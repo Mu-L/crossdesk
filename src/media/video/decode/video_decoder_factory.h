@@ -10,7 +10,7 @@ class VideoDecoderFactory {
   ~VideoDecoderFactory();
 
   static std::unique_ptr<VideoDecoder> CreateVideoDecoder(
-      bool hardware_acceleration);
+      bool hardware_acceleration, bool av1_encoding);
 
   static bool CheckIsHardwareAccerlerationSupported();
 };

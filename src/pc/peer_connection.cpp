@@ -38,6 +38,7 @@ int PeerConnection::Init(PeerConnectionParams params,
   cfg_turn_server_password_ = reader.Get("turn server", "password", "");
   cfg_hardware_acceleration_ =
       reader.Get("hardware acceleration", "turn_on", "false");
+  cfg_av1_encoding_ = reader.Get("av1 encoding", "turn_on", "false");
 
   std::regex regex("\n");
 
@@ -61,6 +62,9 @@ int PeerConnection::Init(PeerConnectionParams params,
   hardware_acceleration_ = cfg_hardware_acceleration_ == "true" ? true : false;
   LOG_INFO("Hardware accelerated codec [{}]",
            hardware_acceleration_ ? "ON" : "OFF");
+
+  av1_encoding_ = cfg_av1_encoding_ == "true" ? true : false;
+  LOG_INFO("av1 encoding [{}]", hardware_acceleration_ ? "ON" : "OFF");
 
   on_receive_video_buffer_ = params.on_receive_video_buffer;
   on_receive_audio_buffer_ = params.on_receive_audio_buffer;
@@ -95,7 +99,7 @@ int PeerConnection::Init(PeerConnectionParams params,
         (uint8_t *)data, size,
         [this, user_id, user_id_size](VideoFrame video_frame) {
           if (on_receive_video_buffer_) {
-            // LOG_ERROR("Receive video, size {}", video_frame.Size());
+            LOG_ERROR("Receive video, size {}", video_frame.Size());
             on_receive_video_buffer_((const char *)video_frame.Buffer(),
                                      video_frame.Size(), user_id, user_id_size);
           }
@@ -177,44 +181,54 @@ int PeerConnection::CreateVideoCodec(bool hardware_acceleration) {
 #else
 #endif
 
-  video_encoder_ =
-      VideoEncoderFactory::CreateVideoEncoder(hardware_acceleration_);
-  if (hardware_acceleration_ && !video_encoder_) {
-    LOG_WARN(
-        "Hardware accelerated encoder not available, use default software "
-        "encoder");
-    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false);
-    if (!video_encoder_) {
-      LOG_ERROR(
-          "Hardware accelerated encoder and software encoder both not "
-          "available");
-      return -1;
+  if (av1_encoding_) {
+    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, true);
+    LOG_INFO("Only support software encoding for AV1");
+  } else {
+    video_encoder_ =
+        VideoEncoderFactory::CreateVideoEncoder(hardware_acceleration_, false);
+    if (hardware_acceleration_ && !video_encoder_) {
+      LOG_WARN(
+          "Hardware accelerated encoder not available, use default software "
+          "encoder");
+      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+      if (!video_encoder_) {
+        LOG_ERROR(
+            "Hardware accelerated encoder and software encoder both not "
+            "available");
+        return -1;
+      }
     }
   }
   if (0 != video_encoder_->Init()) {
-    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false);
+    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
     if (!video_encoder_ || 0 != video_encoder_->Init()) {
       LOG_ERROR("Encoder init failed");
       return -1;
     }
   }
 
-  video_decoder_ =
-      VideoDecoderFactory::CreateVideoDecoder(hardware_acceleration_);
-  if (hardware_acceleration_ && !video_decoder_) {
-    LOG_WARN(
-        "Hardware accelerated decoder not available, use default software "
-        "decoder");
-    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false);
-    if (!video_decoder_) {
-      LOG_ERROR(
-          "Hardware accelerated decoder and software decoder both not "
-          "available");
-      return -1;
+  if (av1_encoding_) {
+    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, true);
+    LOG_INFO("Only support software decoding for AV1");
+  } else {
+    video_decoder_ =
+        VideoDecoderFactory::CreateVideoDecoder(hardware_acceleration_, false);
+    if (hardware_acceleration_ && !video_decoder_) {
+      LOG_WARN(
+          "Hardware accelerated decoder not available, use default software "
+          "decoder");
+      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
+      if (!video_decoder_) {
+        LOG_ERROR(
+            "Hardware accelerated decoder and software decoder both not "
+            "available");
+        return -1;
+      }
     }
   }
   if (0 != video_decoder_->Init()) {
-    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false);
+    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
     if (!video_decoder_ || video_decoder_->Init()) {
       LOG_ERROR("Decoder init failed");
       return -1;
@@ -376,7 +390,8 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
           ice_transmission_list_[remote_user_id]->InitIceTransmission(
               cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,
               turn_server_port_, cfg_turn_server_username_,
-              cfg_turn_server_password_);
+              cfg_turn_server_password_,
+              av1_encoding_ ? RtpPacket::AV1 : RtpPacket::H264);
           ice_transmission_list_[remote_user_id]->JoinTransmission();
         }
 
@@ -430,7 +445,8 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         ice_transmission_list_[remote_user_id]->InitIceTransmission(
             cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,
             turn_server_port_, cfg_turn_server_username_,
-            cfg_turn_server_password_);
+            cfg_turn_server_password_,
+            av1_encoding_ ? RtpPacket::AV1 : RtpPacket::H264);
 
         ice_transmission_list_[remote_user_id]->SetTransmissionId(
             transmission_id_);

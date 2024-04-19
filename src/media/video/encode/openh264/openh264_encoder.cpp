@@ -49,7 +49,9 @@ static int NV12ToYUV420PFFmpeg(unsigned char *src_buffer, int width, int height,
   return 0;
 }
 
-OpenH264Encoder::OpenH264Encoder() {
+OpenH264Encoder::OpenH264Encoder() {}
+
+OpenH264Encoder::~OpenH264Encoder() {
   if (SAVE_NV12_STREAM && file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
@@ -62,8 +64,8 @@ OpenH264Encoder::OpenH264Encoder() {
     file_h264_ = nullptr;
   }
   delete encoded_frame_;
+  Release();
 }
-OpenH264Encoder::~OpenH264Encoder() { Release(); }
 
 SEncParamExt OpenH264Encoder::CreateEncoderParams() const {
   SEncParamExt encoder_params;

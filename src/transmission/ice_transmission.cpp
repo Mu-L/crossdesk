@@ -42,11 +42,11 @@ IceTransmission::~IceTransmission() {
   }
 }
 
-int IceTransmission::InitIceTransmission(std::string &stun_ip, int stun_port,
-                                         std::string &turn_ip, int turn_port,
-                                         std::string &turn_username,
-                                         std::string &turn_password) {
-  video_rtp_codec_ = std::make_unique<RtpCodec>(RtpPacket::PAYLOAD_TYPE::H264);
+int IceTransmission::InitIceTransmission(
+    std::string &stun_ip, int stun_port, std::string &turn_ip, int turn_port,
+    std::string &turn_username, std::string &turn_password,
+    RtpPacket::PAYLOAD_TYPE video_codec_payload_type) {
+  video_rtp_codec_ = std::make_unique<RtpCodec>(video_codec_payload_type);
   audio_rtp_codec_ = std::make_unique<RtpCodec>(RtpPacket::PAYLOAD_TYPE::OPUS);
   data_rtp_codec_ = std::make_unique<RtpCodec>(RtpPacket::PAYLOAD_TYPE::DATA);
 

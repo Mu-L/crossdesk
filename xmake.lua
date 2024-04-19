@@ -11,7 +11,7 @@ add_defines("ASIO_STANDALONE", "ASIO_HAS_STD_TYPE_TRAITS", "ASIO_HAS_STD_SHARED_
     "ASIO_HAS_STD_ADDRESSOF", "ASIO_HAS_STD_ATOMIC", "ASIO_HAS_STD_CHRONO", 
     "ASIO_HAS_CSTDINT", "ASIO_HAS_STD_ARRAY",  "ASIO_HAS_STD_SYSTEM_ERROR")
 
-add_requires("asio 1.24.0", "nlohmann_json", "spdlog 1.11.0", "openfec", "libopus 1.4")
+add_requires("asio 1.24.0", "nlohmann_json", "spdlog 1.11.0", "openfec", "libopus 1.4", "dav1d 1.1.0")
 add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus")
 
 includes("thirdparty")
@@ -19,8 +19,9 @@ includes("thirdparty")
 if is_os("windows") then
     add_requires("vcpkg::ffmpeg 5.1.2", {configs = {shared = false}})
     add_requires("vcpkg::libnice 0.1.21")
+    add_requires("vcpkg::aom")
     add_requires("openh264 2.1.1", {configs = {shared = false}})
-    add_packages("vcpkg::ffmpeg", "vcpkg::libnice", "openh264", "cuda")
+    add_packages("vcpkg::ffmpeg", "vcpkg::libnice", "vcpkg::aom", "openh264", "dav1d", "cuda")
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
     add_requires("cuda")
 elseif is_os("linux") then
@@ -119,7 +120,9 @@ target("media")
         "src/media/video/encode/ffmpeg/*.cpp",
         "src/media/video/decode/ffmpeg/*.cpp",
         "src/media/video/encode/openh264/*.cpp",
-        "src/media/video/decode/openh264/*.cpp")
+        "src/media/video/decode/openh264/*.cpp",
+        "src/media/video/encode/aom/*.cpp",
+        "src/media/video/decode/dav1d/*.cpp")
         add_includedirs("src/media/video/encode",
         "src/media/video/decode",
         "src/media/video/encode/nvcodec",
@@ -128,6 +131,8 @@ target("media")
         "src/media/video/decode/ffmpeg",
         "src/media/video/encode/openh264",
         "src/media/video/decode/openh264",
+        "src/media/video/encode/aom",
+        "src/media/video/decode/dav1d",
         "thirdparty/nvcodec/Interface",
         "thirdparty/nvcodec/Samples", {public = true})
     elseif is_os(("linux")) then

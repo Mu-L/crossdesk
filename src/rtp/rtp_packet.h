@@ -115,6 +115,44 @@
 // |               padding         | Padding size  |
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+// AV1
+//  0                   1                   2                   3
+//  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |V=2|P|X|  CC   |M|     PT      |       sequence number         |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                           timestamp                           |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |           synchronization source (SSRC) identifier            |
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |            contributing source (CSRC) identifiers             |x
+// |                             ....                              |x
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |         0x100         |  0x0  |       extensions length       |x
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |      ID       |  hdr_length   |                               |x
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+                               |x
+// |                                                               |x
+// |          dependency descriptor (hdr_length #bytes)            |x
+// |                                                               |x
+// |                               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                               | Other rtp header extensions...|x
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// | AV1 aggr hdr  |                                               |
+// +-+-+-+-+-+-+-+-+                                               |
+// |                                                               |
+// |                   Bytes 2..N of AV1 payload                   |
+// |                                                               |
+// |                               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                               :    OPTIONAL RTP padding       |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+// | AV1 aggr hdr  |
+//  0 1 2 3 4 5 6 7
+// +-+-+-+-+-+-+-+-+
+// |Z|Y| W |N|-|-|-|
+// +-+-+-+-+-+-+-+-+
+
 #define DEFAULT_MTU 1500
 #define MAX_NALU_LEN 1400
 
@@ -124,6 +162,7 @@ class RtpPacket {
     H264 = 96,
     H264_FEC_SOURCE = 97,
     H264_FEC_REPAIR = 98,
+    AV1 = 99,
     OPUS = 111,
     DATA = 127
   } PAYLOAD_TYPE;
@@ -179,6 +218,20 @@ class RtpPacket {
     uint8_t nal_unit_type : 5;
   } FU_HEADER;
 
+  typedef struct {
+    uint8_t z : 1;
+    uint8_t y : 1;
+    uint8_t w : 2;
+    uint8_t n : 1;
+  } AV1_AGGR_HEADER;
+
+  // typedef struct Obu {
+  //   uint8_t header;
+  //   uint8_t extension_header;  // undefined if (header & kXbit) == 0
+  //   rtc::ArrayView<const uint8_t> payload;
+  //   int size;  // size of the header and payload combined.
+  // } OBU;
+
   void SetFuIndicator(FU_INDICATOR fu_indicator) {
     fu_indicator_.forbidden_bit = fu_indicator.forbidden_bit;
     fu_indicator_.nal_reference_idc = fu_indicator.nal_reference_idc;
@@ -190,6 +243,13 @@ class RtpPacket {
     fu_header_.end = fu_header.end;
     fu_header_.remain_bit = fu_header.remain_bit;
     fu_header_.nal_unit_type = fu_header.nal_unit_type;
+  }
+
+  void SetAv1AggrHeader(AV1_AGGR_HEADER av1_aggr_header) {
+    av1_aggr_header_.z = av1_aggr_header.z;
+    av1_aggr_header_.y = av1_aggr_header.y;
+    av1_aggr_header_.w = av1_aggr_header.w;
+    av1_aggr_header_.n = av1_aggr_header.n;
   }
 
   void SetFecSymbolId(uint8_t fec_symbol_id) { fec_symbol_id_ = fec_symbol_id; }
@@ -204,11 +264,14 @@ class RtpPacket {
   const uint8_t *EncodeH264FecRepair(uint8_t *payload, size_t payload_size,
                                      unsigned int fec_symbol_id,
                                      unsigned int fec_source_symbol_num);
+  const uint8_t *EncodeAv1(uint8_t *payload, size_t payload_size);
+
   size_t DecodeData(uint8_t *payload = nullptr);
   size_t DecodeH264Nalu(uint8_t *payload = nullptr);
   size_t DecodeH264Fua(uint8_t *payload = nullptr);
   size_t DecodeH264FecSource(uint8_t *payload = nullptr);
   size_t DecodeH264FecRepair(uint8_t *payload = nullptr);
+  size_t DecodeAv1(uint8_t *payload = nullptr);
   size_t DecodeOpus(uint8_t *payload = nullptr);
 
  public:
@@ -314,6 +377,7 @@ class RtpPacket {
   FU_HEADER fu_header_;
   uint8_t fec_symbol_id_ = 0;
   uint8_t fec_source_symbol_num_ = 0;
+  AV1_AGGR_HEADER av1_aggr_header_;
 
   // Payload
   uint8_t *payload_ = nullptr;

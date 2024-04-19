@@ -37,7 +37,8 @@ class IceTransmission {
   int InitIceTransmission(std::string &stun_ip, int stun_port,
                           std::string &turn_ip, int turn_port,
                           std::string &turn_username,
-                          std::string &turn_password);
+                          std::string &turn_password,
+                          RtpPacket::PAYLOAD_TYPE video_codec_payload_type);
 
   int DestroyIceTransmission();
 

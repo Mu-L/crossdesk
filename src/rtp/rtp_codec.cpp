@@ -9,6 +9,16 @@
 #define FU_A 28
 #define FU_B 29
 
+constexpr int kObuTypeSequenceHeader = 1;
+constexpr int kObuTypeTemporalDelimiter = 2;
+constexpr int kObuTypeFrameHeader = 3;
+constexpr int kObuTypeTileGroup = 4;
+constexpr int kObuTypeMetadata = 5;
+constexpr int kObuTypeFrame = 6;
+constexpr int kObuTypeRedundantFrameHeader = 7;
+constexpr int kObuTypeTileList = 8;
+constexpr int kObuTypePadding = 15;
+
 RtpCodec ::RtpCodec(RtpPacket::PAYLOAD_TYPE payload_type)
     : version_(RTP_VERSION),
       has_padding_(false),
@@ -212,6 +222,84 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
                                    last_packet_size);
         } else {
           rtp_packet.EncodeH264Fua(buffer + index * MAX_NALU_LEN, MAX_NALU_LEN);
+        }
+        packets.emplace_back(rtp_packet);
+      }
+    }
+  } else if (RtpPacket::PAYLOAD_TYPE::AV1 == payload_type_) {
+    if (size <= MAX_NALU_LEN) {
+      RtpPacket rtp_packet;
+      rtp_packet.SetVerion(version_);
+      rtp_packet.SetHasPadding(has_padding_);
+      rtp_packet.SetHasExtension(has_extension_);
+      rtp_packet.SetMarker(1);
+      rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
+      rtp_packet.SetSequenceNumber(sequence_number_++);
+
+      timestamp_ =
+          std::chrono::high_resolution_clock::now().time_since_epoch().count();
+      rtp_packet.SetTimestamp(timestamp_);
+      rtp_packet.SetSsrc(ssrc_);
+
+      if (!csrcs_.empty()) {
+        rtp_packet.SetCsrcs(csrcs_);
+      }
+
+      if (has_extension_) {
+        rtp_packet.SetExtensionProfile(extension_profile_);
+        rtp_packet.SetExtensionData(extension_data_, extension_len_);
+      }
+
+      // int obu_header;
+      // memcpy(&obu_header, buffer, sizeof(char));
+      // int obu_type = (obu_header & 0b0'1111'000) >> 3;
+      // LOG_ERROR("OBU type {}", obu_type);
+      // if (obu_type == kObuTypeTemporalDelimiter ||
+      //     obu_type == kObuTypeTileList || obu_type == kObuTypePadding) {
+      //   LOG_ERROR("Unsupported OBU type", obu_type);
+      // }
+
+      RtpPacket::AV1_AGGR_HEADER av1_aggr_header;
+      av1_aggr_header.z = av1_aggr_header.z;
+      av1_aggr_header.y = av1_aggr_header.y;
+      av1_aggr_header.w = av1_aggr_header.w;
+      av1_aggr_header.n = av1_aggr_header.n;
+
+      rtp_packet.SetAv1AggrHeader(av1_aggr_header);
+
+      rtp_packet.EncodeAv1(buffer, size);
+      packets.emplace_back(rtp_packet);
+
+    } else {
+      size_t last_packet_size = size % MAX_NALU_LEN;
+      size_t packet_num = size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
+      timestamp_ =
+          std::chrono::high_resolution_clock::now().time_since_epoch().count();
+
+      for (size_t index = 0; index < packet_num; index++) {
+        RtpPacket rtp_packet;
+        rtp_packet.SetVerion(version_);
+        rtp_packet.SetHasPadding(has_padding_);
+        rtp_packet.SetHasExtension(has_extension_);
+        rtp_packet.SetMarker(index == packet_num - 1 ? 1 : 0);
+        rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
+        rtp_packet.SetSequenceNumber(sequence_number_++);
+        rtp_packet.SetTimestamp(timestamp_);
+        rtp_packet.SetSsrc(ssrc_);
+
+        if (!csrcs_.empty()) {
+          rtp_packet.SetCsrcs(csrcs_);
+        }
+
+        if (has_extension_) {
+          rtp_packet.SetExtensionProfile(extension_profile_);
+          rtp_packet.SetExtensionData(extension_data_, extension_len_);
+        }
+
+        if (index == packet_num - 1 && last_packet_size > 0) {
+          rtp_packet.EncodeAv1(buffer + index * MAX_NALU_LEN, last_packet_size);
+        } else {
+          rtp_packet.EncodeAv1(buffer + index * MAX_NALU_LEN, MAX_NALU_LEN);
         }
         packets.emplace_back(rtp_packet);
       }

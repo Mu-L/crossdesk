@@ -76,10 +76,12 @@ class PeerConnection {
   std::string cfg_turn_server_username_;
   std::string cfg_turn_server_password_;
   std::string cfg_hardware_acceleration_;
+  std::string cfg_av1_encoding_;
   int signal_server_port_ = 0;
   int stun_server_port_ = 0;
   int turn_server_port_ = 0;
   bool hardware_acceleration_ = false;
+  bool av1_encoding_ = false;
 
  private:
   std::shared_ptr<WsTransmission> ws_transport_ = nullptr;
