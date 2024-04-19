@@ -167,7 +167,7 @@ void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame) {
   if (_on_data)
     BGRAToNV12FFmpeg((unsigned char *)frame.data, frame.width, frame.height,
                      nv12_frame_);
-  _on_data(nv12_frame_, frame.width * frame.height * 4, frame.width,
+  _on_data(nv12_frame_, frame.width * frame.height * 3 / 2, frame.width,
            frame.height);
 }
 

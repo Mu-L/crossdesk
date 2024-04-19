@@ -13,7 +13,7 @@ if is_mode("debug") then
     add_defines("REMOTE_DESK_DEBUG")
 end
 
-add_requires("sdl2", {system = false})
+add_requires("sdl2 2.28.3", {system = false})
 add_requires("spdlog 1.11.0", {system = false})
 add_requires("imgui 1.89.9", {configs = {sdl2 = true, sdl2_renderer = true}})
 
@@ -157,7 +157,7 @@ target("remote_desk")
 --     "-lxcb-shm", "-lXext", "-lX11", "-lXv", "-lpthread", "-lSDL2", "-lopenh264",
 --     "-ldl", {force = true})
 
-target("mouse_control")
-    set_kind("binary")
-    add_files("test/linux_mouse_control/mouse_control.cpp")
-    add_includedirs("test/linux_mouse_control")
+-- target("mouse_control")
+--     set_kind("binary")
+--     add_files("test/linux_mouse_control/mouse_control.cpp")
+--     add_includedirs("test/linux_mouse_control")
