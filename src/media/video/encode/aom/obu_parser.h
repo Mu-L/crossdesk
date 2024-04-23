@@ -15,4 +15,13 @@
 #include "obu.h"
 
 std::vector<Obu> ParseObus(uint8_t* payload, int payload_size);
+
+const char* ObuTypeToString(OBU_TYPE type);
+
+bool ObuHasExtension(uint8_t obu_header);
+
+bool ObuHasSize(uint8_t obu_header);
+
+int ObuType(uint8_t obu_header);
+
 #endif

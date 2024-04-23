@@ -343,52 +343,11 @@ int AomAv1Encoder::Encode(
       LOG_INFO("Encoded frame qp = {}", qp);
 
       std::vector<Obu> obus = ParseObus(encoded_frame_, encoded_frame_size_);
-      // LOG_ERROR("Obu size = [{}]", obus.size());
-      // for (int i = 0; i < obus.size(); i++) {
-      //   LOG_ERROR("Obu size = {} [{} {}]", i, obus[i].size_,
-      //             obus[i].payload_size_);
-      // }
-
-      // int consumed_size = 0;
-      // int offset = 0;
-      // int unit = 0;
-      // while (consumed_size < encoded_frame_size_) {
-      //   int obu_size = 0;
-      //   uint8_t obu_header;
-      //   memcpy(&obu_header, encoded_frame_ + offset, sizeof(char));
-      //   obu_size = 1;
-      //   offset += 1;
-      //   // memcpy(reinterpret_cast<char *>(&obu_header), encoded_frame_, 1);
-      //   int obu_type = (obu_header & 0b0'1111'000) >> 3;
-
-      //   bool obu_has_ext = obu_header & 0b0'0000'100;
-      //   // LOG_ERROR("OBU has ext {}", obu_has_ext);
-
-      //   bool obu_has_size = obu_header & kObuSizePresentBit;
-      //   LOG_ERROR("OBU has size {}", obu_has_size);
-      //   if (!obu_has_size) {
-      //     consumed_size = encoded_frame_size_;
-      //     offset = encoded_frame_size_;
-      //   } else {
-      //     uint64_t size = 0;
-      //     if (!ReadLeb128((char *)(encoded_frame_ + offset), &size) ||
-      //         size > encoded_frame_size_ - consumed_size) {
-      //       LOG_ERROR(
-      //           "Malformed AV1 input: declared size {} is larger than "
-      //           "remaining buffer size {}",
-      //           size, encoded_frame_size_ - consumed_size);
-      //       return -1;
-      //     }
-
-      //     LOG_ERROR("leb128 get size = {}, offset = {}", size, offset);
-      //     consumed_size += size;
-      //     offset += size;
-      //     obu_size += size;
-      //   }
-
-      //   LOG_ERROR("Temporal unit [{}], OBU size [{}], OBU type [{}]", unit++,
-      //             obu_size, obu_type);
-      // }
+      for (int i = 0; i < obus.size(); i++) {
+        LOG_ERROR("[{}] Obu size = [{}], Obu type [{}]", i,
+                  obus[i].payload_size_,
+                  ObuTypeToString((OBU_TYPE)ObuType(obus[i].header_)));
+      }
 
       if (on_encoded_image) {
         on_encoded_image((char *)encoded_frame_, encoded_frame_size_);

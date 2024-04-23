@@ -52,8 +52,7 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
   while (payload_reader.Length() > 0) {
     Obu obu;
     payload_reader.ReadUInt8(&obu.header_);
-    LOG_ERROR("Get obu type = [{}]",
-              ObuTypeToString((OBU_TYPE)ObuType(obu.header_)))
+
     obu.size_ = 1;
     if (ObuHasExtension(obu.header_)) {
       if (payload_reader.Length() == 0) {
@@ -70,7 +69,6 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
       obu.SetPayload(reinterpret_cast<const uint8_t*>(payload_reader.Data()),
                      payload_reader.Length());
       payload_reader.Consume(payload_reader.Length());
-      LOG_ERROR("payload_reader.Length() = {}", payload_reader.Length());
     } else {
       uint64_t size = 0;
       if (!payload_reader.ReadUVarint(&size) ||
@@ -84,7 +82,6 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
       obu.SetPayload(reinterpret_cast<const uint8_t*>(payload_reader.Data()),
                      size);
       payload_reader.Consume(size);
-      LOG_ERROR("size = {}", size);
     }
     obu.size_ += obu.payload_size_;
     // Skip obus that shouldn't be transfered over rtp.
@@ -94,19 +91,16 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
     //     obu_type != kObuTypePadding) {
     //   result.push_back(obu);
     // }
-
-    LOG_ERROR("Obu size = [{}], Obu type [{}]", obu.size_,
-              ObuTypeToString((OBU_TYPE)ObuType(obu.header_)));
     if (1) {
       result.push_back(obu);
     }
   }
 
-  LOG_ERROR("Obu size = [{}]", result.size());
-  for (int i = 0; i < result.size(); i++) {
-    LOG_ERROR("[{}] Obu size = [{}], Obu type [{}]", i, result[i].payload_size_,
-              ObuTypeToString((OBU_TYPE)ObuType(result[i].header_)));
-  }
+  // for (int i = 0; i < result.size(); i++) {
+  //   LOG_ERROR("[{}] Obu size = [{}], Obu type [{}]", i,
+  //   result[i].payload_size_,
+  //             ObuTypeToString((OBU_TYPE)ObuType(result[i].header_)));
+  // }
 
   return result;
 }
