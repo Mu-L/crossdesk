@@ -223,65 +223,18 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
     for (int i = 0; i < obus.size(); i++) {
       LOG_ERROR("[{}] Obu size = [{}], Obu type [{}]", i, obus[i].size_,
                 ObuTypeToString((OBU_TYPE)ObuType(obus[i].header_)));
-    }
-
-    if (size <= MAX_NALU_LEN) {
-      RtpPacket rtp_packet;
-      rtp_packet.SetVerion(version_);
-      rtp_packet.SetHasPadding(has_padding_);
-      rtp_packet.SetHasExtension(has_extension_);
-      rtp_packet.SetMarker(1);
-      rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
-      rtp_packet.SetSequenceNumber(sequence_number_++);
-
-      timestamp_ =
-          std::chrono::high_resolution_clock::now().time_since_epoch().count();
-      rtp_packet.SetTimestamp(timestamp_);
-      rtp_packet.SetSsrc(ssrc_);
-
-      if (!csrcs_.empty()) {
-        rtp_packet.SetCsrcs(csrcs_);
-      }
-
-      if (has_extension_) {
-        rtp_packet.SetExtensionProfile(extension_profile_);
-        rtp_packet.SetExtensionData(extension_data_, extension_len_);
-      }
-
-      // int obu_header;
-      // memcpy(&obu_header, buffer, sizeof(char));
-      // int obu_type = (obu_header & 0b0'1111'000) >> 3;
-      // LOG_ERROR("OBU type {}", obu_type);
-      // if (obu_type == kObuTypeTemporalDelimiter ||
-      //     obu_type == kObuTypeTileList || obu_type == kObuTypePadding) {
-      //   LOG_ERROR("Unsupported OBU type", obu_type);
-      // }
-
-      RtpPacket::AV1_AGGR_HEADER av1_aggr_header;
-      av1_aggr_header.z = av1_aggr_header.z;
-      av1_aggr_header.y = av1_aggr_header.y;
-      av1_aggr_header.w = av1_aggr_header.w;
-      av1_aggr_header.n = av1_aggr_header.n;
-
-      rtp_packet.SetAv1AggrHeader(av1_aggr_header);
-
-      rtp_packet.EncodeAv1(buffer, size);
-      packets.emplace_back(rtp_packet);
-
-    } else {
-      size_t last_packet_size = size % MAX_NALU_LEN;
-      size_t packet_num = size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
-      timestamp_ =
-          std::chrono::high_resolution_clock::now().time_since_epoch().count();
-
-      for (size_t index = 0; index < packet_num; index++) {
+      if (obus[i].size_ <= MAX_NALU_LEN) {
         RtpPacket rtp_packet;
         rtp_packet.SetVerion(version_);
         rtp_packet.SetHasPadding(has_padding_);
         rtp_packet.SetHasExtension(has_extension_);
-        rtp_packet.SetMarker(index == packet_num - 1 ? 1 : 0);
+        rtp_packet.SetMarker(1);
         rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
         rtp_packet.SetSequenceNumber(sequence_number_++);
+
+        timestamp_ = std::chrono::high_resolution_clock::now()
+                         .time_since_epoch()
+                         .count();
         rtp_packet.SetTimestamp(timestamp_);
         rtp_packet.SetSsrc(ssrc_);
 
@@ -294,14 +247,82 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
           rtp_packet.SetExtensionData(extension_data_, extension_len_);
         }
 
-        if (index == packet_num - 1 && last_packet_size > 0) {
-          rtp_packet.EncodeAv1(buffer + index * MAX_NALU_LEN, last_packet_size);
-        } else {
-          rtp_packet.EncodeAv1(buffer + index * MAX_NALU_LEN, MAX_NALU_LEN);
-        }
-        packets.emplace_back(rtp_packet);
+        rtp_packet.SetAv1AggrHeader(0, 0, 1, 0);
+
+        // rtp_packet.EncodeAv1(buffer, size);
+        // packets.emplace_back(rtp_packet);
       }
     }
+
+    // if (size <= MAX_NALU_LEN) {
+    //   RtpPacket rtp_packet;
+    //   rtp_packet.SetVerion(version_);
+    //   rtp_packet.SetHasPadding(has_padding_);
+    //   rtp_packet.SetHasExtension(has_extension_);
+    //   rtp_packet.SetMarker(1);
+    //   rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
+    //   rtp_packet.SetSequenceNumber(sequence_number_++);
+
+    //   timestamp_ =
+    //       std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    //   rtp_packet.SetTimestamp(timestamp_);
+    //   rtp_packet.SetSsrc(ssrc_);
+
+    //   if (!csrcs_.empty()) {
+    //     rtp_packet.SetCsrcs(csrcs_);
+    //   }
+
+    //   if (has_extension_) {
+    //     rtp_packet.SetExtensionProfile(extension_profile_);
+    //     rtp_packet.SetExtensionData(extension_data_, extension_len_);
+    //   }
+
+    //   RtpPacket::AV1_AGGR_HEADER av1_aggr_header;
+    //   av1_aggr_header.z = av1_aggr_header.z;
+    //   av1_aggr_header.y = av1_aggr_header.y;
+    //   av1_aggr_header.w = av1_aggr_header.w;
+    //   av1_aggr_header.n = av1_aggr_header.n;
+
+    //   rtp_packet.SetAv1AggrHeader(av1_aggr_header);
+
+    //   rtp_packet.EncodeAv1(buffer, size);
+    //   packets.emplace_back(rtp_packet);
+
+    // } else {
+    //   size_t last_packet_size = size % MAX_NALU_LEN;
+    //   size_t packet_num = size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
+    //   timestamp_ =
+    //       std::chrono::high_resolution_clock::now().time_since_epoch().count();
+
+    //   for (size_t index = 0; index < packet_num; index++) {
+    //     RtpPacket rtp_packet;
+    //     rtp_packet.SetVerion(version_);
+    //     rtp_packet.SetHasPadding(has_padding_);
+    //     rtp_packet.SetHasExtension(has_extension_);
+    //     rtp_packet.SetMarker(index == packet_num - 1 ? 1 : 0);
+    //     rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
+    //     rtp_packet.SetSequenceNumber(sequence_number_++);
+    //     rtp_packet.SetTimestamp(timestamp_);
+    //     rtp_packet.SetSsrc(ssrc_);
+
+    //     if (!csrcs_.empty()) {
+    //       rtp_packet.SetCsrcs(csrcs_);
+    //     }
+
+    //     if (has_extension_) {
+    //       rtp_packet.SetExtensionProfile(extension_profile_);
+    //       rtp_packet.SetExtensionData(extension_data_, extension_len_);
+    //     }
+
+    //     if (index == packet_num - 1 && last_packet_size > 0) {
+    //       rtp_packet.EncodeAv1(buffer + index * MAX_NALU_LEN,
+    //       last_packet_size);
+    //     } else {
+    //       rtp_packet.EncodeAv1(buffer + index * MAX_NALU_LEN, MAX_NALU_LEN);
+    //     }
+    //     packets.emplace_back(rtp_packet);
+    //   }
+    // }
   } else if (RtpPacket::PAYLOAD_TYPE::OPUS == payload_type_) {
     RtpPacket rtp_packet;
     rtp_packet.SetVerion(version_);

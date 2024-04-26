@@ -424,14 +424,12 @@ const uint8_t *RtpPacket::EncodeAv1(uint8_t *payload, size_t payload_size) {
     memcpy(buffer_ + 16 + extension_offset, extension_data_, extension_len_);
   }
 
-  uint32_t payload_offset =
+  uint32_t aggr_header_offset =
       (has_extension_ && extension_data_ ? extension_len_ : 0) +
       extension_offset;
+  memcpy(buffer_ + 12 + aggr_header_offset, &av1_aggr_header_, 1);
 
-  buffer_[12 + payload_offset] = fu_indicator_.forbidden_bit << 7 |
-                                 fu_indicator_.nal_reference_idc << 6 |
-                                 fu_indicator_.nal_unit_type;
-
+  uint32_t payload_offset = aggr_header_offset + 1;
   memcpy(buffer_ + 13 + payload_offset, payload, payload_size);
   size_ = payload_size + (13 + payload_offset);
 

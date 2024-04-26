@@ -218,20 +218,6 @@ class RtpPacket {
     uint8_t nal_unit_type : 5;
   } FU_HEADER;
 
-  typedef struct {
-    uint8_t z : 1;
-    uint8_t y : 1;
-    uint8_t w : 2;
-    uint8_t n : 1;
-  } AV1_AGGR_HEADER;
-
-  // typedef struct Obu {
-  //   uint8_t header;
-  //   uint8_t extension_header;  // undefined if (header & kXbit) == 0
-  //   rtc::ArrayView<const uint8_t> payload;
-  //   int size;  // size of the header and payload combined.
-  // } OBU;
-
   void SetFuIndicator(FU_INDICATOR fu_indicator) {
     fu_indicator_.forbidden_bit = fu_indicator.forbidden_bit;
     fu_indicator_.nal_reference_idc = fu_indicator.nal_reference_idc;
@@ -245,11 +231,11 @@ class RtpPacket {
     fu_header_.nal_unit_type = fu_header.nal_unit_type;
   }
 
-  void SetAv1AggrHeader(AV1_AGGR_HEADER av1_aggr_header) {
-    av1_aggr_header_.z = av1_aggr_header.z;
-    av1_aggr_header_.y = av1_aggr_header.y;
-    av1_aggr_header_.w = av1_aggr_header.w;
-    av1_aggr_header_.n = av1_aggr_header.n;
+  void SetAv1AggrHeader(int z, int y, int w, int n) {
+    if (z) av1_aggr_header_ |= (1 << 7);
+    if (y) av1_aggr_header_ |= (1 << 6);
+    if (w) av1_aggr_header_ |= w << 4;
+    if (n) av1_aggr_header_ |= (1 << 3);
   }
 
   void SetFecSymbolId(uint8_t fec_symbol_id) { fec_symbol_id_ = fec_symbol_id; }
@@ -377,7 +363,7 @@ class RtpPacket {
   FU_HEADER fu_header_;
   uint8_t fec_symbol_id_ = 0;
   uint8_t fec_source_symbol_num_ = 0;
-  AV1_AGGR_HEADER av1_aggr_header_;
+  uint8_t av1_aggr_header_ = 0;
 
   // Payload
   uint8_t *payload_ = nullptr;
