@@ -23,13 +23,17 @@ if is_os("windows") then
         "SDL2-static", "SDL2main", "gdi32", "winmm", "setupapi", "version",
         "Imm32", "iphlpapi")
 elseif is_os("linux") then
+    add_requires("ffmpeg 5.1.2", {system = false})
     add_syslinks("pthread", "dl")
     add_linkdirs("thirdparty/projectx/thirdparty/nvcodec/Lib/x64")
     add_links("SDL2", "cuda", "nvidia-encode", "nvcuvid")
-    add_ldflags("-lasound", "-lxcb-shape", "-lxcb-xfixes", "-lsndio", "-lxcb", 
+    add_ldflags("-lavformat", "-lavdevice", "-lavfilter", "-lavcodec",
+        "-lswscale", "-lavutil", "-lswresample",
+        "-lasound", "-lxcb-shape", "-lxcb-xfixes", "-lsndio", "-lxcb", 
         "-lxcb-shm", "-lXext", "-lX11", "-lXv", "-ldl", "-lpthread",
         {force = true})
 elseif is_os("macosx") then
+    add_requires("ffmpeg 5.1.2", {system = false})
     add_requires("libxcb", {system = false})
     add_packages("libxcb")
     add_links("SDL2", "SDL2main")
@@ -62,11 +66,13 @@ target("screen_capturer")
         add_files("src/screen_capturer/windows/*.cpp")
         add_includedirs("src/screen_capturer/windows", {public = true})
     elseif is_os("macosx") then
-         add_files("src/screen_capturer/macosx/*.cpp")
-         add_includedirs("src/screen_capturer/macosx", {public = true})
+        add_packages("ffmpeg")
+        add_files("src/screen_capturer/macosx/*.cpp")
+        add_includedirs("src/screen_capturer/macosx", {public = true})
     elseif is_os("linux") then
-         add_files("src/screen_capturer/linux/*.cpp")
-         add_includedirs("src/screen_capturer/linux", {public = true})
+        add_packages("ffmpeg")
+        add_files("src/screen_capturer/linux/*.cpp")
+        add_includedirs("src/screen_capturer/linux", {public = true})
     end
 
 target("device_controller")
