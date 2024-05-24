@@ -13,9 +13,8 @@ if is_mode("debug") then
     add_defines("REMOTE_DESK_DEBUG")
 end
 
-add_requires("sdl2 2.28.3", {system = false})
-add_requires("spdlog 1.11.0", {system = false})
-add_requires("imgui 1.89.9", {configs = {sdl2 = true, sdl2_renderer = true}})
+add_requires("spdlog 1.14.1", {system = false})
+add_requires("imgui 1.90.6", {configs = {sdl2 = true, sdl2_renderer = true}})
 add_requires("libyuv")
 
 if is_os("windows") then
@@ -41,7 +40,7 @@ elseif is_os("macosx") then
     add_frameworks("OpenGL")
 end
 
-add_packages("spdlog", "sdl2", "imgui")
+add_packages("spdlog", "imgui")
 
 includes("thirdparty")
 
