@@ -35,6 +35,8 @@
 #define MOUSE_CONTROL 1
 #endif
 
+#define CHINESE_FONT 1
+
 int screen_w = 1280, screen_h = 720;
 int window_w = 1280, window_h = 720;
 const int pixel_w = 1280, pixel_h = 720;
@@ -439,6 +441,29 @@ int main(int argc, char *argv[]) {
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
 
+#ifdef CHINESE_FONT
+  std::string default_font_path = "../../../../font/SourceHanSans-Regular.ttf";
+  std::ifstream font_path_f(default_font_path.c_str());
+  std::string font_path = font_path_f.good()
+                              ? "../../../../font/SourceHanSans-Regular.ttf"
+                              : "SourceHanSans-Regular.ttf";
+
+  // Load Fonts
+#ifdef _WIN32
+  io.Fonts->AddFontFromFileTTF(
+      font_path.c_str(), 20.0f, NULL,
+      io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+#elif __APPLE__
+  io.Fonts->AddFontFromFileTTF(
+      "c:/windows/fonts/msyh.ttc", 16.0f, NULL,
+      io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+#elif __linux__
+  io.Fonts->AddFontFromFileTTF(
+      "c:/windows/fonts/msyh.ttc", 16.0f, NULL,
+      io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+#endif
+#endif
+
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
   // ImGui::StyleColorsLight();
@@ -577,30 +602,53 @@ int main(int argc, char *argv[]) {
 
       const ImGuiViewport *main_viewport = ImGui::GetMainViewport();
       ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
-      ImGui::SetNextWindowSize(ImVec2(190, 200));
 
+#ifdef CHINESE_FONT
+      ImGui::SetNextWindowSize(ImVec2(190, 250));
+#else
+      ImGui::SetNextWindowSize(ImVec2(190, 200));
+#endif
+
+#ifdef CHINESE_FONT
+      ImGui::Begin(u8"菜单", nullptr, ImGuiWindowFlags_NoResize);
+#else
       ImGui::Begin("Menu", nullptr, ImGuiWindowFlags_NoResize);
+#endif
 
       {
         menu_hovered = ImGui::IsWindowHovered();
+#ifdef CHINESE_FONT
+        ImGui::Text(u8" 本机ID:");
+#else
         ImGui::Text(" LOCAL ID:");
+#endif
         ImGui::SameLine();
-        ImGui::SetNextItemWidth(95);
+        ImGui::SetNextItemWidth(105);
         ImGui::InputText(
             "##local_id", (char *)mac_addr_str.c_str(),
             mac_addr_str.length() + 1,
             ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_ReadOnly);
 
+#ifdef CHINESE_FONT
+        ImGui::Text(u8"     密码:");
+#else
         ImGui::Text(" PASSWORD:");
+#endif
         ImGui::SameLine();
-        ImGui::SetNextItemWidth(95);
+        ImGui::SetNextItemWidth(105);
 
         char input_password_tmp[7] = "";
         strncpy(input_password_tmp, input_password, sizeof(input_password));
 
+#ifdef CHINESE_FONT
+        ImGui::InputTextWithHint("##server_pwd", u8"最长6个字符",
+                                 input_password, IM_ARRAYSIZE(input_password),
+                                 ImGuiInputTextFlags_CharsNoBlank);
+#else
         ImGui::InputTextWithHint("##server_pwd", "max 6 chars", input_password,
                                  IM_ARRAYSIZE(input_password),
                                  ImGuiInputTextFlags_CharsNoBlank);
+#endif
         if (strcmp(input_password_tmp, input_password)) {
           cd_cache_file = fopen("cache.cd", "w+");
           if (cd_cache_file) {
@@ -622,9 +670,13 @@ int main(int argc, char *argv[]) {
         {
           {
             static char remote_id[20] = "";
+#ifdef CHINESE_FONT
+            ImGui::Text(u8"远端 ID:");
+#else
             ImGui::Text("REMOTE ID:");
+#endif
             ImGui::SameLine();
-            ImGui::SetNextItemWidth(95);
+            ImGui::SetNextItemWidth(105);
             ImGui::InputTextWithHint("##remote_id", mac_addr_str.c_str(),
                                      remote_id, IM_ARRAYSIZE(remote_id),
                                      ImGuiInputTextFlags_CharsUppercase |
@@ -632,16 +684,30 @@ int main(int argc, char *argv[]) {
 
             ImGui::Spacing();
 
+#ifdef CHINESE_FONT
+            ImGui::Text(u8"     密码:");
+#else
             ImGui::Text(" PASSWORD:");
+#endif
             ImGui::SameLine();
-            ImGui::SetNextItemWidth(95);
+            ImGui::SetNextItemWidth(105);
             static char client_password[20] = "";
-            ImGui::InputTextWithHint("##client_pwd", "max 6 chars",
+#ifdef CHINESE_FONT
+            ImGui::InputTextWithHint("##client_pwd", u8"最长6个字符",
                                      client_password,
                                      IM_ARRAYSIZE(client_password),
                                      ImGuiInputTextFlags_CharsNoBlank);
-
-            if (ImGui::Button(connect_label)) {
+#else
+            ImGui::InputTextWithHint("##client_pwd", u8"最长6个字符",
+                                     client_password,
+                                     IM_ARRAYSIZE(client_password),
+                                     ImGuiInputTextFlags_CharsNoBlank);
+#endif
+#ifdef CHINESE_FONT
+            if (ImGui::Button(u8"连接")) {
+#else
+            if (ImGui::Button("Connect")) {
+#endif
               int ret = -1;
               if ("ClientSignalConnected" == client_signal_status_str) {
                 if (strcmp(connect_label, "Connect") == 0 && !joined) {
@@ -677,7 +743,11 @@ int main(int argc, char *argv[]) {
       ImGui::Spacing();
 
       {
+#ifdef CHINESE_FONT
+        if (ImGui::Button(u8"重置窗口")) {
+#else
         if (ImGui::Button("Resize Window")) {
+#endif
           SDL_GetWindowSize(window, &window_w, &window_h);
 
           if (window_h != window_w * 9 / 16) {
