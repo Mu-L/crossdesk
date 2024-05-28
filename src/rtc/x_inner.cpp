@@ -55,7 +55,7 @@ int JoinConnection(PeerPtr *peer_ptr, const char *transmission_id,
   }
 
   peer_ptr->peer_connection->Join(transmission_id, password);
-  LOG_INFO("JoinConnection[{}] with password [{}]", transmission_id, password);
+  LOG_INFO("JoinConnection [{}] with password [{}]", transmission_id, password);
   return 0;
 }
 

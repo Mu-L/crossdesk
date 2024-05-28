@@ -11,28 +11,24 @@ add_defines("ASIO_STANDALONE", "ASIO_HAS_STD_TYPE_TRAITS", "ASIO_HAS_STD_SHARED_
     "ASIO_HAS_STD_ADDRESSOF", "ASIO_HAS_STD_ATOMIC", "ASIO_HAS_STD_CHRONO", 
     "ASIO_HAS_CSTDINT", "ASIO_HAS_STD_ARRAY",  "ASIO_HAS_STD_SYSTEM_ERROR")
 
-add_requires("asio 1.24.0", "nlohmann_json", "spdlog 1.14.1", "openfec", "libopus 1.5.1", "dav1d 1.1.0", "libyuv", "aom", {system = false})
-add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus", "dav1d", "libyuv", "aom")
+add_requires("asio 1.24.0", "nlohmann_json 3.11.3", "spdlog 1.14.1", "openfec 1.4.2", "libopus 1.5.1", "openh264 2.4.1", "dav1d 1.1.0", "libyuv 2024.5.21", "aom 3.9.0", {system = false}, {configs = {shared = false}})
+add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus", "openh264", "dav1d", "libyuv", "aom")
+
+add_requires("vcpkg::libnice", {configs = {shared = false}})
+add_packages("vcpkg::libnice")
 
 includes("thirdparty")
 
 if is_os("windows") then
-    add_requires("vcpkg::libnice", {configs = {shared = false}})
-    add_requires("openh264 2.1.1", {configs = {shared = false}})
-    add_packages("vcpkg::libnice", "openh264", "cuda")
+    add_packages("cuda")
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
     add_requires("cuda")
 elseif is_os("linux") then
     add_requires("glib", {system = true})
-    add_requires("vcpkg::libnice", {configs = {shared = false}})
-    add_requires("openh264 2.1.1", {configs = {shared = false}})
-    add_packages("glib", "vcpkg::libnice", "openh264", "cuda")
+    add_packages("glib", "cuda")
     add_cxflags("-fPIC") 
     add_syslinks("pthread")
 elseif is_os("macosx") then
-    add_requires("vcpkg::libnice", {configs = {shared = false}})
-    add_requires("openh264 2.4.1", {configs = {shared = false}}, {system = false})
-    add_packages("vcpkg::libnice", "openh264")
     add_ldflags("-Wl,-ld_classic")
 end
 
