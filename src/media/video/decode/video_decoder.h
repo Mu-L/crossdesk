@@ -20,6 +20,8 @@ class VideoDecoder {
   virtual int Decode(
       const uint8_t *data, int size,
       std::function<void(VideoFrame)> on_receive_decoded_frame) = 0;
+  VideoDecoder() = default;
+  virtual ~VideoDecoder() {}
 };
 
 #endif
