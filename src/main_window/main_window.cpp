@@ -18,13 +18,56 @@ MainWindow::MainWindow() {}
 
 MainWindow::~MainWindow() {}
 
-int MainWindow::Run() {
+int MainWindow::SaveSettingsIntoCacheFile() {
+  cd_cache_file_ = fopen("cache.cd", "w+");
+  if (!cd_cache_file_) {
+    return -1;
+  }
+
+  fseek(cd_cache_file_, 0, SEEK_SET);
+  strncpy(cd_cache_.password, input_password_, sizeof(input_password_));
+  memcpy(&cd_cache_.language, &language_button_value_,
+         sizeof(language_button_value_));
+  memcpy(&cd_cache_.video_quality, &video_quality_button_value_,
+         sizeof(video_quality_button_value_));
+  memcpy(&cd_cache_.settings_language_pos, &settings_language_pos_,
+         sizeof(settings_language_pos_));
+  memcpy(&cd_cache_.settings_video_quality_pos, &settings_video_quality_pos_,
+         sizeof(settings_video_quality_pos_));
+  fwrite(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
+  fclose(cd_cache_file_);
+
+  return 0;
+}
+
+int MainWindow::LoadSettingsIntoCacheFile() {
   cd_cache_file_ = fopen("cache.cd", "r+");
-  if (cd_cache_file_) {
-    fseek(cd_cache_file_, 0, SEEK_SET);
-    fread(&cd_cache_.password, sizeof(cd_cache_.password), 1, cd_cache_file_);
-    fclose(cd_cache_file_);
-    strncpy(input_password_, cd_cache_.password, sizeof(cd_cache_.password));
+  if (!cd_cache_file_) {
+    return -1;
+  }
+
+  fseek(cd_cache_file_, 0, SEEK_SET);
+  fread(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
+  fclose(cd_cache_file_);
+  strncpy(input_password_, cd_cache_.password, sizeof(cd_cache_.password));
+  language_button_value_ = cd_cache_.language;
+  video_quality_button_value_ = cd_cache_.video_quality;
+  settings_language_pos_ = cd_cache_.settings_language_pos;
+  settings_video_quality_pos_ = cd_cache_.settings_video_quality_pos;
+
+  return 0;
+}
+
+int MainWindow::Run() {
+  LoadSettingsIntoCacheFile();
+
+  localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
+  localization_language_index_ = language_button_value_;
+
+  if (localization_language_index_last_ != localization_language_index_) {
+    LOG_INFO("Set localization language: {}",
+             localization_language_index_ == 0 ? "zh" : "en");
+    localization_language_index_last_ = localization_language_index_;
   }
 
   // Setup SDL
@@ -135,7 +178,7 @@ int MainWindow::Run() {
         LOG_INFO("Create peer");
         std::string server_user_id = "S-" + mac_addr_str_;
         Init(peer_, server_user_id.c_str());
-        LOG_INFO("peer_ init finish");
+        LOG_INFO("Peer init finish");
 
         {
           while (SignalStatus::SignalConnected != signal_status_ && !exit_) {
@@ -206,15 +249,6 @@ int MainWindow::Run() {
 
   // Main loop
   while (!exit_) {
-    localization_language_ = config_center_.GetLanguage();
-    localization_language_index_ = (int)localization_language_;
-
-    if (localization_language_index_last_ != localization_language_index_) {
-      LOG_ERROR("localization_language_: {}",
-                localization_language_index_ == 0 ? "zh" : "en");
-      localization_language_index_last_ = localization_language_index_;
-    }
-
     connect_button_label_ =
         connect_button_pressed_
             ? localization::disconnect[localization_language_index_]
@@ -223,6 +257,9 @@ int MainWindow::Run() {
         fullscreen_button_pressed_
             ? localization::exit_fullscreen[localization_language_index_]
             : localization::fullscreen[localization_language_index_];
+
+    settings_button_label_ =
+        localization::settings[localization_language_index_];
 
     // Start the Dear ImGui frame
     ImGui_ImplSDLRenderer2_NewFrame();
@@ -296,15 +333,7 @@ int MainWindow::Run() {
               ImGuiInputTextFlags_CharsNoBlank);
 
           if (strcmp(input_password_tmp_, input_password_)) {
-            cd_cache_file_ = fopen("cache.cd", "w+");
-            if (cd_cache_file_) {
-              fseek(cd_cache_file_, 0, SEEK_SET);
-              strncpy(cd_cache_.password, input_password_,
-                      sizeof(input_password_));
-              fwrite(&cd_cache_.password, sizeof(cd_cache_.password), 1,
-                     cd_cache_file_);
-              fclose(cd_cache_file_);
-            }
+            SaveSettingsIntoCacheFile();
           }
         }
 
@@ -418,6 +447,124 @@ int MainWindow::Run() {
                 : localization::fullscreen[localization_language_index_];
         fullscreen_button_pressed_ = false;
       }
+
+      ImGui::SameLine();
+
+      if (ImGui::Button(settings_button_label_.c_str())) {
+        settings_button_pressed_ = !settings_button_pressed_;
+      }
+
+      if (settings_button_pressed_) {
+        const ImGuiViewport *viewport = ImGui::GetMainViewport();
+
+        ImGui::SetNextWindowPos(
+            ImVec2((viewport->WorkSize.x - viewport->WorkPos.x - 200) / 2,
+                   (viewport->WorkSize.y - viewport->WorkPos.y - 160) / 2));
+        ImGui::SetNextWindowSize(ImVec2(200, 160));
+
+        ImGui::Begin(
+            localization::settings[localization_language_index_].c_str(),
+            nullptr,
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoMove);
+
+        {
+          ImGui::Text(
+              localization::language[localization_language_index_].c_str());
+
+          ImGui::SetCursorPosX(settings_language_pos_);
+          ImGui::RadioButton(
+              localization::language_zh[localization_language_index_].c_str(),
+              &language_button_value_, 0);
+          ImGui::SameLine();
+          ImGui::RadioButton(
+              localization::language_en[localization_language_index_].c_str(),
+              &language_button_value_, 1);
+        }
+
+        ImGui::Separator();
+
+        {
+          ImGui::Text(localization::video_quality[localization_language_index_]
+                          .c_str());
+
+          ImGui::SetCursorPosX(settings_video_quality_pos_);
+          ImGui::RadioButton(
+              localization::video_quality_high[localization_language_index_]
+                  .c_str(),
+              &video_quality_button_value_, 0);
+          ImGui::SameLine();
+          ImGui::RadioButton(
+              localization::video_quality_medium[localization_language_index_]
+                  .c_str(),
+              &video_quality_button_value_, 1);
+          ImGui::SameLine();
+          ImGui::RadioButton(
+              localization::video_quality_low[localization_language_index_]
+                  .c_str(),
+              &video_quality_button_value_, 2);
+        }
+
+        ImGui::SetCursorPosX(60.0f);
+        ImGui::SetCursorPosY(130.0f);
+
+        // OK
+        if (ImGui::Button(
+                localization::ok[localization_language_index_].c_str())) {
+          settings_button_pressed_ = false;
+
+          // Language
+          if (language_button_value_ == 0) {
+            config_center_.SetLanguage(ConfigCenter::LANGUAGE::CHINESE);
+            settings_language_pos_ = 40.0f;
+            settings_video_quality_pos_ = 40.0f;
+          } else {
+            config_center_.SetLanguage(ConfigCenter::LANGUAGE::ENGLISH);
+            settings_language_pos_ = 15.0f;
+            settings_video_quality_pos_ = 15.0f;
+          }
+          language_button_value_last_ = language_button_value_;
+          localization_language_ =
+              (ConfigCenter::LANGUAGE)language_button_value_;
+          localization_language_index_ = language_button_value_;
+
+          if (localization_language_index_last_ !=
+              localization_language_index_) {
+            LOG_INFO("Set localization language: {}",
+                     localization_language_index_ == 0 ? "zh" : "en");
+            localization_language_index_last_ = localization_language_index_;
+          }
+
+          // Video quality
+          if (video_quality_button_value_ == 0) {
+            config_center_.SetVideoQuality(ConfigCenter::VIDEO_QUALITY::HIGH);
+          } else if (video_quality_button_value_ == 1) {
+            config_center_.SetVideoQuality(ConfigCenter::VIDEO_QUALITY::MEDIUM);
+          } else {
+            config_center_.SetVideoQuality(ConfigCenter::VIDEO_QUALITY::LOW);
+          }
+          video_quality_button_value_last_ = video_quality_button_value_;
+
+          SaveSettingsIntoCacheFile();
+          // To do: set encode resolution
+        }
+        ImGui::SameLine();
+        // Cancel
+        if (ImGui::Button(
+                localization::cancel[localization_language_index_].c_str())) {
+          settings_button_pressed_ = false;
+          if (language_button_value_ != language_button_value_last_) {
+            language_button_value_ = language_button_value_last_;
+          }
+
+          if (video_quality_button_value_ != video_quality_button_value_last_) {
+            video_quality_button_value_ = video_quality_button_value_last_;
+          }
+        }
+
+        ImGui::End();
+      }
+
       ImGui::End();
     }
 

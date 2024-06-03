@@ -52,8 +52,16 @@ class MainWindow {
   void SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len);
 
  private:
+  int SaveSettingsIntoCacheFile();
+  int LoadSettingsIntoCacheFile();
+
+ private:
   typedef struct {
     char password[7];
+    int video_quality;
+    int language;
+    float settings_language_pos;
+    float settings_video_quality_pos;
   } CDCache;
 
  private:
@@ -73,6 +81,7 @@ class MainWindow {
   std::string mac_addr_str_ = "";
   std::string connect_button_label_ = "Connect";
   std::string fullscreen_button_label_ = "Fullscreen";
+  std::string settings_button_label_ = "Setting";
   char input_password_tmp_[7] = "";
   char input_password_[7] = "";
   char remote_id_[20] = "";
@@ -100,6 +109,7 @@ class MainWindow {
   bool menu_hovered_ = false;
   bool connect_button_pressed_ = false;
   bool fullscreen_button_pressed_ = false;
+  bool settings_button_pressed_ = false;
   bool received_frame_ = false;
   bool is_create_connection_ = false;
   bool audio_buffer_fresh_ = false;
@@ -139,6 +149,14 @@ class MainWindow {
 #else
   std::chrono::steady_clock::time_point last_frame_time_;
 #endif
+
+ private:
+  float settings_language_pos_ = 40.0f;
+  float settings_video_quality_pos_ = 40.0f;
+  int language_button_value_ = 0;
+  int video_quality_button_value_ = 0;
+  int language_button_value_last_ = 0;
+  int video_quality_button_value_last_ = 0;
 };
 
 #endif
