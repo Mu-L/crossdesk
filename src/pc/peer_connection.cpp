@@ -27,44 +27,66 @@ int PeerConnection::Init(PeerConnectionParams params,
   // Todo: checkout user_id unique or not
   user_id_ = user_id;
 
-  INIReader reader(params.cfg_path);
-  cfg_signal_server_ip_ = reader.Get("signal server", "ip", "-1");
-  cfg_signal_server_port_ = reader.Get("signal server", "port", "-1");
-  cfg_stun_server_ip_ = reader.Get("stun server", "ip", "-1");
-  cfg_stun_server_port_ = reader.Get("stun server", "port", "-1");
-  cfg_turn_server_ip_ = reader.Get("turn server", "ip", "");
-  cfg_turn_server_port_ = reader.Get("turn server", "port", "-1");
-  cfg_turn_server_username_ = reader.Get("turn server", "username", "");
-  cfg_turn_server_password_ = reader.Get("turn server", "password", "");
-  cfg_hardware_acceleration_ =
-      reader.Get("hardware acceleration", "turn_on", "false");
-  cfg_av1_encoding_ = reader.Get("av1 encoding", "turn_on", "false");
+  if (params.use_cfg_file) {
+    INIReader reader(params.cfg_path);
+    cfg_signal_server_ip_ = reader.Get("signal server", "ip", "-1");
+    cfg_signal_server_port_ = reader.Get("signal server", "port", "-1");
+    cfg_stun_server_ip_ = reader.Get("stun server", "ip", "-1");
+    cfg_stun_server_port_ = reader.Get("stun server", "port", "-1");
+    cfg_turn_server_ip_ = reader.Get("turn server", "ip", "");
+    cfg_turn_server_port_ = reader.Get("turn server", "port", "-1");
+    cfg_turn_server_username_ = reader.Get("turn server", "username", "");
+    cfg_turn_server_password_ = reader.Get("turn server", "password", "");
+    cfg_hardware_acceleration_ =
+        reader.Get("hardware acceleration", "turn_on", "false");
+    cfg_av1_encoding_ = reader.Get("av1 encoding", "turn_on", "false");
 
-  std::regex regex("\n");
+    std::regex regex("\n");
 
-  LOG_INFO("Read config success");
+    signal_server_port_ = stoi(cfg_signal_server_port_);
+    stun_server_port_ = stoi(cfg_stun_server_port_);
+    turn_server_port_ = stoi(cfg_turn_server_port_);
 
-  signal_server_port_ = stoi(cfg_signal_server_port_);
-  stun_server_port_ = stoi(cfg_stun_server_port_);
-  turn_server_port_ = stoi(cfg_turn_server_port_);
+    hardware_acceleration_ =
+        cfg_hardware_acceleration_ == "true" ? true : false;
+    av1_encoding_ = cfg_av1_encoding_ == "true" ? true : false;
 
-  LOG_INFO("stun server ip [{}] port [{}]", cfg_stun_server_ip_,
-           stun_server_port_);
+  } else {
+    cfg_signal_server_ip_ = params.signal_server_ip;
+    signal_server_port_ = params.signal_server_port;
+    cfg_stun_server_ip_ = params.stun_server_ip;
+    stun_server_port_ = params.stun_server_port;
+    cfg_turn_server_ip_ = params.turn_server_ip;
+    turn_server_port_ = params.turn_server_port;
+    cfg_turn_server_username_ = params.turn_server_username;
+    cfg_turn_server_password_ = params.turn_server_password;
+    hardware_acceleration_ = params.hardware_acceleration;
+    av1_encoding_ = params.av1_encoding;
+
+    cfg_signal_server_port_ = std::to_string(signal_server_port_);
+    cfg_stun_server_port_ = std::to_string(stun_server_port_);
+    cfg_turn_server_port_ = std::to_string(turn_server_port_);
+  }
+
+  LOG_INFO("Read config success, use configure file [{}]", params.use_cfg_file);
+
+  LOG_INFO("Signal server ip [{}] port [{}]", cfg_signal_server_ip_,
+           cfg_signal_server_port_);
+
+  LOG_INFO("Stun server ip [{}] port [{}]", cfg_stun_server_ip_,
+           cfg_stun_server_port_);
 
   if (!cfg_turn_server_ip_.empty() && 0 != turn_server_port_ &&
       !cfg_turn_server_username_.empty() &&
       !cfg_turn_server_password_.empty()) {
-    LOG_INFO("turn server ip [{}] port [{}] username [{}] password [{}]",
+    LOG_INFO("Turn server ip [{}] port [{}] username [{}] password [{}]",
              cfg_turn_server_ip_, turn_server_port_, cfg_turn_server_username_,
              cfg_turn_server_password_);
   }
 
-  hardware_acceleration_ = cfg_hardware_acceleration_ == "true" ? true : false;
   LOG_INFO("Hardware accelerated codec [{}]",
            hardware_acceleration_ ? "ON" : "OFF");
-
-  av1_encoding_ = cfg_av1_encoding_ == "true" ? true : false;
-  LOG_INFO("av1 encoding [{}]", av1_encoding_ ? "ON" : "OFF");
+  LOG_INFO("AV1 encoding [{}]", av1_encoding_ ? "ON" : "OFF");
 
   on_receive_video_buffer_ = params.on_receive_video_buffer;
   on_receive_audio_buffer_ = params.on_receive_audio_buffer;

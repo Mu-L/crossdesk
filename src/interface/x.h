@@ -48,7 +48,20 @@ typedef void (*NetStatusReport)(const unsigned short, const unsigned short,
                                 void*);
 
 typedef struct {
+  bool use_cfg_file;
   const char* cfg_path;
+
+  const char* signal_server_ip;
+  int signal_server_port;
+  const char* stun_server_ip;
+  int stun_server_port;
+  const char* turn_server_ip;
+  int turn_server_port;
+  const char* turn_server_username;
+  const char* turn_server_password;
+  bool hardware_acceleration;
+  bool av1_encoding;
+
   OnReceiveBuffer on_receive_video_buffer;
   OnReceiveBuffer on_receive_audio_buffer;
   OnReceiveBuffer on_receive_data_buffer;

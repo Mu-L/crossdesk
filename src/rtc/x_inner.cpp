@@ -13,7 +13,21 @@ using nlohmann::json;
 PeerPtr *CreatePeer(const Params *params) {
   PeerPtr *peer_ptr = new PeerPtr;
   peer_ptr->peer_connection = new PeerConnection();
-  peer_ptr->pc_params.cfg_path = params->cfg_path;
+  peer_ptr->pc_params.use_cfg_file = params->use_cfg_file;
+  if (params->use_cfg_file) {
+    peer_ptr->pc_params.cfg_path = params->cfg_path;
+  } else {
+    peer_ptr->pc_params.signal_server_ip = params->signal_server_ip;
+    peer_ptr->pc_params.signal_server_port = params->signal_server_port;
+    peer_ptr->pc_params.stun_server_ip = params->stun_server_ip;
+    peer_ptr->pc_params.stun_server_port = params->stun_server_port;
+    peer_ptr->pc_params.turn_server_ip = params->turn_server_ip;
+    peer_ptr->pc_params.turn_server_port = params->turn_server_port;
+    peer_ptr->pc_params.turn_server_username = params->turn_server_username;
+    peer_ptr->pc_params.turn_server_password = params->turn_server_password;
+    peer_ptr->pc_params.hardware_acceleration = params->hardware_acceleration;
+    peer_ptr->pc_params.av1_encoding = params->av1_encoding;
+  }
   peer_ptr->pc_params.on_receive_video_buffer = params->on_receive_video_buffer;
   peer_ptr->pc_params.on_receive_audio_buffer = params->on_receive_audio_buffer;
   peer_ptr->pc_params.on_receive_data_buffer = params->on_receive_data_buffer;
