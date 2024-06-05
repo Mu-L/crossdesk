@@ -9,24 +9,28 @@
 
 class ConfigCenter {
  public:
-  enum class VIDEO_QUALITY { LOW = 0, MEDIUM = 1, HIGH = 2 };
   enum class LANGUAGE { CHINESE = 0, ENGLISH = 1 };
+  enum class VIDEO_QUALITY { LOW = 0, MEDIUM = 1, HIGH = 2 };
+  enum class VIDEO_ENCODE_FORMAT { AV1 = 0, H264 = 1 };
 
  public:
   ConfigCenter();
   ~ConfigCenter();
 
  public:
-  int SetVideoQuality(VIDEO_QUALITY video_quality);
   int SetLanguage(LANGUAGE language);
+  int SetVideoQuality(VIDEO_QUALITY video_quality);
+  int SetVideoEncodeFormat(VIDEO_ENCODE_FORMAT video_encode_format);
 
  public:
-  VIDEO_QUALITY GetVideoQuality();
   LANGUAGE GetLanguage();
+  VIDEO_QUALITY GetVideoQuality();
+  VIDEO_ENCODE_FORMAT GetVideoEncodeFormat();
 
  private:
-  VIDEO_QUALITY video_quality_ = VIDEO_QUALITY::MEDIUM;
   LANGUAGE language_ = LANGUAGE::CHINESE;
+  VIDEO_QUALITY video_quality_ = VIDEO_QUALITY::MEDIUM;
+  VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::AV1;
 };
 
 #endif
