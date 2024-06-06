@@ -204,6 +204,7 @@ target("projectx")
     add_installfiles("src/interface/*.h", {prefixdir = "include"})
     add_rules("utils.symbols.export_list", {symbols = {
         "CreatePeer",
+        "DestroyPeer",
         "Init",
         "CreateConnection",
         "JoinConnection",
