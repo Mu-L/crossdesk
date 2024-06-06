@@ -45,9 +45,10 @@ int MainWindow::SaveSettingsIntoCacheFile() {
          sizeof(language_button_value_));
   memcpy(&cd_cache_.video_quality, &video_quality_button_value_,
          sizeof(video_quality_button_value_));
-  memcpy(&cd_cache_.video_encode_format,
-         &video_video_encode_format_button_value_,
-         sizeof(video_video_encode_format_button_value_));
+  memcpy(&cd_cache_.video_encode_format, &video_encode_format_button_value_,
+         sizeof(video_encode_format_button_value_));
+  memcpy(&cd_cache_.enable_hardware_video_codec, &enable_hardware_video_codec_,
+         sizeof(enable_hardware_video_codec_));
   memcpy(&cd_cache_.settings_language_pos, &settings_language_pos_,
          sizeof(settings_language_pos_));
   memcpy(&cd_cache_.settings_video_quality_pos, &settings_video_quality_pos_,
@@ -55,6 +56,9 @@ int MainWindow::SaveSettingsIntoCacheFile() {
   memcpy(&cd_cache_.settings_video_encode_format_pos,
          &settings_video_encode_format_pos_,
          sizeof(settings_video_encode_format_pos_));
+  memcpy(&cd_cache_.settings_enable_hardware_video_codec_pos,
+         &settings_enable_hardware_video_codec_pos_,
+         sizeof(settings_enable_hardware_video_codec_pos_));
   fwrite(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
   fclose(cd_cache_file_);
 
@@ -73,11 +77,14 @@ int MainWindow::LoadSettingsIntoCacheFile() {
   strncpy(input_password_, cd_cache_.password, sizeof(cd_cache_.password));
   language_button_value_ = cd_cache_.language;
   video_quality_button_value_ = cd_cache_.video_quality;
-  video_video_encode_format_button_value_ = cd_cache_.video_encode_format;
+  video_encode_format_button_value_ = cd_cache_.video_encode_format;
+  enable_hardware_video_codec_ = cd_cache_.enable_hardware_video_codec;
   settings_language_pos_ = cd_cache_.settings_language_pos;
   settings_video_quality_pos_ = cd_cache_.settings_video_quality_pos;
   settings_video_encode_format_pos_ =
       cd_cache_.settings_video_encode_format_pos;
+  settings_enable_hardware_video_codec_pos_ =
+      cd_cache_.settings_enable_hardware_video_codec_pos;
 
   return 0;
 }
@@ -264,8 +271,11 @@ int MainWindow::Run() {
   params_.turn_server_port = 3478;
   params_.turn_server_username = "dijunkun";
   params_.turn_server_password = "dijunkunpw";
-  params_.hardware_acceleration = false;
-  params_.av1_encoding = true;
+  params_.hardware_acceleration = config_center_.IsHardwareVideoCodec();
+  params_.av1_encoding = config_center_.GetVideoEncodeFormat() ==
+                                 ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
+                             ? true
+                             : false;
 #endif
   params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
   params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
@@ -594,7 +604,8 @@ int MainWindow::Run() {
           ImGui::SetCursorPosX(settings_video_encode_format_pos_);
           ImGui::SetCursorPosY(90);
           ImGui::SetNextItemWidth(80);
-          ImGui::Combo("##video_encode_format", &language_button_value_,
+          ImGui::Combo("##video_encode_format",
+                       &video_encode_format_button_value_,
                        video_encode_format_items,
                        IM_ARRAYSIZE(video_encode_format_items));
         }
@@ -606,10 +617,10 @@ int MainWindow::Run() {
           ImGui::Text(localization::enable_hardware_video_codec
                           [localization_language_index_]
                               .c_str());
-          ImGui::SetCursorPosX(settings_enable_video_codec_pos_);
+          ImGui::SetCursorPosX(settings_enable_hardware_video_codec_pos_);
           ImGui::SetCursorPosY(120);
           ImGui::Checkbox("##enable_hardware_video_codec",
-                          &enable_video_codec_);
+                          &enable_hardware_video_codec_);
         }
 
         ImGui::SetCursorPosX(60.0f);
@@ -627,14 +638,14 @@ int MainWindow::Run() {
             settings_video_quality_pos_ = settings_video_quality_pos_default_;
             settings_video_encode_format_pos_ =
                 settings_video_encode_format_pos_default_;
-            settings_enable_video_codec_pos_ =
-                settings_enable_video_codec_pos_default_;
+            settings_enable_hardware_video_codec_pos_ =
+                settings_enable_hardware_video_codec_pos_default_;
           } else {
             config_center_.SetLanguage(ConfigCenter::LANGUAGE::ENGLISH);
             settings_language_pos_ = 140.0f;
             settings_video_quality_pos_ = 140.0f;
             settings_video_encode_format_pos_ = 140.0f;
-            settings_enable_video_codec_pos_ = 201.0f;
+            settings_enable_hardware_video_codec_pos_ = 201.0f;
           }
           language_button_value_last_ = language_button_value_;
           localization_language_ =
@@ -659,15 +670,23 @@ int MainWindow::Run() {
           video_quality_button_value_last_ = video_quality_button_value_;
 
           // Video encode format
-          if (video_video_encode_format_button_value_ == 0) {
+          if (video_encode_format_button_value_ == 0) {
             config_center_.SetVideoEncodeFormat(
                 ConfigCenter::VIDEO_ENCODE_FORMAT::AV1);
           } else if (video_quality_button_value_ == 1) {
             config_center_.SetVideoEncodeFormat(
                 ConfigCenter::VIDEO_ENCODE_FORMAT::H264);
           }
-          video_video_encode_format_button_value_last_ =
-              video_video_encode_format_button_value_;
+          video_encode_format_button_value_last_ =
+              video_encode_format_button_value_;
+
+          // Hardware video codec
+          if (enable_hardware_video_codec_) {
+            config_center_.SetHardwareVideoCodec(true);
+          } else {
+            config_center_.SetHardwareVideoCodec(false);
+          }
+          enable_hardware_video_codec_last_ = enable_hardware_video_codec_;
 
           SaveSettingsIntoCacheFile();
           // To do: set encode resolution
@@ -686,11 +705,17 @@ int MainWindow::Run() {
             video_quality_button_value_ = video_quality_button_value_last_;
           }
 
-          if (video_video_encode_format_button_value_ !=
-              video_video_encode_format_button_value_last_) {
-            video_video_encode_format_button_value_ =
-                video_video_encode_format_button_value_last_;
+          if (video_encode_format_button_value_ !=
+              video_encode_format_button_value_last_) {
+            video_encode_format_button_value_ =
+                video_encode_format_button_value_last_;
           }
+
+          if (enable_hardware_video_codec_ !=
+              enable_hardware_video_codec_last_) {
+            enable_hardware_video_codec_ = enable_hardware_video_codec_last_;
+          }
+
           settings_window_pos_reset_ = true;
         }
 

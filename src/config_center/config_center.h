@@ -21,16 +21,20 @@ class ConfigCenter {
   int SetLanguage(LANGUAGE language);
   int SetVideoQuality(VIDEO_QUALITY video_quality);
   int SetVideoEncodeFormat(VIDEO_ENCODE_FORMAT video_encode_format);
+  int SetHardwareVideoCodec(bool hardware_video_codec);
 
  public:
   LANGUAGE GetLanguage();
   VIDEO_QUALITY GetVideoQuality();
   VIDEO_ENCODE_FORMAT GetVideoEncodeFormat();
+  bool IsHardwareVideoCodec();
 
  private:
+  // Default value should be same with parameters in localization.h
   LANGUAGE language_ = LANGUAGE::CHINESE;
   VIDEO_QUALITY video_quality_ = VIDEO_QUALITY::MEDIUM;
   VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::AV1;
+  bool hardware_video_codec_ = false;
 };
 
 #endif

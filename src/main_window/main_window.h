@@ -67,9 +67,11 @@ class MainWindow {
     int language;
     int video_quality;
     int video_encode_format;
+    bool enable_hardware_video_codec;
     float settings_language_pos;
     float settings_video_quality_pos;
     float settings_video_encode_format_pos;
+    float settings_enable_hardware_video_codec_pos;
   } CDCache;
 
  private:
@@ -162,23 +164,24 @@ class MainWindow {
   float settings_language_pos_default_ = 100.0f;
   float settings_video_quality_pos_default_ = 100.0f;
   float settings_video_encode_format_pos_default_ = 100.0f;
-  float settings_enable_video_codec_pos_default_ = 161.0f;
+  float settings_enable_hardware_video_codec_pos_default_ = 161.0f;
 
   float settings_language_pos_ = settings_language_pos_default_;
   float settings_video_quality_pos_ = settings_video_quality_pos_default_;
   float settings_video_encode_format_pos_ =
       settings_video_encode_format_pos_default_;
-  float settings_enable_video_codec_pos_ =
-      settings_enable_video_codec_pos_default_;
+  float settings_enable_hardware_video_codec_pos_ =
+      settings_enable_hardware_video_codec_pos_default_;
 
   int language_button_value_ = 0;
   int video_quality_button_value_ = 0;
-  int video_video_encode_format_button_value_ = 0;
+  int video_encode_format_button_value_ = 0;
+  bool enable_hardware_video_codec_ = false;
+
   int language_button_value_last_ = 0;
   int video_quality_button_value_last_ = 0;
-  int video_video_encode_format_button_value_last_ = 0;
-  bool enable_video_codec_ = false;
-  bool enable_video_codec_last_ = false;
+  int video_encode_format_button_value_last_ = 0;
+  bool enable_hardware_video_codec_last_ = false;
 
  private:
   std::atomic<bool> start_screen_capture_{false};

@@ -20,6 +20,11 @@ int ConfigCenter::SetVideoEncodeFormat(
   return 0;
 }
 
+int ConfigCenter::SetHardwareVideoCodec(bool hardware_video_codec) {
+  hardware_video_codec_ = hardware_video_codec;
+  return 0;
+}
+
 ConfigCenter::LANGUAGE ConfigCenter::GetLanguage() { return language_; }
 
 ConfigCenter::VIDEO_QUALITY ConfigCenter::GetVideoQuality() {
@@ -29,3 +34,5 @@ ConfigCenter::VIDEO_QUALITY ConfigCenter::GetVideoQuality() {
 ConfigCenter::VIDEO_ENCODE_FORMAT ConfigCenter::GetVideoEncodeFormat() {
   return video_encode_format_;
 }
+
+bool ConfigCenter::IsHardwareVideoCodec() { return hardware_video_codec_; }
