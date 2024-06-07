@@ -98,7 +98,7 @@ class MainWindow {
   char input_password_[7] = "";
   char remote_id_[20] = "";
   char client_password_[20] = "";
-  bool is_client_ = false;
+  bool is_client_mode_ = false;
 
  private:
   int screen_width_ = 1280;

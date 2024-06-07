@@ -185,7 +185,7 @@ int MainWindow::CreateConnectionPeer() {
   peer_ = CreatePeer(&params_);
   if (peer_) {
     LOG_INFO("Create peer instance successful");
-    std::string user_id = "S-" + mac_addr_str_;
+    std::string user_id = mac_addr_str_;
     Init(peer_, user_id.c_str());
     LOG_INFO("Peer init finish");
   } else {
@@ -291,34 +291,7 @@ int MainWindow::Run() {
   // Our state
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-  mac_addr_str_ = GetMac();
-
-  params_.use_cfg_file = false;
-  params_.signal_server_ip = "150.158.81.30";
-  params_.signal_server_port = 9099;
-  params_.stun_server_ip = "150.158.81.30";
-  params_.stun_server_port = 3478;
-  params_.turn_server_ip = "150.158.81.30";
-  params_.turn_server_port = 3478;
-  params_.turn_server_username = "dijunkun";
-  params_.turn_server_password = "dijunkunpw";
-  params_.hardware_acceleration = config_center_.IsHardwareVideoCodec();
-  params_.av1_encoding = config_center_.GetVideoEncodeFormat() ==
-                                 ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
-                             ? true
-                             : false;
-  params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
-  params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
-  params_.on_receive_data_buffer = OnReceiveDataBufferCb;
-  params_.on_signal_status = OnSignalStatusCb;
-  params_.on_connection_status = OnConnectionStatusCb;
-  params_.user_data = this;
-
-  peer_ = CreatePeer(&params_);
-  LOG_INFO("Create peer");
-  std::string user_id = "S-" + mac_addr_str_;
-  Init(peer_, user_id.c_str());
-  LOG_INFO("Peer init finish");
+  CreateConnectionPeer();
 
   {
     nv12_buffer_ = new char[NV12_BUFFER_SIZE];
@@ -499,7 +472,7 @@ int MainWindow::Run() {
                   !connection_established_) {
                 ret = JoinConnection(peer_, remote_id_, client_password_);
                 if (0 == ret) {
-                  is_client_ = true;
+                  is_client_mode_ = true;
                 }
 
               } else if (connect_button_label_ ==
@@ -512,7 +485,7 @@ int MainWindow::Run() {
                 is_create_connection_ = false;
                 connection_established_ = false;
                 received_frame_ = false;
-                is_client_ = false;
+                is_client_mode_ = false;
               }
 
               if (0 == ret) {
@@ -844,7 +817,7 @@ int MainWindow::Run() {
   // Cleanup
   if (is_create_connection_) {
     LeaveConnection(peer_);
-    is_client_ = false;
+    is_client_mode_ = false;
   }
 
   if (peer_) {
