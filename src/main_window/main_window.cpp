@@ -499,6 +499,7 @@ int MainWindow::Run() {
                   !connection_established_) {
                 ret = JoinConnection(peer_, remote_id_, client_password_);
                 if (0 == ret) {
+                  is_client_ = true;
                 }
 
               } else if (connect_button_label_ ==
@@ -511,6 +512,7 @@ int MainWindow::Run() {
                 is_create_connection_ = false;
                 connection_established_ = false;
                 received_frame_ = false;
+                is_client_ = false;
               }
 
               if (0 == ret) {
@@ -842,6 +844,7 @@ int MainWindow::Run() {
   // Cleanup
   if (is_create_connection_) {
     LeaveConnection(peer_);
+    is_client_ = false;
   }
 
   if (peer_) {
