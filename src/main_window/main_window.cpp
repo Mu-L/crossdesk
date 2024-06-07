@@ -482,7 +482,6 @@ int MainWindow::Run() {
                 ret = LeaveConnection(peer_);
                 memset(audio_buffer_, 0, 960);
 
-                is_create_connection_ = false;
                 connection_established_ = false;
                 received_frame_ = false;
                 is_client_mode_ = false;
