@@ -201,12 +201,6 @@ int MainWindow::Run() {
   localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
   localization_language_index_ = language_button_value_;
 
-  if (localization_language_index_last_ != localization_language_index_) {
-    LOG_INFO("Set localization language: {}",
-             localization_language_index_ == 0 ? "zh" : "en");
-    localization_language_index_last_ = localization_language_index_;
-  }
-
   // Setup SDL
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER |
                SDL_INIT_GAMECONTROLLER) != 0) {
@@ -314,7 +308,8 @@ int MainWindow::Run() {
       LOG_INFO("Connected with signal server, create p2p connection");
     }
 
-    if (!inited_) {
+    if (!inited_ ||
+        localization_language_index_last_ != localization_language_index_) {
       connect_button_label_ =
           connect_button_pressed_
               ? localization::disconnect[localization_language_index_]
@@ -332,6 +327,7 @@ int MainWindow::Run() {
       settings_button_label_ =
           localization::settings[localization_language_index_];
       inited_ = true;
+      localization_language_index_last_ = localization_language_index_;
     }
 
     if (start_screen_capture_ && !screen_capture_is_started_) {
@@ -546,6 +542,7 @@ int MainWindow::Run() {
           mouse_control_button_label_ =
               localization::control_mouse[localization_language_index_];
         }
+        mouse_control_button_pressed_ = !mouse_control_button_pressed_;
       }
 
       ImGui::SameLine();
@@ -567,6 +564,7 @@ int MainWindow::Run() {
           fullscreen_button_label_ =
               localization::fullscreen[localization_language_index_];
         }
+        fullscreen_button_pressed_ = !fullscreen_button_pressed_;
       }
 
       ImGui::Spacing();
@@ -704,13 +702,8 @@ int MainWindow::Run() {
           localization_language_ =
               (ConfigCenter::LANGUAGE)language_button_value_;
           localization_language_index_ = language_button_value_;
-
-          if (localization_language_index_last_ !=
-              localization_language_index_) {
-            LOG_INFO("Set localization language: {}",
-                     localization_language_index_ == 0 ? "zh" : "en");
-            localization_language_index_last_ = localization_language_index_;
-          }
+          LOG_INFO("Set localization language: {}",
+                   localization_language_index_ == 0 ? "zh" : "en");
 
           // Video quality
           if (video_quality_button_value_ == 0) {
