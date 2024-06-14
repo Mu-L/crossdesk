@@ -532,10 +532,11 @@ int MainWindow::Run() {
       ImGui::Separator();
 
       ImGui::Spacing();
-
+      // Mouse control
       if (ImGui::Button(mouse_control_button_label_.c_str())) {
         if (mouse_control_button_label_ ==
-            localization::control_mouse[localization_language_index_]) {
+                localization::control_mouse[localization_language_index_] &&
+            connection_established_) {
           mouse_control_button_pressed_ = true;
           control_mouse_ = true;
           mouse_control_button_label_ =
@@ -548,7 +549,7 @@ int MainWindow::Run() {
       }
 
       ImGui::SameLine();
-
+      // Fullscreen
       if (ImGui::Button(fullscreen_button_label_.c_str())) {
         if (fullscreen_button_label_ ==
             localization::fullscreen[localization_language_index_]) {
@@ -561,6 +562,8 @@ int MainWindow::Run() {
           SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
           SDL_SetWindowSize(main_window_, main_window_width_before_fullscreen_,
                             main_window_height_before_fullscreen_);
+          main_window_width_ = main_window_width_before_fullscreen_;
+          main_window_height_ = main_window_height_before_fullscreen_;
           fullscreen_button_label_ =
               localization::fullscreen[localization_language_index_];
         }
