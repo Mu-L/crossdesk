@@ -5,6 +5,7 @@
 #include <string>
 
 #include "device_controller_factory.h"
+#include "element_style.h"
 #include "localization.h"
 #include "log.h"
 #include "platform.h"
@@ -13,21 +14,6 @@
 // Refresh Event
 #define REFRESH_EVENT (SDL_USEREVENT + 1)
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
-
-static std::string _labelPrefix(const char *const label) {
-  float width = ImGui::CalcItemWidth();
-
-  float x = ImGui::GetCursorPosX();
-  ImGui::Text(label);
-  ImGui::SameLine();
-  ImGui::SetCursorPosX(x + width * 0.5f + ImGui::GetStyle().ItemInnerSpacing.x);
-  ImGui::SetNextItemWidth(-1);
-
-  std::string labelID = "##";
-  labelID += label;
-
-  return labelID;
-}
 
 MainWindow::MainWindow() {}
 
@@ -49,16 +35,6 @@ int MainWindow::SaveSettingsIntoCacheFile() {
          sizeof(video_encode_format_button_value_));
   memcpy(&cd_cache_.enable_hardware_video_codec, &enable_hardware_video_codec_,
          sizeof(enable_hardware_video_codec_));
-  memcpy(&cd_cache_.settings_language_pos, &settings_language_pos_,
-         sizeof(settings_language_pos_));
-  memcpy(&cd_cache_.settings_video_quality_pos, &settings_video_quality_pos_,
-         sizeof(settings_video_quality_pos_));
-  memcpy(&cd_cache_.settings_video_encode_format_pos,
-         &settings_video_encode_format_pos_,
-         sizeof(settings_video_encode_format_pos_));
-  memcpy(&cd_cache_.settings_enable_hardware_video_codec_pos,
-         &settings_enable_hardware_video_codec_pos_,
-         sizeof(settings_enable_hardware_video_codec_pos_));
   fwrite(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
   fclose(cd_cache_file_);
 
@@ -79,12 +55,6 @@ int MainWindow::LoadSettingsIntoCacheFile() {
   video_quality_button_value_ = cd_cache_.video_quality;
   video_encode_format_button_value_ = cd_cache_.video_encode_format;
   enable_hardware_video_codec_ = cd_cache_.enable_hardware_video_codec;
-  settings_language_pos_ = cd_cache_.settings_language_pos;
-  settings_video_quality_pos_ = cd_cache_.settings_video_quality_pos;
-  settings_video_encode_format_pos_ =
-      cd_cache_.settings_video_encode_format_pos;
-  settings_enable_hardware_video_codec_pos_ =
-      cd_cache_.settings_enable_hardware_video_codec_pos;
 
   return 0;
 }
@@ -360,9 +330,11 @@ int MainWindow::Run() {
       ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
 
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-        ImGui::SetNextWindowSize(ImVec2(160, 245));
+        ImGui::SetNextWindowSize(
+            ImVec2(MENU_WINDOW_WIDTH_CN, MENU_WINDOW_HEIGHT_CN));
       } else {
-        ImGui::SetNextWindowSize(ImVec2(190, 245));
+        ImGui::SetNextWindowSize(
+            ImVec2(MENU_WINDOW_WIDTH_EN, MENU_WINDOW_HEIGHT_EN));
       }
 
       if (!connection_established_) {
@@ -386,11 +358,11 @@ int MainWindow::Run() {
               localization::local_id[localization_language_index_].c_str());
 
           ImGui::SameLine();
-          ImGui::SetNextItemWidth(90);
+          ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
           if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(60.0f);
+            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_CN);
           } else {
-            ImGui::SetCursorPosX(80.0f);
+            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_EN);
           }
           ImGui::InputText("##local_id", (char *)mac_addr_str_.c_str(),
                            mac_addr_str_.length() + 1,
@@ -404,11 +376,11 @@ int MainWindow::Run() {
 
           strncpy(input_password_tmp_, input_password_,
                   sizeof(input_password_));
-          ImGui::SetNextItemWidth(90);
+          ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
           if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(60.0f);
+            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_CN);
           } else {
-            ImGui::SetCursorPosX(80.0f);
+            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_EN);
           }
           ImGui::InputTextWithHint(
               "##server_pwd",
@@ -432,11 +404,11 @@ int MainWindow::Run() {
               localization::remote_id[localization_language_index_].c_str());
 
           ImGui::SameLine();
-          ImGui::SetNextItemWidth(90);
+          ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
           if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(60.0f);
+            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_CN);
           } else {
-            ImGui::SetCursorPosX(80.0f);
+            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_EN);
           }
           ImGui::InputTextWithHint("##remote_id_", mac_addr_str_.c_str(),
                                    remote_id_, IM_ARRAYSIZE(remote_id_),
@@ -449,12 +421,12 @@ int MainWindow::Run() {
               localization::password[localization_language_index_].c_str());
 
           ImGui::SameLine();
-          ImGui::SetNextItemWidth(90);
+          ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
 
           if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(60.0f);
+            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_CN);
           } else {
-            ImGui::SetCursorPosX(80.0f);
+            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_EN);
           }
 
           ImGui::InputTextWithHint(
@@ -581,16 +553,30 @@ int MainWindow::Run() {
       if (settings_button_pressed_) {
         if (settings_window_pos_reset_) {
           const ImGuiViewport *viewport = ImGui::GetMainViewport();
-          ImGui::SetNextWindowPos(
-              ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                      localization::settings_window_width
-                          [localization_language_index_]) /
-                         2,
-                     (viewport->WorkSize.y - viewport->WorkPos.y - 190) / 2));
+          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+            ImGui::SetNextWindowPos(
+                ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
+                        SETTINGS_WINDOW_WIDTH_CN) /
+                           2,
+                       (viewport->WorkSize.y - viewport->WorkPos.y -
+                        SETTINGS_WINDOW_HEIGHT_CN) /
+                           2));
 
-          ImGui::SetNextWindowSize(ImVec2(
-              localization::settings_window_width[localization_language_index_],
-              190));
+            ImGui::SetNextWindowSize(
+                ImVec2(SETTINGS_WINDOW_WIDTH_CN, SETTINGS_WINDOW_HEIGHT_CN));
+          } else {
+            ImGui::SetNextWindowPos(
+                ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
+                        SETTINGS_WINDOW_WIDTH_EN) /
+                           2,
+                       (viewport->WorkSize.y - viewport->WorkPos.y -
+                        SETTINGS_WINDOW_HEIGHT_EN) /
+                           2));
+
+            ImGui::SetNextWindowSize(
+                ImVec2(SETTINGS_WINDOW_WIDTH_EN, SETTINGS_WINDOW_HEIGHT_EN));
+          }
+
           settings_window_pos_reset_ = false;
         }
 
@@ -611,9 +597,14 @@ int MainWindow::Run() {
           ImGui::SetCursorPosY(32);
           ImGui::Text(
               localization::language[localization_language_index_].c_str());
-          ImGui::SetCursorPosX(settings_language_pos_);
+          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+            ImGui::SetCursorPosX(LANGUAGE_SELECT_WINDOW_PADDING_CN);
+          } else {
+            ImGui::SetCursorPosX(LANGUAGE_SELECT_WINDOW_PADDING_EN);
+          }
           ImGui::SetCursorPosY(30);
-          ImGui::SetNextItemWidth(80);
+          ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
+
           ImGui::Combo("##language", &language_button_value_, language_items,
                        IM_ARRAYSIZE(language_items));
         }
@@ -632,9 +623,15 @@ int MainWindow::Run() {
           ImGui::SetCursorPosY(62);
           ImGui::Text(localization::video_quality[localization_language_index_]
                           .c_str());
-          ImGui::SetCursorPosX(settings_video_quality_pos_);
+
+          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+            ImGui::SetCursorPosX(VIDEO_QUALITY_SELECT_WINDOW_PADDING_CN);
+          } else {
+            ImGui::SetCursorPosX(VIDEO_QUALITY_SELECT_WINDOW_PADDING_EN);
+          }
           ImGui::SetCursorPosY(60);
-          ImGui::SetNextItemWidth(80);
+          ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
+
           ImGui::Combo("##video_quality", &video_quality_button_value_,
                        video_quality_items, IM_ARRAYSIZE(video_quality_items));
         }
@@ -650,9 +647,15 @@ int MainWindow::Run() {
           ImGui::Text(
               localization::video_encode_format[localization_language_index_]
                   .c_str());
-          ImGui::SetCursorPosX(settings_video_encode_format_pos_);
+
+          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+            ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_CN);
+          } else {
+            ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_EN);
+          }
           ImGui::SetCursorPosY(90);
-          ImGui::SetNextItemWidth(80);
+          ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
+
           ImGui::Combo("##video_encode_format",
                        &video_encode_format_button_value_,
                        video_encode_format_items,
@@ -666,15 +669,24 @@ int MainWindow::Run() {
           ImGui::Text(localization::enable_hardware_video_codec
                           [localization_language_index_]
                               .c_str());
-          ImGui::SetCursorPosX(settings_enable_hardware_video_codec_pos_);
+
+          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+            ImGui::SetCursorPosX(
+                ENABLE_HARDWARE_VIDEO_CODEC_CHECK_WINDOW_PADDING_CN);
+          } else {
+            ImGui::SetCursorPosX(
+                ENABLE_HARDWARE_VIDEO_CODEC_CHECK_WINDOW_PADDING_EN);
+          }
           ImGui::SetCursorPosY(120);
           ImGui::Checkbox("##enable_hardware_video_codec",
                           &enable_hardware_video_codec_);
         }
 
-        ImGui::SetCursorPosX(
-            settings_language_pos_ == settings_language_pos_default_ ? 60.0f
-                                                                     : 80.0f);
+        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+          ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_CN);
+        } else {
+          ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_EN);
+        }
         ImGui::SetCursorPosY(160.0f);
 
         // OK
@@ -685,18 +697,8 @@ int MainWindow::Run() {
           // Language
           if (language_button_value_ == 0) {
             config_center_.SetLanguage(ConfigCenter::LANGUAGE::CHINESE);
-            settings_language_pos_ = settings_language_pos_default_;
-            settings_video_quality_pos_ = settings_video_quality_pos_default_;
-            settings_video_encode_format_pos_ =
-                settings_video_encode_format_pos_default_;
-            settings_enable_hardware_video_codec_pos_ =
-                settings_enable_hardware_video_codec_pos_default_;
           } else {
             config_center_.SetLanguage(ConfigCenter::LANGUAGE::ENGLISH);
-            settings_language_pos_ = 140.0f;
-            settings_video_quality_pos_ = 140.0f;
-            settings_video_encode_format_pos_ = 140.0f;
-            settings_enable_hardware_video_codec_pos_ = 201.0f;
           }
           language_button_value_last_ = language_button_value_;
           localization_language_ =

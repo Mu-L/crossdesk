@@ -171,18 +171,6 @@ class MainWindow {
 #endif
 
  private:
-  float settings_language_pos_default_ = 100.0f;
-  float settings_video_quality_pos_default_ = 100.0f;
-  float settings_video_encode_format_pos_default_ = 100.0f;
-  float settings_enable_hardware_video_codec_pos_default_ = 161.0f;
-
-  float settings_language_pos_ = settings_language_pos_default_;
-  float settings_video_quality_pos_ = settings_video_quality_pos_default_;
-  float settings_video_encode_format_pos_ =
-      settings_video_encode_format_pos_default_;
-  float settings_enable_hardware_video_codec_pos_ =
-      settings_enable_hardware_video_codec_pos_default_;
-
   int language_button_value_ = 0;
   int video_quality_button_value_ = 0;
   int video_encode_format_button_value_ = 0;

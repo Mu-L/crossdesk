@@ -15,7 +15,7 @@ static std::vector<std::string> local_id = {u8"本机ID:", "Local ID:"};
 static std::vector<std::string> password = {u8"密码:", "Password:"};
 static std::vector<std::string> max_password_len = {u8"最大6个字符",
                                                     "Max 6 chars"};
-static std::vector<std::string> remote_id = {u8"远端ID:", "Remote ID:"};
+static std::vector<std::string> remote_id = {u8"对端ID:", "Remote ID:"};
 static std::vector<std::string> connect = {u8"连接", "Connect"};
 static std::vector<std::string> disconnect = {u8"断开连接", "Disconnect"};
 static std::vector<std::string> fullscreen = {u8"全屏", "Fullscreen"};
@@ -23,7 +23,6 @@ static std::vector<std::string> exit_fullscreen = {u8"退出全屏",
                                                    "Exit fullscreen"};
 static std::vector<std::string> control_mouse = {u8"控制鼠标", "Mouse Control"};
 static std::vector<std::string> release_mouse = {u8"释放鼠标", "Release Mouse"};
-static std::vector<float> settings_window_width = {188.0f, 228.0f};
 static std::vector<std::string> settings = {u8"设置", "Settings"};
 static std::vector<std::string> language = {u8"语言:", "Language:"};
 static std::vector<std::string> language_zh = {u8"中文", "Chinese"};
