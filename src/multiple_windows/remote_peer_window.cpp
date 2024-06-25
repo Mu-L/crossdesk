@@ -48,9 +48,7 @@ int Render::RemoteWindow() {
     if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 35)) || rejoin_) {
       int ret = -1;
       if ("SignalConnected" == signal_status_str_) {
-        if (connect_button_label_ ==
-                localization::connect[localization_language_index_] &&
-            !connection_established_ && strlen(remote_id_)) {
+        if (!connection_established_ && strlen(remote_id_)) {
           if (remote_id_ == local_id_ && !peer_reserved_) {
             peer_reserved_ = CreatePeer(&params_);
             if (peer_reserved_) {
@@ -72,27 +70,6 @@ int Render::RemoteWindow() {
           } else {
             rejoin_ = true;
           }
-
-        } else if (connect_button_label_ ==
-                       localization::disconnect[localization_language_index_] &&
-                   connection_established_) {
-          ret = LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_);
-
-          if (0 == ret) {
-            rejoin_ = false;
-            memset(audio_buffer_, 0, 960);
-            connection_established_ = false;
-            received_frame_ = false;
-            is_client_mode_ = false;
-          }
-        }
-
-        if (0 == ret) {
-          connect_button_pressed_ = !connect_button_pressed_;
-          connect_button_label_ =
-              connect_button_pressed_
-                  ? localization::disconnect[localization_language_index_]
-                  : localization::connect[localization_language_index_];
         }
       }
     }

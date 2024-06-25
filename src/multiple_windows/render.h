@@ -30,6 +30,7 @@ class Render {
   int Run();
 
  private:
+  int CreateStreamRenderWindow();
   int MainWindow();
   int MenuWindow();
   int LocalWindow();
@@ -110,8 +111,10 @@ class Render {
   int screen_height_ = 720;
   int main_window_width_ = 960;
   int main_window_height_ = 540;
-  int main_window_width_last_ = 960;
-  int main_window_height_last_ = 540;
+  int stream_window_width_ = 1280;
+  int stream_window_height_ = 720;
+  int stream_window_width_last_ = 1280;
+  int stream_window_height_last_ = 720;
   int main_window_width_before_fullscreen_ = 1280;
   int main_window_height_before_fullscreen_ = 720;
   int menu_window_height_ = 40;
@@ -121,18 +124,19 @@ class Render {
   int texture_height_ = 720;
 
   SDL_Window *main_window_;
-  SDL_Renderer *sdl_renderer_ = nullptr;
+  SDL_Renderer *main_renderer_ = nullptr;
   SDL_Texture *sdl_texture_ = nullptr;
-  SDL_Rect sdl_rect_;
-  uint32_t pixformat_ = 0;
 
   // video window
-  SDL_Window *video_window_;
-  SDL_Renderer *video_renderer_ = nullptr;
-  SDL_Texture *video_texture_ = nullptr;
+  SDL_Window *stream_window_;
+  SDL_Renderer *stream_renderer_ = nullptr;
+  SDL_Texture *stream_texture_ = nullptr;
+  SDL_Rect stream_render_rect_;
+  uint32_t stream_pixformat_ = 0;
 
   bool inited_ = false;
   bool exit_ = false;
+  bool exit_video_window_ = false;
   bool connection_established_ = false;
   bool subwindow_hovered_ = false;
   bool connect_button_pressed_ = false;
@@ -146,7 +150,8 @@ class Render {
   bool control_mouse_ = false;
   bool show_password_ = true;
   bool regenerate_password_ = false;
-  bool video_window_created_ = false;
+  bool stream_windows_created_ = false;
+
   int regenerate_password_frame_count_ = 0;
 
   int fps_ = 0;

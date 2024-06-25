@@ -172,6 +172,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
       render->start_screen_capture_ = true;
       render->start_mouse_control_ = true;
     }
+    // SDL_MinimizeWindow(render->main_window_);
   } else if (ConnectionStatus::Disconnected == status) {
     render->connection_status_str_ = "Disconnected";
   } else if (ConnectionStatus::Failed == status) {
@@ -182,6 +183,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     render->start_mouse_control_ = false;
     render->connection_established_ = false;
     render->control_mouse_ = false;
+    render->exit_video_window_ = false;
     if (render->dst_buffer_) {
       memset(render->dst_buffer_, 0, 1280 * 720 * 3);
       SDL_UpdateTexture(render->sdl_texture_, NULL, render->dst_buffer_, 1280);
