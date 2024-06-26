@@ -1,13 +1,15 @@
+#include "render.h"
+
 #include <fstream>
 #include <iostream>
 #include <string>
 
+#include "IconsFontAwesome6.h"
 #include "device_controller_factory.h"
 #include "layout_style.h"
 #include "localization.h"
 #include "log.h"
 #include "platform.h"
-#include "render.h"
 #include "screen_capturer_factory.h"
 
 // Refresh Event
@@ -184,28 +186,37 @@ int Render::Run() {
 
   // Create main window with SDL_Renderer graphics context
   SDL_WindowFlags window_flags =
-      (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-  main_window_ = SDL_CreateWindow("Remote Desk", SDL_WINDOWPOS_CENTERED,
-                                  SDL_WINDOWPOS_CENTERED, main_window_width_,
+      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+  main_window_ = SDL_CreateWindow("Remote Desk", SDL_WINDOWPOS_UNDEFINED,
+                                  SDL_WINDOWPOS_UNDEFINED, main_window_width_,
                                   main_window_height_, window_flags);
+
+  main_renderer_ = SDL_CreateRenderer(
+      main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+  if (main_renderer_ == nullptr) {
+    LOG_ERROR("1 Error creating SDL_Renderer");
+    return 0;
+  }
+
+  stream_pixformat_ = SDL_PIXELFORMAT_NV12;
+
+  stream_texture_ = SDL_CreateTexture(main_renderer_, stream_pixformat_,
+                                      SDL_TEXTUREACCESS_STREAMING,
+                                      texture_width_, texture_height_);
+
+  // Auto scaling for the render frame
+  // SDL_RenderSetLogicalSize(main_renderer_, main_window_width_,
+  //                          main_window_height_);
+
+  stream_render_rect_.x = 0;
+  stream_render_rect_.y = 0;
+  stream_render_rect_.w = main_window_width_;
+  stream_render_rect_.h = main_window_height_;
 
   SDL_DisplayMode DM;
   SDL_GetCurrentDisplayMode(0, &DM);
   screen_width_ = DM.w;
   screen_height_ = DM.h;
-
-  sdl_renderer_ = SDL_CreateRenderer(
-      main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-  if (sdl_renderer_ == nullptr) {
-    SDL_Log("Error creating SDL_Renderer!");
-    return 0;
-  }
-
-  pixformat_ = SDL_PIXELFORMAT_NV12;
-
-  sdl_texture_ =
-      SDL_CreateTexture(sdl_renderer_, pixformat_, SDL_TEXTUREACCESS_STREAMING,
-                        texture_width_, texture_height_);
 
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
@@ -225,7 +236,7 @@ int Render::Run() {
     std::string font_path =
         font_path_f.good() ? "c:/windows/fonts/simhei.ttf" : "";
     if (!font_path.empty()) {
-      io.Fonts->AddFontFromFileTTF(font_path.c_str(), 13.0f, NULL,
+      io.Fonts->AddFontFromFileTTF(font_path.c_str(), 30.0f, NULL,
                                    io.Fonts->GetGlyphRangesChineseFull());
     }
 #elif __APPLE__
@@ -243,16 +254,22 @@ int Render::Run() {
 #endif
   }
 
+  ImFontConfig config;
+  config.MergeMode = true;
+  config.GlyphMinAdvanceX =
+      13.0f;  // Use if you want to make the icon monospaced
+  static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+  io.Fonts->AddFontFromFileTTF("fonts/fa-solid-900.ttf", 30.0f, &config,
+                               icon_ranges);
+  io.Fonts->Build();
+
   // Setup Dear ImGui style
   // ImGui::StyleColorsDark();
   ImGui::StyleColorsLight();
 
   // Setup Platform/Renderer backends
-  ImGui_ImplSDL2_InitForSDLRenderer(main_window_, sdl_renderer_);
-  ImGui_ImplSDLRenderer2_Init(sdl_renderer_);
-
-  // Our state
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+  ImGui_ImplSDL2_InitForSDLRenderer(main_window_, main_renderer_);
+  ImGui_ImplSDLRenderer2_Init(main_renderer_);
 
   CreateConnectionPeer();
 
@@ -320,507 +337,82 @@ int Render::Run() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    if (connection_established_ && !subwindow_hovered_ && control_mouse_) {
-      ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(
+        ImVec2(main_window_width_,
+               streaming_ ? menu_window_height_ : main_window_height_),
+        ImGuiCond_Always);
+    ImGui::Begin("Render", nullptr,
+                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+
+    if (!streaming_) {
+      MainWindow();
+    } else {
+      MenuWindow();
     }
 
-    // main window layout
-    {
-      ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
-
-      if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-        ImGui::SetNextWindowSize(
-            ImVec2(MENU_WINDOW_WIDTH_CN, MENU_WINDOW_HEIGHT_CN));
-      } else {
-        ImGui::SetNextWindowSize(
-            ImVec2(MENU_WINDOW_WIDTH_EN, MENU_WINDOW_HEIGHT_EN));
-      }
-
-      if (!connection_established_) {
-        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-        ImGui::Begin(localization::menu[localization_language_index_].c_str(),
-                     nullptr,
-                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                         ImGuiWindowFlags_NoMove);
-      } else {
-        // ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
-        ImGui::Begin(localization::menu[localization_language_index_].c_str(),
-                     nullptr, ImGuiWindowFlags_None);
-      }
-
-      {
-        subwindow_hovered_ = ImGui::IsWindowHovered();
-
-        // local
-        {
-          ImGui::Text(
-              localization::local_id[localization_language_index_].c_str());
-
-          ImGui::SameLine();
-          ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_CN);
-          } else {
-            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_EN);
-          }
-          ImGui::InputText("##local_id", (char *)mac_addr_str_.c_str(),
-                           mac_addr_str_.length() + 1,
-                           ImGuiInputTextFlags_CharsUppercase |
-                               ImGuiInputTextFlags_ReadOnly);
-
-          ImGui::Text(
-              localization::password[localization_language_index_].c_str());
-
-          ImGui::SameLine();
-
-          strncpy(input_password_tmp_, input_password_,
-                  sizeof(input_password_));
-          ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_CN);
-          } else {
-            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_EN);
-          }
-          ImGui::InputTextWithHint(
-              "##server_pwd",
-              localization::max_password_len[localization_language_index_]
-                  .c_str(),
-              input_password_, IM_ARRAYSIZE(input_password_),
-              ImGuiInputTextFlags_CharsNoBlank);
-
-          if (strcmp(input_password_tmp_, input_password_)) {
-            SaveSettingsIntoCacheFile();
-          }
-        }
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        // remote
-        {
-          ImGui::Text(
-              localization::remote_id[localization_language_index_].c_str());
-
-          ImGui::SameLine();
-          ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_CN);
-          } else {
-            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_EN);
-          }
-          ImGui::InputTextWithHint("##remote_id_", mac_addr_str_.c_str(),
-                                   remote_id_, IM_ARRAYSIZE(remote_id_),
-                                   ImGuiInputTextFlags_CharsUppercase |
-                                       ImGuiInputTextFlags_CharsNoBlank);
-
-          ImGui::Spacing();
-
-          ImGui::Text(
-              localization::password[localization_language_index_].c_str());
-
-          ImGui::SameLine();
-          ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
-
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_CN);
-          } else {
-            ImGui::SetCursorPosX(INPUT_WINDOW_PADDING_EN);
-          }
-
-          ImGui::InputTextWithHint(
-              "##client_pwd",
-              localization::max_password_len[localization_language_index_]
-                  .c_str(),
-              client_password_, IM_ARRAYSIZE(client_password_),
-              ImGuiInputTextFlags_CharsNoBlank);
-
-          ImGui::Spacing();
-          ImGui::Separator();
-          ImGui::Spacing();
-
-          if (ImGui::Button(connect_button_label_.c_str()) || rejoin_) {
-            int ret = -1;
-            if ("SignalConnected" == signal_status_str_) {
-              if (connect_button_label_ ==
-                      localization::connect[localization_language_index_] &&
-                  !connection_established_ && strlen(remote_id_)) {
-                if (remote_id_ == local_id_ && !peer_reserved_) {
-                  peer_reserved_ = CreatePeer(&params_);
-                  if (peer_reserved_) {
-                    LOG_INFO("Create peer[reserved] instance successful");
-                    std::string local_id = "C-" + mac_addr_str_;
-                    Init(peer_reserved_, local_id.c_str());
-                    LOG_INFO("Peer[reserved] init finish");
-                  } else {
-                    LOG_INFO("Create peer[reserved] instance failed");
-                  }
-                }
-                ret = JoinConnection(peer_reserved_ ? peer_reserved_ : peer_,
-                                     remote_id_, client_password_);
-                if (0 == ret) {
-                  if (!peer_reserved_) {
-                    is_client_mode_ = true;
-                  }
-                  rejoin_ = false;
-                } else {
-                  rejoin_ = true;
-                }
-
-              } else if (connect_button_label_ ==
-                             localization::disconnect
-                                 [localization_language_index_] &&
-                         connection_established_) {
-                ret = LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_);
-
-                if (0 == ret) {
-                  rejoin_ = false;
-                  memset(audio_buffer_, 0, 960);
-                  connection_established_ = false;
-                  received_frame_ = false;
-                  is_client_mode_ = false;
-                }
-              }
-
-              if (0 == ret) {
-                connect_button_pressed_ = !connect_button_pressed_;
-                connect_button_label_ =
-                    connect_button_pressed_
-                        ? localization::disconnect[localization_language_index_]
-                        : localization::connect[localization_language_index_];
-              }
-            }
-          }
-        }
-      }
-
-      ImGui::Spacing();
-
-      ImGui::Separator();
-
-      ImGui::Spacing();
-      // Mouse control
-      if (ImGui::Button(mouse_control_button_label_.c_str())) {
-        if (mouse_control_button_label_ ==
-                localization::control_mouse[localization_language_index_] &&
-            connection_established_) {
-          mouse_control_button_pressed_ = true;
-          control_mouse_ = true;
-          mouse_control_button_label_ =
-              localization::release_mouse[localization_language_index_];
-        } else {
-          control_mouse_ = false;
-          mouse_control_button_label_ =
-              localization::control_mouse[localization_language_index_];
-        }
-        mouse_control_button_pressed_ = !mouse_control_button_pressed_;
-      }
-
-      ImGui::SameLine();
-      // Fullscreen
-      if (ImGui::Button(fullscreen_button_label_.c_str())) {
-        if (fullscreen_button_label_ ==
-            localization::fullscreen[localization_language_index_]) {
-          main_window_width_before_fullscreen_ = main_window_width_;
-          main_window_height_before_fullscreen_ = main_window_height_;
-          SDL_SetWindowFullscreen(main_window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
-          fullscreen_button_label_ =
-              localization::exit_fullscreen[localization_language_index_];
-        } else {
-          SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
-          SDL_SetWindowSize(main_window_, main_window_width_before_fullscreen_,
-                            main_window_height_before_fullscreen_);
-          main_window_width_ = main_window_width_before_fullscreen_;
-          main_window_height_ = main_window_height_before_fullscreen_;
-          fullscreen_button_label_ =
-              localization::fullscreen[localization_language_index_];
-        }
-        fullscreen_button_pressed_ = !fullscreen_button_pressed_;
-      }
-
-      ImGui::Spacing();
-
-      ImGui::Separator();
-
-      ImGui::Spacing();
-
-      if (ImGui::Button(settings_button_label_.c_str())) {
-        settings_button_pressed_ = !settings_button_pressed_;
-        settings_window_pos_reset_ = true;
-      }
-
-      if (settings_button_pressed_) {
-        if (settings_window_pos_reset_) {
-          const ImGuiViewport *viewport = ImGui::GetMainViewport();
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetNextWindowPos(
-                ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                        SETTINGS_WINDOW_WIDTH_CN) /
-                           2,
-                       (viewport->WorkSize.y - viewport->WorkPos.y -
-                        SETTINGS_WINDOW_HEIGHT_CN) /
-                           2));
-
-            ImGui::SetNextWindowSize(
-                ImVec2(SETTINGS_WINDOW_WIDTH_CN, SETTINGS_WINDOW_HEIGHT_CN));
-          } else {
-            ImGui::SetNextWindowPos(
-                ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                        SETTINGS_WINDOW_WIDTH_EN) /
-                           2,
-                       (viewport->WorkSize.y - viewport->WorkPos.y -
-                        SETTINGS_WINDOW_HEIGHT_EN) /
-                           2));
-
-            ImGui::SetNextWindowSize(
-                ImVec2(SETTINGS_WINDOW_WIDTH_EN, SETTINGS_WINDOW_HEIGHT_EN));
-          }
-
-          settings_window_pos_reset_ = false;
-        }
-
-        // Settings
-        ImGui::Begin(
-            localization::settings[localization_language_index_].c_str(),
-            nullptr,
-            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoSavedSettings);
-
-        {
-          subwindow_hovered_ = ImGui::IsWindowHovered();
-
-          const char *language_items[] = {
-              localization::language_zh[localization_language_index_].c_str(),
-              localization::language_en[localization_language_index_].c_str()};
-
-          ImGui::SetCursorPosY(32);
-          ImGui::Text(
-              localization::language[localization_language_index_].c_str());
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(LANGUAGE_SELECT_WINDOW_PADDING_CN);
-          } else {
-            ImGui::SetCursorPosX(LANGUAGE_SELECT_WINDOW_PADDING_EN);
-          }
-          ImGui::SetCursorPosY(30);
-          ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
-
-          ImGui::Combo("##language", &language_button_value_, language_items,
-                       IM_ARRAYSIZE(language_items));
-        }
-
-        ImGui::Separator();
-
-        {
-          const char *video_quality_items[] = {
-              localization::video_quality_high[localization_language_index_]
-                  .c_str(),
-              localization::video_quality_medium[localization_language_index_]
-                  .c_str(),
-              localization::video_quality_low[localization_language_index_]
-                  .c_str()};
-
-          ImGui::SetCursorPosY(62);
-          ImGui::Text(localization::video_quality[localization_language_index_]
-                          .c_str());
-
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(VIDEO_QUALITY_SELECT_WINDOW_PADDING_CN);
-          } else {
-            ImGui::SetCursorPosX(VIDEO_QUALITY_SELECT_WINDOW_PADDING_EN);
-          }
-          ImGui::SetCursorPosY(60);
-          ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
-
-          ImGui::Combo("##video_quality", &video_quality_button_value_,
-                       video_quality_items, IM_ARRAYSIZE(video_quality_items));
-        }
-
-        ImGui::Separator();
-
-        {
-          const char *video_encode_format_items[] = {
-              localization::av1[localization_language_index_].c_str(),
-              localization::h264[localization_language_index_].c_str()};
-
-          ImGui::SetCursorPosY(92);
-          ImGui::Text(
-              localization::video_encode_format[localization_language_index_]
-                  .c_str());
-
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_PADDING_CN);
-          } else {
-            ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_PADDING_EN);
-          }
-          ImGui::SetCursorPosY(90);
-          ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
-
-          ImGui::Combo("##video_encode_format",
-                       &video_encode_format_button_value_,
-                       video_encode_format_items,
-                       IM_ARRAYSIZE(video_encode_format_items));
-        }
-
-        ImGui::Separator();
-
-        {
-          ImGui::SetCursorPosY(122);
-          ImGui::Text(localization::enable_hardware_video_codec
-                          [localization_language_index_]
-                              .c_str());
-
-          if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(
-                ENABLE_HARDWARE_VIDEO_CODEC_CHECKBOX_PADDING_CN);
-          } else {
-            ImGui::SetCursorPosX(
-                ENABLE_HARDWARE_VIDEO_CODEC_CHECKBOX_PADDING_EN);
-          }
-          ImGui::SetCursorPosY(120);
-          ImGui::Checkbox("##enable_hardware_video_codec",
-                          &enable_hardware_video_codec_);
-        }
-
-        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-          ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_CN);
-        } else {
-          ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_EN);
-        }
-        ImGui::SetCursorPosY(160.0f);
-
-        // OK
-        if (ImGui::Button(
-                localization::ok[localization_language_index_].c_str())) {
-          settings_button_pressed_ = false;
-
-          // Language
-          if (language_button_value_ == 0) {
-            config_center_.SetLanguage(ConfigCenter::LANGUAGE::CHINESE);
-          } else {
-            config_center_.SetLanguage(ConfigCenter::LANGUAGE::ENGLISH);
-          }
-          language_button_value_last_ = language_button_value_;
-          localization_language_ =
-              (ConfigCenter::LANGUAGE)language_button_value_;
-          localization_language_index_ = language_button_value_;
-          LOG_INFO("Set localization language: {}",
-                   localization_language_index_ == 0 ? "zh" : "en");
-
-          // Video quality
-          if (video_quality_button_value_ == 0) {
-            config_center_.SetVideoQuality(ConfigCenter::VIDEO_QUALITY::HIGH);
-          } else if (video_quality_button_value_ == 1) {
-            config_center_.SetVideoQuality(ConfigCenter::VIDEO_QUALITY::MEDIUM);
-          } else {
-            config_center_.SetVideoQuality(ConfigCenter::VIDEO_QUALITY::LOW);
-          }
-          video_quality_button_value_last_ = video_quality_button_value_;
-
-          // Video encode format
-          if (video_encode_format_button_value_ == 0) {
-            config_center_.SetVideoEncodeFormat(
-                ConfigCenter::VIDEO_ENCODE_FORMAT::AV1);
-          } else if (video_encode_format_button_value_ == 1) {
-            config_center_.SetVideoEncodeFormat(
-                ConfigCenter::VIDEO_ENCODE_FORMAT::H264);
-          }
-          video_encode_format_button_value_last_ =
-              video_encode_format_button_value_;
-
-          // Hardware video codec
-          if (enable_hardware_video_codec_) {
-            config_center_.SetHardwareVideoCodec(true);
-          } else {
-            config_center_.SetHardwareVideoCodec(false);
-          }
-          enable_hardware_video_codec_last_ = enable_hardware_video_codec_;
-
-          SaveSettingsIntoCacheFile();
-          settings_window_pos_reset_ = true;
-
-          // Recreate peer instance
-          LoadSettingsIntoCacheFile();
-
-          // Recreate peer instance
-          {
-            DestroyPeer(peer_);
-            CreateConnectionPeer();
-            LOG_INFO("Recreate peer instance successful");
-          }
-        }
-        ImGui::SameLine();
-        // Cancel
-        if (ImGui::Button(
-                localization::cancel[localization_language_index_].c_str())) {
-          settings_button_pressed_ = false;
-          if (language_button_value_ != language_button_value_last_) {
-            language_button_value_ = language_button_value_last_;
-          }
-
-          if (video_quality_button_value_ != video_quality_button_value_last_) {
-            video_quality_button_value_ = video_quality_button_value_last_;
-          }
-
-          if (video_encode_format_button_value_ !=
-              video_encode_format_button_value_last_) {
-            video_encode_format_button_value_ =
-                video_encode_format_button_value_last_;
-          }
-
-          if (enable_hardware_video_codec_ !=
-              enable_hardware_video_codec_last_) {
-            enable_hardware_video_codec_ = enable_hardware_video_codec_last_;
-          }
-
-          settings_window_pos_reset_ = true;
-        }
-
-        ImGui::End();
-      }
-
-      ImGui::End();
-    }
-
-    // Rendering
-    ImGui::Render();
-    SDL_RenderSetScale(sdl_renderer_, io.DisplayFramebufferScale.x,
-                       io.DisplayFramebufferScale.y);
+    ImGui::End();
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
       if (event.type == SDL_QUIT) {
-        exit_ = true;
-      } else if (event.type == SDL_WINDOWEVENT &&
-                 event.window.event == SDL_WINDOWEVENT_RESIZED) {
-        int window_w_last = main_window_width_;
-        int window_h_last = main_window_height_;
-
+        if (streaming_) {
+          LOG_INFO("Return to main interface");
+          streaming_ = false;
+          LeaveConnection(peer_reserved_);
+          rejoin_ = false;
+          memset(audio_buffer_, 0, 960);
+          connection_established_ = false;
+          received_frame_ = false;
+          is_client_mode_ = false;
+          SDL_SetWindowSize(main_window_, main_window_width_last_,
+                            main_window_height_last_);
+          SDL_SetWindowPosition(main_window_, SDL_WINDOWPOS_CENTERED,
+                                SDL_WINDOWPOS_CENTERED);
+          continue;
+        } else {
+          LOG_INFO("Quit program");
+          exit_ = true;
+        }
+      } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         SDL_GetWindowSize(main_window_, &main_window_width_,
                           &main_window_height_);
-
-        int w_change_ratio = abs(main_window_width_ - window_w_last) / 16;
-        int h_change_ratio = abs(main_window_height_ - window_h_last) / 9;
-
-        if (w_change_ratio > h_change_ratio) {
-          main_window_height_ = main_window_width_ * 9 / 16;
-        } else {
-          main_window_width_ = main_window_height_ * 16 / 9;
+        if (!streaming_) {
+          main_window_width_last_ = main_window_width_;
+          main_window_height_last_ = main_window_height_;
         }
 
-        SDL_SetWindowSize(main_window_, main_window_width_,
-                          main_window_height_);
-      } else if (event.type == SDL_WINDOWEVENT &&
-                 event.window.event == SDL_WINDOWEVENT_CLOSE &&
-                 event.window.windowID == SDL_GetWindowID(main_window_)) {
-        exit_ = true;
-      } else if (event.type == REFRESH_EVENT) {
-        sdl_rect_.x = 0;
-        sdl_rect_.y = 0;
-        sdl_rect_.w = main_window_width_;
-        sdl_rect_.h = main_window_height_;
+        if (main_window_width_ * 9 < main_window_height_ * 16) {
+          stream_render_rect_.x = 0;
+          stream_render_rect_.y =
+              abs(main_window_height_ - main_window_width_ * 9 / 16) / 2;
+          stream_render_rect_.w = main_window_width_;
+          stream_render_rect_.h = main_window_width_ * 9 / 16;
+        } else if (main_window_width_ * 9 > main_window_height_ * 16) {
+          stream_render_rect_.x =
+              abs(main_window_width_ - main_window_height_ * 16 / 9) / 2;
+          stream_render_rect_.y = 0;
+          stream_render_rect_.w = main_window_height_ * 16 / 9;
+          stream_render_rect_.h = main_window_height_;
+        } else {
+          stream_render_rect_.x = 0;
+          stream_render_rect_.y = 0;
+          stream_render_rect_.w = main_window_width_;
+          stream_render_rect_.h = main_window_height_;
+        }
 
-        SDL_UpdateTexture(sdl_texture_, NULL, dst_buffer_, 1280);
+      } else if (event.type == SDL_WINDOWEVENT &&
+                 event.window.event == SDL_WINDOWEVENT_CLOSE) {
+        if (connection_established_) {
+          continue;
+        } else {
+          exit_ = true;
+        }
+      } else if (event.type == REFRESH_EVENT) {
+        if (stream_texture_)
+          SDL_UpdateTexture(stream_texture_, NULL, dst_buffer_, 1280 * 720 * 3);
       } else {
         if (connection_established_) {
           ProcessMouseKeyEven(event);
@@ -828,18 +420,17 @@ int Render::Run() {
       }
     }
 
-    SDL_RenderClear(sdl_renderer_);
-    SDL_RenderCopy(sdl_renderer_, sdl_texture_, NULL, &sdl_rect_);
+    // Rendering
+    ImGui::Render();
 
-    if (!connection_established_ || !received_frame_) {
-      SDL_RenderClear(sdl_renderer_);
-      SDL_SetRenderDrawColor(
-          sdl_renderer_, (Uint8)(clear_color.x * 0), (Uint8)(clear_color.y * 0),
-          (Uint8)(clear_color.z * 0), (Uint8)(clear_color.w * 0));
+    if (connection_established_ && received_frame_ && streaming_) {
+      SDL_RenderClear(main_renderer_);
+      SDL_RenderCopy(main_renderer_, stream_texture_, NULL,
+                     &stream_render_rect_);
     }
 
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
-    SDL_RenderPresent(sdl_renderer_);
+    SDL_RenderPresent(main_renderer_);
 
     frame_count_++;
     end_time_ = SDL_GetTicks();
@@ -877,7 +468,7 @@ int Render::Run() {
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();
 
-  SDL_DestroyRenderer(sdl_renderer_);
+  SDL_DestroyRenderer(main_renderer_);
   SDL_DestroyWindow(main_window_);
 
   SDL_CloseAudio();

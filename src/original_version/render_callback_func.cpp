@@ -111,102 +111,105 @@ void Render::SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len) {
 void Render::OnReceiveVideoBufferCb(const char *data, size_t size,
                                     const char *user_id, size_t user_id_size,
                                     void *user_data) {
-  Render *render = (Render *)user_data;
-  if (render->connection_established_) {
-    memcpy(render->dst_buffer_, data, size);
+  Render *main_window = (Render *)user_data;
+  if (main_window->connection_established_) {
+    memcpy(main_window->dst_buffer_, data, size);
     SDL_Event event;
     event.type = REFRESH_EVENT;
     SDL_PushEvent(&event);
-    render->received_frame_ = true;
+    main_window->received_frame_ = true;
   }
 }
 
 void Render::OnReceiveAudioBufferCb(const char *data, size_t size,
                                     const char *user_id, size_t user_id_size,
                                     void *user_data) {
-  Render *render = (Render *)user_data;
-  render->audio_buffer_fresh_ = true;
-  SDL_QueueAudio(render->output_dev_, data, (uint32_t)size);
+  Render *main_window = (Render *)user_data;
+  main_window->audio_buffer_fresh_ = true;
+  SDL_QueueAudio(main_window->output_dev_, data, (uint32_t)size);
 }
 
 void Render::OnReceiveDataBufferCb(const char *data, size_t size,
                                    const char *user_id, size_t user_id_size,
                                    void *user_data) {
-  Render *render = (Render *)user_data;
+  Render *main_window = (Render *)user_data;
   std::string user(user_id, user_id_size);
   RemoteAction remote_action;
   memcpy(&remote_action, data, sizeof(remote_action));
 
 #if MOUSE_CONTROL
-  if (render->mouse_controller_) {
-    render->mouse_controller_->SendCommand(remote_action);
+  if (main_window->mouse_controller_) {
+    main_window->mouse_controller_->SendCommand(remote_action);
   }
 #endif
 }
 
 void Render::OnSignalStatusCb(SignalStatus status, void *user_data) {
-  Render *render = (Render *)user_data;
-  render->signal_status_ = status;
+  Render *main_window = (Render *)user_data;
+  main_window->signal_status_ = status;
   if (SignalStatus::SignalConnecting == status) {
-    render->signal_status_str_ = "SignalConnecting";
+    main_window->signal_status_str_ = "SignalConnecting";
   } else if (SignalStatus::SignalConnected == status) {
-    render->signal_status_str_ = "SignalConnected";
+    main_window->signal_status_str_ = "SignalConnected";
   } else if (SignalStatus::SignalFailed == status) {
-    render->signal_status_str_ = "SignalFailed";
+    main_window->signal_status_str_ = "SignalFailed";
   } else if (SignalStatus::SignalClosed == status) {
-    render->signal_status_str_ = "SignalClosed";
+    main_window->signal_status_str_ = "SignalClosed";
   } else if (SignalStatus::SignalReconnecting == status) {
-    render->signal_status_str_ = "SignalReconnecting";
+    main_window->signal_status_str_ = "SignalReconnecting";
   }
 }
 
 void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
-  Render *render = (Render *)user_data;
-  render->connection_status_ = status;
+  Render *main_window = (Render *)user_data;
+  main_window->connection_status_ = status;
   if (ConnectionStatus::Connecting == status) {
-    render->connection_status_str_ = "Connecting";
+    main_window->connection_status_str_ = "Connecting";
   } else if (ConnectionStatus::Connected == status) {
-    render->connection_status_str_ = "Connected";
-    render->connection_established_ = true;
-    if (!render->is_client_mode_) {
-      render->start_screen_capture_ = true;
-      render->start_mouse_control_ = true;
+    main_window->connection_status_str_ = "Connected";
+    main_window->connection_established_ = true;
+    if (!main_window->is_client_mode_) {
+      main_window->start_screen_capture_ = true;
+      main_window->start_mouse_control_ = true;
     }
-    // SDL_MinimizeWindow(render->main_window_);
   } else if (ConnectionStatus::Disconnected == status) {
-    render->connection_status_str_ = "Disconnected";
+    main_window->connection_status_str_ = "Disconnected";
   } else if (ConnectionStatus::Failed == status) {
-    render->connection_status_str_ = "Failed";
+    main_window->connection_status_str_ = "Failed";
   } else if (ConnectionStatus::Closed == status) {
-    render->connection_status_str_ = "Closed";
-    render->start_screen_capture_ = false;
-    render->start_mouse_control_ = false;
-    render->connection_established_ = false;
-    render->control_mouse_ = false;
-    render->exit_video_window_ = false;
-    if (render->dst_buffer_) {
-      memset(render->dst_buffer_, 0, 1280 * 720 * 3);
-      SDL_UpdateTexture(render->sdl_texture_, NULL, render->dst_buffer_, 1280);
+    main_window->connection_status_str_ = "Closed";
+    main_window->start_screen_capture_ = false;
+    main_window->start_mouse_control_ = false;
+    main_window->connection_established_ = false;
+    main_window->control_mouse_ = false;
+    if (main_window->dst_buffer_) {
+      memset(main_window->dst_buffer_, 0, 1280 * 720 * 3);
+      SDL_UpdateTexture(main_window->sdl_texture_, NULL,
+                        main_window->dst_buffer_, 1280);
     }
   } else if (ConnectionStatus::IncorrectPassword == status) {
-    render->connection_status_str_ = "Incorrect password";
-    if (render->connect_button_pressed_) {
-      render->connect_button_pressed_ = false;
-      render->connection_established_ = false;
-      render->connect_button_label_ =
-          render->connect_button_pressed_
-              ? localization::disconnect[render->localization_language_index_]
-              : localization::connect[render->localization_language_index_];
+    main_window->connection_status_str_ = "Incorrect password";
+    if (main_window->connect_button_pressed_) {
+      main_window->connect_button_pressed_ = false;
+      main_window->connection_established_ = false;
+      main_window->connect_button_label_ =
+          main_window->connect_button_pressed_
+              ? localization::disconnect[main_window
+                                             ->localization_language_index_]
+              : localization::connect[main_window
+                                          ->localization_language_index_];
     }
   } else if (ConnectionStatus::NoSuchTransmissionId == status) {
-    render->connection_status_str_ = "No such transmission id";
-    if (render->connect_button_pressed_) {
-      render->connect_button_pressed_ = false;
-      render->connection_established_ = false;
-      render->connect_button_label_ =
-          render->connect_button_pressed_
-              ? localization::disconnect[render->localization_language_index_]
-              : localization::connect[render->localization_language_index_];
+    main_window->connection_status_str_ = "No such transmission id";
+    if (main_window->connect_button_pressed_) {
+      main_window->connect_button_pressed_ = false;
+      main_window->connection_established_ = false;
+      main_window->connect_button_label_ =
+          main_window->connect_button_pressed_
+              ? localization::disconnect[main_window
+                                             ->localization_language_index_]
+              : localization::connect[main_window
+                                          ->localization_language_index_];
     }
   }
 }

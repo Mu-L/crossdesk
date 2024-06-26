@@ -99,6 +99,17 @@ target("localization")
     set_kind("headeronly")
     add_includedirs("src/localization", {public = true})
 
+target("original_version")
+    set_kind("object")
+    add_deps("log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
+    if is_os("macosx") then
+        add_packages("ffmpeg")
+    elseif is_os("linux") then
+        add_packages("ffmpeg")
+    end
+    add_files("src/original_version/*.cpp")
+    add_includedirs("src/original_version", {public = true})
+
 target("single_window")
     set_kind("object")
     add_deps("log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
@@ -110,20 +121,9 @@ target("single_window")
     add_files("src/single_window/*.cpp")
     add_includedirs("src/single_window", {public = true})
 
-target("multiple_windows")
-    set_kind("object")
-    add_deps("log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
-    if is_os("macosx") then
-        add_packages("ffmpeg")
-    elseif is_os("linux") then
-        add_packages("ffmpeg")
-    end
-    add_files("src/multiple_windows/*.cpp")
-    add_includedirs("src/multiple_windows", {public = true})
-
 target("remote_desk")
     set_kind("binary")
-    add_deps("log", "common", "multiple_windows")
+    add_deps("log", "common", "single_window")
     if is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then

@@ -27,25 +27,21 @@ int Render::SettingWindow() {
 
   ImGui::SameLine();
   // Fullscreen
-  std::string fullscreen = ICON_FA_EXPAND;
+  std::string fullscreen =
+      fullscreen_button_pressed_ ? ICON_FA_COMPRESS : ICON_FA_EXPAND;
   if (ImGui::Button(fullscreen.c_str(), ImVec2(25, 25))) {
-    if (fullscreen_button_label_ ==
-        localization::fullscreen[localization_language_index_]) {
+    fullscreen_button_pressed_ = !fullscreen_button_pressed_;
+    if (fullscreen_button_pressed_) {
       main_window_width_before_fullscreen_ = main_window_width_;
       main_window_height_before_fullscreen_ = main_window_height_;
       SDL_SetWindowFullscreen(main_window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
-      fullscreen_button_label_ =
-          localization::exit_fullscreen[localization_language_index_];
     } else {
       SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
       SDL_SetWindowSize(main_window_, main_window_width_before_fullscreen_,
                         main_window_height_before_fullscreen_);
       main_window_width_ = main_window_width_before_fullscreen_;
       main_window_height_ = main_window_height_before_fullscreen_;
-      fullscreen_button_label_ =
-          localization::fullscreen[localization_language_index_];
     }
-    fullscreen_button_pressed_ = !fullscreen_button_pressed_;
   }
 
   ImGui::SameLine();

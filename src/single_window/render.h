@@ -29,6 +29,14 @@ class Render {
  public:
   int Run();
 
+ private:
+  int CreateStreamRenderWindow();
+  int MainWindow();
+  int MenuWindow();
+  int LocalWindow();
+  int RemoteWindow();
+  int SettingWindow();
+
  public:
   static void OnReceiveVideoBufferCb(const char *data, size_t size,
                                      const char *user_id, size_t user_id_size,
@@ -101,22 +109,33 @@ class Render {
  private:
   int screen_width_ = 1280;
   int screen_height_ = 720;
-  int main_window_width_ = 1280;
-  int main_window_height_ = 720;
+  int main_window_width_ = 960;
+  int main_window_height_ = 540;
+  int main_window_width_last_ = 960;
+  int main_window_height_last_ = 540;
+  int stream_window_width_ = 1280;
+  int stream_window_height_ = 720;
+  int stream_window_width_last_ = 1280;
+  int stream_window_height_last_ = 720;
   int main_window_width_before_fullscreen_ = 1280;
   int main_window_height_before_fullscreen_ = 720;
+  int menu_window_height_ = 40;
+  int local_window_width_ = 350;
 
   int texture_width_ = 1280;
   int texture_height_ = 720;
 
-  SDL_Texture *sdl_texture_ = nullptr;
-  SDL_Renderer *sdl_renderer_ = nullptr;
-  SDL_Rect sdl_rect_;
   SDL_Window *main_window_;
-  uint32_t pixformat_ = 0;
+  SDL_Renderer *main_renderer_ = nullptr;
+
+  // video window
+  SDL_Texture *stream_texture_ = nullptr;
+  SDL_Rect stream_render_rect_;
+  uint32_t stream_pixformat_ = 0;
 
   bool inited_ = false;
   bool exit_ = false;
+  bool exit_video_window_ = false;
   bool connection_established_ = false;
   bool subwindow_hovered_ = false;
   bool connect_button_pressed_ = false;
@@ -128,6 +147,11 @@ class Render {
   bool audio_buffer_fresh_ = false;
   bool rejoin_ = false;
   bool control_mouse_ = false;
+  bool show_password_ = true;
+  bool regenerate_password_ = false;
+  bool streaming_ = false;
+
+  int regenerate_password_frame_count_ = 0;
 
   int fps_ = 0;
   uint32_t start_time_;
