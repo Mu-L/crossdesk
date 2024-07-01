@@ -4,6 +4,7 @@ set_license("LGPL-3.0")
 
 add_rules("mode.release", "mode.debug")
 set_languages("c++17")
+set_encodings("utf-8")
 
 -- set_policy("build.warning", true)
 -- set_warnings("all", "extra")

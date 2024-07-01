@@ -147,14 +147,12 @@ void ConvertABGRtoBGRA(const uint8_t *abgr_data, uint8_t *bgra_data, int width,
                        int height, int abgr_stride, int bgra_stride) {
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
-      // ABGR到BGRA的索引映射
       int abgr_index = (i * abgr_stride + j) * 4;
       int bgra_index = (i * bgra_stride + j) * 4;
 
-      // 直接交换蓝色和红色分量，同时保持Alpha通道不变
-      bgra_data[bgra_index + 0] = abgr_data[abgr_index + 2];  // 蓝色
-      bgra_data[bgra_index + 1] = abgr_data[abgr_index + 1];  // 绿色
-      bgra_data[bgra_index + 2] = abgr_data[abgr_index + 0];  // 红色
+      bgra_data[bgra_index + 0] = abgr_data[abgr_index + 2];  // 钃濊壊
+      bgra_data[bgra_index + 1] = abgr_data[abgr_index + 1];  // 缁胯壊
+      bgra_data[bgra_index + 2] = abgr_data[abgr_index + 0];  // 绾㈣壊
       bgra_data[bgra_index + 3] = abgr_data[abgr_index + 3];  // Alpha
     }
   }
@@ -164,11 +162,9 @@ void ConvertBGRAtoABGR(const uint8_t *bgra_data, uint8_t *abgr_data, int width,
                        int height, int bgra_stride, int abgr_stride) {
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
-      // BGRA到ABGR的索引映射
       int bgra_index = (i * bgra_stride + j) * 4;
       int abgr_index = (i * abgr_stride + j) * 4;
 
-      // 交换红色和蓝色分量，同时保持Alpha通道在最前面
       abgr_data[abgr_index + 0] = bgra_data[bgra_index + 3];  // Alpha
       abgr_data[abgr_index + 1] = bgra_data[bgra_index + 0];  // Blue
       abgr_data[abgr_index + 2] = bgra_data[bgra_index + 1];  // Green
