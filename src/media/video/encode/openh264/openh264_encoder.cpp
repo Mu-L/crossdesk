@@ -29,7 +29,7 @@ void nv12ToI420(unsigned char *Src_data, int src_width, int src_height,
   int src_stride_y = src_width;
   int src_stride_uv = src_width;
 
-  // dst: buffer address of Y channel¡¢U channel and V channel
+  // dst: buffer address of Y channelã€U channel and V channel
   unsigned char *Y_data_Dst = Dst_data;
   unsigned char *U_data_Dst = Dst_data + I420_Y_Size;
   unsigned char *V_data_Dst = Dst_data + I420_Y_Size + I420_U_Size;

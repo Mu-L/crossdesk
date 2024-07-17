@@ -3,7 +3,8 @@ set_version("0.0.1")
 set_license("LGPL-3.0")
 
 add_rules("mode.release", "mode.debug")
-set_languages("c++14")
+set_languages("c++17")
+set_encodings("utf-8")
 
 set_installdir("$(projectdir)/out")
 
@@ -34,7 +35,7 @@ end
 
 target("log")
     set_kind("object")
-    add_files("src/log/log.cpp")
+    add_headerfiles("src/log/log.h")
     add_includedirs("src/log", {public = true})
 
 target("common")

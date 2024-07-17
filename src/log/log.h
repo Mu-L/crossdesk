@@ -18,20 +18,7 @@ using namespace std::chrono;
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
 
-// SPDLOG_TRACE(...)
-// SPDLOG_DEBUG(...)
-// SPDLOG_INFO(...)
-// SPDLOG_WARN(...)
-// SPDLOG_ERROR(...)
-// SPDLOG_CRITICAL(...)
-
-#ifdef SIGNAL_LOGGER
-constexpr auto LOGGER_NAME = "siganl";
-#else
-constexpr auto LOGGER_NAME = "rtc";
-#endif
-
-int LogDummy();
+constexpr auto LOGGER_NAME = "rt";
 
 #define LOG_INFO(...)                                                         \
   if (nullptr == spdlog::get(LOGGER_NAME)) {                                  \
