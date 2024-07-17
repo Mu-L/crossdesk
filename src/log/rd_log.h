@@ -1,5 +1,11 @@
-#ifndef _LOG_H_
-#define _LOG_H_
+/*
+ * @Author: DI JUNKUN
+ * @Date: 2024-07-17
+ * Copyright (c) 2024 by DI JUNKUN, All Rights Reserved.
+ */
+
+#ifndef _RD_LOG_H_
+#define _RD_LOG_H_
 
 #include <chrono>
 #include <iomanip>
@@ -18,18 +24,7 @@ using namespace std::chrono;
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
 
-// SPDLOG_TRACE(...)
-// SPDLOG_DEBUG(...)
-// SPDLOG_INFO(...)
-// SPDLOG_WARN(...)
-// SPDLOG_ERROR(...)
-// SPDLOG_CRITICAL(...)
-
-#ifdef SIGNAL_LOGGER
-constexpr auto LOGGER_NAME = "siganl_server";
-#else
-constexpr auto LOGGER_NAME = "remote_desk";
-#endif
+constexpr auto LOGGER_NAME = "rd";
 
 #define LOG_INFO(...)                                                         \
   if (nullptr == spdlog::get(LOGGER_NAME)) {                                  \

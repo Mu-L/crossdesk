@@ -1,7 +1,7 @@
 #include "IconsFontAwesome6.h"
 #include "layout_style.h"
 #include "localization.h"
-#include "log.h"
+#include "rd_log.h"
 #include "render.h"
 
 int Render::RemoteWindow() {

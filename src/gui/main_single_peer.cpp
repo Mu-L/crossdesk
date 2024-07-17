@@ -24,8 +24,8 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
-#include "log.h"
 #include "platform.h"
+#include "rd_log.h"
 #include "screen_capturer_factory.h"
 
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2

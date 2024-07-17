@@ -45,21 +45,21 @@ add_packages("spdlog", "imgui")
 
 includes("thirdparty")
 
-target("log")
+target("rd_log")
     set_kind("object")
     add_packages("spdlog")
-    add_headerfiles("src/log/log.h")
+    add_headerfiles("src/log/rd_log.h")
     add_includedirs("src/log", {public = true})
 
 target("common")
     set_kind("object")
-    add_deps("log")
+    add_deps("rd_log")
     add_files("src/common/*.cpp")
     add_includedirs("src/common", {public = true})
 
 target("screen_capturer")
     set_kind("object")
-    add_deps("log")
+    add_deps("rd_log")
     add_packages("libyuv")
     add_includedirs("src/screen_capturer", {public = true})
     if is_os("windows") then
@@ -77,7 +77,7 @@ target("screen_capturer")
 
 target("device_controller")
     set_kind("object")
-    add_deps("log")
+    add_deps("rd_log")
     add_includedirs("src/device_controller", {public = true})
     if is_os("windows") then
         add_files("src/device_controller/mouse/windows/*.cpp")
@@ -92,7 +92,7 @@ target("device_controller")
 
 target("config_center")
     set_kind("object")
-    add_deps("log")
+    add_deps("rd_log")
     add_files("src/config_center/*.cpp")
     add_includedirs("src/config_center", {public = true})
 
@@ -102,7 +102,7 @@ target("localization")
 
 target("original_version")
     set_kind("object")
-    add_deps("log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
+    add_deps("rd_log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
     if is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then
@@ -113,7 +113,7 @@ target("original_version")
 
 target("single_window")
     set_kind("object")
-    add_deps("log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
+    add_deps("rd_log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
     if is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then
@@ -125,7 +125,7 @@ target("single_window")
 
 target("remote_desk")
     set_kind("binary")
-    add_deps("log", "common", "single_window")
+    add_deps("rd_log", "common", "single_window")
     if is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then

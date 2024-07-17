@@ -10,8 +10,8 @@
 #include "fa-solid-900.h"
 #include "layout_style.h"
 #include "localization.h"
-#include "log.h"
 #include "platform.h"
+#include "rd_log.h"
 #include "screen_capturer_factory.h"
 
 // Refresh Event

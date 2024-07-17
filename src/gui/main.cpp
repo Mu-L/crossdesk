@@ -6,7 +6,7 @@
 #endif
 #endif
 
-#include "log.h"
+#include "rd_log.h"
 #include "render.h"
 
 int main(int argc, char *argv[]) {

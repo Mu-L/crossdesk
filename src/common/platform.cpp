@@ -1,6 +1,6 @@
 #include "platform.h"
 
-#include "log.h"
+#include "rd_log.h"
 
 #ifdef _WIN32
 #include <Winsock2.h>
