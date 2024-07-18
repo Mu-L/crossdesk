@@ -52,6 +52,7 @@ int Render::SettingButton() {
     // Settings
     {
       ImGui::SetWindowFontScale(0.5f);
+      ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
       ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
@@ -251,6 +252,7 @@ int Render::SettingButton() {
       ImGui::SetWindowFontScale(0.5f);
       ImGui::End();
       ImGui::PopStyleVar(2);
+      ImGui::PopStyleColor();
       ImGui::SetWindowFontScale(1.0f);
     }
   }

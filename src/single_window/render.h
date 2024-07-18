@@ -161,6 +161,8 @@ class Render {
   bool connection_established_ = false;
   bool subwindow_hovered_ = false;
   bool connect_button_pressed_ = false;
+  bool password_validating_ = false;
+  uint32_t password_validating_time_ = 0;
   bool control_bar_button_pressed_ = false;
   bool fullscreen_button_pressed_ = false;
   bool mouse_control_button_pressed_ = false;

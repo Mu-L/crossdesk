@@ -32,22 +32,17 @@ int Render::ConnectionStatusWindow() {
     ImGui::PopStyleColor();
     ImGui::SetWindowFontScale(1.0f);
 
-    ImGui::SetWindowFontScale(0.6f);
+    ImGui::SetWindowFontScale(0.5f);
     std::string text;
 
     if (ConnectionStatus::Connecting == connection_status_) {
-      text = "Connecting...";
+      text = localization::p2p_connecting[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
-      // Cancel
-      if (ImGui::Button(
-              localization::cancel[localization_language_index_].c_str())) {
-        connect_button_pressed_ = false;
-      }
     } else if (ConnectionStatus::Connected == connection_status_) {
-      text = "Connected";
+      text = localization::p2p_connected[localization_language_index_];
     } else if (ConnectionStatus::Disconnected == connection_status_) {
-      text = "Disonnected";
+      text = localization::p2p_disconnected[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
       // Cancel
@@ -56,7 +51,7 @@ int Render::ConnectionStatusWindow() {
         connect_button_pressed_ = false;
       }
     } else if (ConnectionStatus::Failed == connection_status_) {
-      text = "Failed";
+      text = localization::p2p_failed[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
       // Cancel
@@ -65,47 +60,59 @@ int Render::ConnectionStatusWindow() {
         connect_button_pressed_ = false;
       }
     } else if (ConnectionStatus::Closed == connection_status_) {
-      text = "Closed";
+      text = localization::p2p_closed[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
       // Cancel
       if (ImGui::Button(
-              localization::cancel[localization_language_index_].c_str())) {
+              localization::ok[localization_language_index_].c_str())) {
         connect_button_pressed_ = false;
       }
     } else if (ConnectionStatus::IncorrectPassword == connection_status_) {
-      text = "Please input password";
-      auto window_width = ImGui::GetWindowSize().x;
-      auto window_height = ImGui::GetWindowSize().y;
-      ImGui::SetCursorPosX((window_width - IPUT_WINDOW_WIDTH / 2) * 0.5f);
-      ImGui::SetCursorPosY(window_height * 0.4f);
-      ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH / 2);
+      if (!password_validating_) {
+        if (password_validating_time_ == 1) {
+          text = localization::input_password[localization_language_index_];
+        } else {
+          text = localization::reinput_password[localization_language_index_];
+        }
+        auto window_width = ImGui::GetWindowSize().x;
+        auto window_height = ImGui::GetWindowSize().y;
+        ImGui::SetCursorPosX((window_width - IPUT_WINDOW_WIDTH / 2) * 0.5f);
+        ImGui::SetCursorPosY(window_height * 0.4f);
+        ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH / 2);
 
-      ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
-      ImGui::InputText("##password", (char *)remote_password_.c_str(), 7,
-                       ImGuiInputTextFlags_CharsNoBlank);
-      ImGui::PopStyleVar();
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+        ImGui::InputText("##password", (char *)remote_password_.c_str(), 7,
+                         ImGuiInputTextFlags_CharsNoBlank);
+        ImGui::PopStyleVar();
 
-      ImGui::SetCursorPosX(window_width * 0.28f);
-      ImGui::SetCursorPosY(window_height * 0.75f);
-      // OK
-      if (ImGui::Button(
-              localization::ok[localization_language_index_].c_str())) {
-        connect_button_pressed_ = true;
-        JoinConnection(peer_reserved_ ? peer_reserved_ : peer_, remote_id_,
-                       remote_password_.c_str());
+        ImGui::SetCursorPosX(window_width * 0.315f);
+        ImGui::SetCursorPosY(window_height * 0.75f);
+        // OK
+        if (ImGui::Button(
+                localization::ok[localization_language_index_].c_str())) {
+          connect_button_pressed_ = true;
+          password_validating_ = true;
+          JoinConnection(peer_reserved_ ? peer_reserved_ : peer_, remote_id_,
+                         remote_password_.c_str());
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(
+                localization::cancel[localization_language_index_].c_str())) {
+          remote_password_ = "";
+          connect_button_pressed_ = false;
+        }
+      } else {
+        text = localization::validate_password[localization_language_index_];
+        ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
+        ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
       }
+    }
 
-      ImGui::SameLine();
-
-      if (ImGui::Button(
-              localization::cancel[localization_language_index_].c_str())) {
-        remote_password_ = "";
-        connect_button_pressed_ = false;
-      }
-
-    } else if (ConnectionStatus::NoSuchTransmissionId == connection_status_) {
-      text = "No such transmissionId";
+    else if (ConnectionStatus::NoSuchTransmissionId == connection_status_) {
+      text = localization::no_such_id[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
       // Cancel

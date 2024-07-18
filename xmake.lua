@@ -1,6 +1,8 @@
 set_project("remote_desk")
-set_version("0.0.1")
 set_license("LGPL-3.0")
+
+set_version("0.0.1")
+add_defines("RD_VERSION=\"0.0.1\"");
 
 add_rules("mode.release", "mode.debug")
 set_languages("c++17")

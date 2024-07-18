@@ -50,7 +50,7 @@ int Render::AboutWindow() {
 
   ImGui::SetNextWindowSize(ImVec2(about_window_width_, about_window_height_));
 
-  // ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0, 1.0, 1.0, 1.0));
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
@@ -61,7 +61,16 @@ int Render::AboutWindow() {
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
   ImGui::SetWindowFontScale(1.0f);
   ImGui::SetWindowFontScale(0.5f);
-  std::string text = "Version 0.0.1";
+
+  std::string version;
+#ifdef RD_VERSION
+  version = RD_VERSION;
+#else
+  version = "Unknown";
+#endif
+
+  std::string text =
+      localization::version[localization_language_index_] + ": " + version;
   ImGui::Text("%s", text.c_str());
 
   ImGui::SetCursorPosX(about_window_width_ * 0.42f);
@@ -76,6 +85,7 @@ int Render::AboutWindow() {
   ImGui::End();
   ImGui::SetWindowFontScale(1.0f);
   ImGui::PopStyleVar(3);
+  ImGui::PopStyleColor();
 
   return 0;
 }

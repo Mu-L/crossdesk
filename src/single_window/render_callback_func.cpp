@@ -174,7 +174,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     render->connection_status_str_ = "Connected";
     render->connection_established_ = true;
     render->streaming_ = true;
-    // render->connect_button_pressed_ = false;
     SDL_SetWindowSize(render->main_window_, render->stream_window_width_,
                       render->stream_window_height_);
     SDL_SetWindowPosition(render->main_window_, SDL_WINDOWPOS_CENTERED,
@@ -185,10 +184,13 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     }
   } else if (ConnectionStatus::Disconnected == status) {
     render->connection_status_str_ = "Disconnected";
+    render->password_validating_time_ = 0;
   } else if (ConnectionStatus::Failed == status) {
     render->connection_status_str_ = "Failed";
+    render->password_validating_time_ = 0;
   } else if (ConnectionStatus::Closed == status) {
     render->connection_status_str_ = "Closed";
+    render->password_validating_time_ = 0;
     render->start_screen_capture_ = false;
     render->start_mouse_control_ = false;
     render->connection_established_ = false;
@@ -202,8 +204,9 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     }
   } else if (ConnectionStatus::IncorrectPassword == status) {
     render->connection_status_str_ = "Incorrect password";
+    render->password_validating_ = false;
+    render->password_validating_time_++;
     if (render->connect_button_pressed_) {
-      // render->connect_button_pressed_ = false;
       render->connection_established_ = false;
       render->connect_button_label_ =
           render->connect_button_pressed_
@@ -213,7 +216,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
   } else if (ConnectionStatus::NoSuchTransmissionId == status) {
     render->connection_status_str_ = "No such transmission id";
     if (render->connect_button_pressed_) {
-      // render->connect_button_pressed_ = false;
       render->connection_established_ = false;
       render->connect_button_label_ =
           render->connect_button_pressed_

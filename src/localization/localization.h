@@ -47,6 +47,13 @@ static std::vector<std::string> enable_hardware_video_codec = {
 static std::vector<std::string> ok = {u8"确认", "OK"};
 static std::vector<std::string> cancel = {u8"取消", "Cancel"};
 
+static std::vector<std::string> input_password = {u8"请输入密码",
+                                                  "Please input password"};
+static std::vector<std::string> validate_password = {u8"验证密码中...",
+                                                     "Validate password ..."};
+static std::vector<std::string> reinput_password = {
+    u8"请重新输入密码", "Please input password again"};
+
 static std::vector<std::string> signal_connected = {u8"已连接服务器",
                                                     "Connected"};
 static std::vector<std::string> signal_disconnected = {u8"未连接服务器",
@@ -56,10 +63,15 @@ static std::vector<std::string> p2p_connected = {u8"对等连接已建立",
                                                  "P2P Connected"};
 static std::vector<std::string> p2p_disconnected = {u8"对等连接已断开",
                                                     "P2P Disconnected"};
-static std::vector<std::string> p2p_connecting = {u8"正在建立对等连接",
-                                                  "P2P Connecting"};
+static std::vector<std::string> p2p_connecting = {u8"正在建立对等连接...",
+                                                  "P2P Connecting ..."};
+static std::vector<std::string> p2p_failed = {u8"对等连接失败", "P2P Failed"};
+static std::vector<std::string> p2p_closed = {u8"对等连接已关闭", "P2P closed"};
+
+static std::vector<std::string> no_such_id = {u8"无此ID", "No such ID"};
 
 static std::vector<std::string> about = {u8"关于", "About"};
+static std::vector<std::string> version = {u8"版本", "Version"};
 
 }  // namespace localization
 
