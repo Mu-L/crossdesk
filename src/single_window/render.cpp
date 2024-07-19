@@ -217,6 +217,40 @@ int Render::Run() {
   screen_width_ = DM.w;
   screen_height_ = DM.h;
 
+  // Audio
+  SDL_AudioSpec want_in, have_in, want_out, have_out;
+  SDL_zero(want_in);
+  want_in.freq = 48000;
+  want_in.format = AUDIO_S16LSB;
+  want_in.channels = 1;
+  want_in.samples = 480;
+  want_in.callback = SdlCaptureAudioIn;
+  want_in.userdata = this;
+
+  input_dev_ = SDL_OpenAudioDevice(NULL, 1, &want_in, &have_in, 0);
+  if (input_dev_ == 0) {
+    SDL_Log("Failed to open input: %s", SDL_GetError());
+    // return 1;
+  }
+
+  SDL_zero(want_out);
+  want_out.freq = 48000;
+  want_out.format = AUDIO_S16LSB;
+  want_out.channels = 1;
+  // want_out.silence = 0;
+  want_out.samples = 480;
+  want_out.callback = SdlCaptureAudioOut;
+  want_out.userdata = this;
+
+  output_dev_ = SDL_OpenAudioDevice(NULL, 0, &want_out, &have_out, 0);
+  if (output_dev_ == 0) {
+    SDL_Log("Failed to open input: %s", SDL_GetError());
+    // return 1;
+  }
+
+  SDL_PauseAudioDevice(input_dev_, 0);
+  SDL_PauseAudioDevice(output_dev_, 0);
+
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();

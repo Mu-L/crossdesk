@@ -129,7 +129,7 @@ target("remote_desk")
     set_kind("binary")
     add_deps("rd_log", "common", "single_window")
     if is_os("windows") then
-        add_files("icon/app_icon.ico")
+        add_files("icon/app.rc")
     elseif is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then

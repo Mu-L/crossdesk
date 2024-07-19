@@ -61,8 +61,9 @@ class Render {
 
  private:
   int ProcessMouseKeyEven(SDL_Event &ev);
-  void SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len);
-  void SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len);
+
+  static void SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len);
+  static void SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len);
 
  private:
   int SaveSettingsIntoCacheFile();

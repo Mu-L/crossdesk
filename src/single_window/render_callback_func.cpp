@@ -78,34 +78,40 @@ int Render::ProcessMouseKeyEven(SDL_Event &ev) {
 }
 
 void Render::SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
-  if (1) {
-    if ("Connected" == connection_status_str_) {
-      SendData(peer_, DATA_TYPE::AUDIO, (const char *)stream, len);
-    }
-  } else {
-    memcpy(audio_buffer_, stream, len);
-    audio_len_ = len;
-    SDL_Delay(10);
-    audio_buffer_fresh_ = true;
-  }
+  // Render *render = (Render *)userdata;
+  // if (1) {
+  //   if ("Connected" == render->connection_status_str_) {
+  //     SendData(render->peer_, DATA_TYPE::AUDIO, (const char *)stream, len);
+  //   }
+  // } else {
+  //   memcpy(render->audio_buffer_, stream, len);
+  //   render->audio_len_ = len;
+  //   SDL_Delay(10);
+  //   render->audio_buffer_fresh_ = true;
+  // }
 }
 
 void Render::SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len) {
-  if (!audio_buffer_fresh_) {
-    return;
+  Render *render = (Render *)userdata;
+  if ("Connected" == render->connection_status_str_) {
+    SendData(render->peer_, DATA_TYPE::AUDIO, (const char *)stream, len);
   }
 
-  SDL_memset(stream, 0, len);
+  // if (!render->audio_buffer_fresh_) {
+  //   return;
+  // }
 
-  if (audio_len_ == 0) {
-    return;
-  } else {
-  }
+  // SDL_memset(stream, 0, len);
 
-  len = (len > audio_len_ ? audio_len_ : len);
-  SDL_MixAudioFormat(stream, audio_buffer_, AUDIO_S16LSB, len,
-                     SDL_MIX_MAXVOLUME);
-  audio_buffer_fresh_ = false;
+  // if (render->audio_len_ == 0) {
+  //   return;
+  // } else {
+  // }
+
+  // len = (len > render->audio_len_ ? render->audio_len_ : len);
+  // SDL_MixAudioFormat(stream, render->audio_buffer_, AUDIO_S16LSB, len,
+  //                    SDL_MIX_MAXVOLUME);
+  // render->audio_buffer_fresh_ = false;
 }
 
 void Render::OnReceiveVideoBufferCb(const char *data, size_t size,
