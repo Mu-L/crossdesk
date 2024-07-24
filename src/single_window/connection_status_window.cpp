@@ -4,7 +4,7 @@
 #include "render.h"
 
 int Render::ConnectionStatusWindow() {
-  if (connect_button_pressed_) {
+  if (show_connection_status_window_) {
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
 
     ImGui::SetNextWindowPos(ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
@@ -41,6 +41,7 @@ int Render::ConnectionStatusWindow() {
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
     } else if (ConnectionStatus::Connected == connection_status_) {
       text = localization::p2p_connected[localization_language_index_];
+      show_connection_status_window_ = false;
     } else if (ConnectionStatus::Disconnected == connection_status_) {
       text = localization::p2p_disconnected[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
@@ -48,7 +49,7 @@ int Render::ConnectionStatusWindow() {
       // Cancel
       if (ImGui::Button(
               localization::cancel[localization_language_index_].c_str())) {
-        connect_button_pressed_ = false;
+        show_connection_status_window_ = false;
       }
     } else if (ConnectionStatus::Failed == connection_status_) {
       text = localization::p2p_failed[localization_language_index_];
@@ -57,7 +58,7 @@ int Render::ConnectionStatusWindow() {
       // Cancel
       if (ImGui::Button(
               localization::cancel[localization_language_index_].c_str())) {
-        connect_button_pressed_ = false;
+        show_connection_status_window_ = false;
       }
     } else if (ConnectionStatus::Closed == connection_status_) {
       text = localization::p2p_closed[localization_language_index_];
@@ -66,7 +67,7 @@ int Render::ConnectionStatusWindow() {
       // Cancel
       if (ImGui::Button(
               localization::ok[localization_language_index_].c_str())) {
-        connect_button_pressed_ = false;
+        show_connection_status_window_ = false;
       }
     } else if (ConnectionStatus::IncorrectPassword == connection_status_) {
       if (!password_validating_) {
@@ -91,7 +92,7 @@ int Render::ConnectionStatusWindow() {
         // OK
         if (ImGui::Button(
                 localization::ok[localization_language_index_].c_str())) {
-          connect_button_pressed_ = true;
+          show_connection_status_window_ = true;
           password_validating_ = true;
           JoinConnection(peer_reserved_ ? peer_reserved_ : peer_, remote_id_,
                          remote_password_.c_str());
@@ -102,7 +103,7 @@ int Render::ConnectionStatusWindow() {
         if (ImGui::Button(
                 localization::cancel[localization_language_index_].c_str())) {
           remote_password_ = "";
-          connect_button_pressed_ = false;
+          show_connection_status_window_ = false;
         }
       } else {
         text = localization::validate_password[localization_language_index_];
@@ -118,7 +119,7 @@ int Render::ConnectionStatusWindow() {
       // Cancel
       if (ImGui::Button(
               localization::cancel[localization_language_index_].c_str())) {
-        connect_button_pressed_ = false;
+        show_connection_status_window_ = false;
       }
     }
 

@@ -183,6 +183,7 @@ class Render {
   bool regenerate_password_ = false;
   bool streaming_ = false;
   bool show_about_window_ = false;
+  bool show_connection_status_window_ = false;
 
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;

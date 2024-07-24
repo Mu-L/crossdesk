@@ -174,6 +174,7 @@ void Render::OnSignalStatusCb(SignalStatus status, void *user_data) {
 void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
   Render *render = (Render *)user_data;
   render->connection_status_ = status;
+  render->show_connection_status_window_ = true;
   if (ConnectionStatus::Connecting == status) {
     render->connection_status_str_ = "Connecting";
   } else if (ConnectionStatus::Connected == status) {
