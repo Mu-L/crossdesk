@@ -8,7 +8,6 @@
 #define _SCREEN_CAPTURER_FACTORY_H_
 
 #ifdef _WIN32
-
 #include "screen_capturer_wgc.h"
 #elif __linux__
 #include "screen_capturer_x11.h"

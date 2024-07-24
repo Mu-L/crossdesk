@@ -20,6 +20,7 @@
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
 #include "screen_capturer_factory.h"
+#include "speaker_capturer_factory.h"
 
 class Render {
  public:
@@ -71,6 +72,9 @@ class Render {
 
   int StartScreenCapture();
   int StopScreenCapture();
+
+  int StartSpeakerCapture();
+  int StopSpeakerCapture();
 
   int StartMouseControl();
   int StopMouseControl();
@@ -213,6 +217,8 @@ class Render {
  private:
   ScreenCapturerFactory *screen_capturer_factory_ = nullptr;
   ScreenCapturer *screen_capturer_ = nullptr;
+  SpeakerCapturerFactory *speaker_capturer_factory_ = nullptr;
+  SpeakerCapturer *speaker_capturer_ = nullptr;
   DeviceControllerFactory *device_controller_factory_ = nullptr;
   MouseController *mouse_controller_ = nullptr;
 

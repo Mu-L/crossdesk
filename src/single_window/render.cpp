@@ -108,6 +108,36 @@ int Render::StopScreenCapture() {
   return 0;
 }
 
+int Render::StartSpeakerCapture() {
+  speaker_capturer_ = (SpeakerCapturer *)speaker_capturer_factory_->Create();
+
+  int speaker_capturer_init_ret =
+      speaker_capturer_->Init([this](unsigned char *data, size_t size) -> void {
+        SendData(peer_, DATA_TYPE::AUDIO, (const char *)data, size);
+      });
+
+  if (0 == speaker_capturer_init_ret) {
+    speaker_capturer_->Start();
+  } else {
+    speaker_capturer_->Destroy();
+    delete speaker_capturer_;
+    speaker_capturer_ = nullptr;
+  }
+
+  return 0;
+}
+
+int Render::StopSpeakerCapture() {
+  if (speaker_capturer_) {
+    LOG_INFO("Destroy speaker capturer")
+    speaker_capturer_->Destroy();
+    delete speaker_capturer_;
+    speaker_capturer_ = nullptr;
+  }
+
+  return 0;
+}
+
 int Render::StartMouseControl() {
   device_controller_factory_ = new DeviceControllerFactory();
   mouse_controller_ = (MouseController *)device_controller_factory_->Create(
@@ -239,10 +269,10 @@ int Render::Run() {
   want_out.channels = 1;
   // want_out.silence = 0;
   want_out.samples = 480;
-  want_out.callback = SdlCaptureAudioOut;
+  want_out.callback = nullptr;
   want_out.userdata = this;
 
-  output_dev_ = SDL_OpenAudioDevice(NULL, 0, &want_out, &have_out, 0);
+  output_dev_ = SDL_OpenAudioDevice(nullptr, 0, &want_out, NULL, 0);
   if (output_dev_ == 0) {
     SDL_Log("Failed to open input: %s", SDL_GetError());
     // return 1;
@@ -301,9 +331,14 @@ int Render::Run() {
     // Screen capture
     screen_capturer_factory_ = new ScreenCapturerFactory();
 
+    // Speaker capture
+    // speaker_capturer_factory_ = new SpeakerCapturerFactory();
+
     // Mouse control
     device_controller_factory_ = new DeviceControllerFactory();
   }
+
+  // StartSpeakerCapture();
 
   // Main loop
   while (!exit_) {

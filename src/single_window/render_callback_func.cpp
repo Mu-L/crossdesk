@@ -78,24 +78,24 @@ int Render::ProcessMouseKeyEven(SDL_Event &ev) {
 }
 
 void Render::SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
-  // Render *render = (Render *)userdata;
-  // if (1) {
-  //   if ("Connected" == render->connection_status_str_) {
-  //     SendData(render->peer_, DATA_TYPE::AUDIO, (const char *)stream, len);
-  //   }
-  // } else {
-  //   memcpy(render->audio_buffer_, stream, len);
-  //   render->audio_len_ = len;
-  //   SDL_Delay(10);
-  //   render->audio_buffer_fresh_ = true;
-  // }
+  Render *render = (Render *)userdata;
+  if (1) {
+    if ("Connected" == render->connection_status_str_) {
+      SendData(render->peer_, DATA_TYPE::AUDIO, (const char *)stream, len);
+    }
+  } else {
+    memcpy(render->audio_buffer_, stream, len);
+    render->audio_len_ = len;
+    SDL_Delay(10);
+    render->audio_buffer_fresh_ = true;
+  }
 }
 
 void Render::SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len) {
-  Render *render = (Render *)userdata;
-  if ("Connected" == render->connection_status_str_) {
-    SendData(render->peer_, DATA_TYPE::AUDIO, (const char *)stream, len);
-  }
+  // Render *render = (Render *)userdata;
+  // if ("Connected" == render->connection_status_str_) {
+  //   SendData(render->peer_, DATA_TYPE::AUDIO, (const char *)stream, len);
+  // }
 
   // if (!render->audio_buffer_fresh_) {
   //   return;
