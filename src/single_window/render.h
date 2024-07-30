@@ -60,6 +60,9 @@ class Render {
 
   static void OnConnectionStatusCb(ConnectionStatus status, void *user_data);
 
+  static void NetStatusReport(TraversalMode mode, const unsigned short send,
+                             const unsigned short receive, void *user_ptr);
+
  private:
   int ProcessMouseKeyEven(SDL_Event &ev);
 

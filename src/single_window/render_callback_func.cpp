@@ -229,3 +229,8 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     }
   }
 }
+
+void Render::NetStatusReport(TraversalMode mode, const unsigned short send,
+                             const unsigned short receive, void *user_ptr) {
+  printf("Net mode: [%d]\n", mode);
+}

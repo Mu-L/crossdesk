@@ -184,6 +184,7 @@ int Render::CreateConnectionPeer() {
   params_.on_receive_data_buffer = OnReceiveDataBufferCb;
   params_.on_signal_status = OnSignalStatusCb;
   params_.on_connection_status = OnConnectionStatusCb;
+  params_.net_status_report = NetStatusReport;
   params_.user_data = this;
 
   peer_ = CreatePeer(&params_);
