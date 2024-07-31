@@ -17,7 +17,6 @@ int Render::ConnectionStatusWindow() {
     ImGui::SetNextWindowSize(ImVec2(connection_status_window_width_,
                                     connection_status_window_height_));
 
-    ImGui::SetWindowFontScale(0.5f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0, 1.0, 1.0, 1.0));
@@ -30,7 +29,6 @@ int Render::ConnectionStatusWindow() {
                      ImGuiWindowFlags_NoSavedSettings);
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor();
-    ImGui::SetWindowFontScale(1.0f);
 
     ImGui::SetWindowFontScale(0.5f);
     std::string text;
@@ -130,10 +128,8 @@ int Render::ConnectionStatusWindow() {
     ImGui::Text("%s", text.c_str());
     ImGui::SetWindowFontScale(1.0f);
 
-    ImGui::SetWindowFontScale(0.5f);
     ImGui::End();
     ImGui::PopStyleVar();
-    ImGui::SetWindowFontScale(1.0f);
   }
   return 0;
 }

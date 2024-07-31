@@ -18,6 +18,46 @@
 #define REFRESH_EVENT (SDL_USEREVENT + 1)
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
+#define MOUSE_GRAB_PADDING 10
+
+SDL_HitTestResult HitTestCallback(SDL_Window *Window, const SDL_Point *Area,
+                                  void *Data) {
+  int Width, Height;
+  SDL_GetWindowSize(Window, &Width, &Height);
+
+  if (Area->y < 30 && Area->x < 30) {
+    return SDL_HITTEST_DRAGGABLE;
+  } else {
+    return SDL_HITTEST_NORMAL;
+  }
+
+  // if (Area->y < MOUSE_GRAB_PADDING) {
+  //   if (Area->x < MOUSE_GRAB_PADDING) {
+  //     return SDL_HITTEST_RESIZE_TOPLEFT;
+  //   } else if (Area->x > Width - MOUSE_GRAB_PADDING) {
+  //     return SDL_HITTEST_RESIZE_TOPRIGHT;
+  //   } else {
+  //     return SDL_HITTEST_RESIZE_TOP;
+  //   }
+  // } else if (Area->y > Height - MOUSE_GRAB_PADDING) {
+  //   if (Area->x < MOUSE_GRAB_PADDING) {
+  //     return SDL_HITTEST_RESIZE_BOTTOMLEFT;
+  //   } else if (Area->x > Width - MOUSE_GRAB_PADDING) {
+  //     return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+  //   } else {
+  //     return SDL_HITTEST_RESIZE_BOTTOM;
+  //   }
+  // } else if (Area->x < MOUSE_GRAB_PADDING) {
+  //   return SDL_HITTEST_RESIZE_LEFT;
+  // } else if (Area->x > Width - MOUSE_GRAB_PADDING) {
+  //   return SDL_HITTEST_RESIZE_RIGHT;
+  // } else if (Area->y < 70) {
+  //   return SDL_HITTEST_DRAGGABLE;
+  // }
+
+  // return SDL_HITTEST_DRAGGABLE;  // SDL_HITTEST_NORMAL <- Windows behaviour
+}
+
 Render::Render() {}
 
 Render::~Render() {}
@@ -213,16 +253,14 @@ int Render::Run() {
     return -1;
   }
 
-  // From 2.0.18: Enable native IME.
-#ifdef SDL_HINT_IME_SHOW_UI
-  SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
-#endif
-
   // Create main window with SDL_Renderer graphics context
-  SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI);
+  SDL_WindowFlags window_flags =
+      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
   main_window_ = SDL_CreateWindow(
       "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       main_window_width_default_, main_window_height_default_, window_flags);
+
+  SDL_SetWindowHitTest(main_window_, HitTestCallback, 0);
 
   main_renderer_ = SDL_CreateRenderer(
       main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
@@ -238,7 +276,7 @@ int Render::Run() {
                                       texture_width_, texture_height_);
 
   stream_render_rect_.x = 0;
-  stream_render_rect_.y = 0;
+  stream_render_rect_.y = title_bar_height_;
   stream_render_rect_.w = main_window_width_;
   stream_render_rect_.h = main_window_height_;
 
@@ -394,26 +432,30 @@ int Render::Run() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::PushStyleColor(ImGuiCol_WindowBg,
-                          ImVec4(1.0f, 1.0f, 1.0f, streaming_ ? 0 : 1.0f));
+    // ImGui::PushStyleColor(ImGuiCol_WindowBg,
+    //                       ImVec4(1.0f, 1.0f, 1.0f, streaming_ ? 0 : 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(
         ImVec2(main_window_width_,
-               streaming_ ? control_window_height_ : main_window_height_),
+               streaming_ ? title_bar_height_ : main_window_height_default_),
         ImGuiCond_Always);
     ImGui::Begin("Render", nullptr,
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
+                     ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PopStyleVar();
-    ImGui::PopStyleColor();
+    // ImGui::PopStyleColor();
+
+    TitleBar();
+
     if (streaming_ && is_client_mode_) {
       if (!resizable_) {
         resizable_ = !resizable_;
         SDL_SetWindowResizable(main_window_, SDL_TRUE);
       }
 
-      ControlWindow();
+      // ControlWindow();
     } else {
       if (resizable_) {
         resizable_ = !resizable_;
@@ -491,7 +533,7 @@ int Render::Run() {
                      &stream_render_rect_);
     }
 
-    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), main_renderer_);
     SDL_RenderPresent(main_renderer_);
 
     // frame_count_++;

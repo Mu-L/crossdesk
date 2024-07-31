@@ -18,7 +18,7 @@ if is_mode("debug") then
 end
 
 add_requires("spdlog 1.14.1", {system = false})
-add_requires("imgui 1.90.6", {configs = {sdl2 = true, sdl2_renderer = true}})
+add_requires("imgui v1.91.0", {configs = {sdl2 = true, sdl2_renderer = true}})
 add_requires("libyuv")
 
 if is_os("windows") then

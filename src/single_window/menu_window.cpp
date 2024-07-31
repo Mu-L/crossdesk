@@ -7,7 +7,7 @@
 int Render::MenuWindow() {
   ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(255, 255, 255, 1));
   static bool a, b, c, d, e;
-  ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+  ImGui::SetNextWindowPos(ImVec2(0, 0 + title_bar_height_), ImGuiCond_Always);
   ImGui::SetWindowFontScale(0.8f);
   ImGui::BeginChild(
       "MenuWindow", ImVec2(main_window_width_, menu_window_height_),

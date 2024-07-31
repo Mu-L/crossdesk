@@ -32,6 +32,7 @@ class Render {
 
  private:
   int CreateStreamRenderWindow();
+  int TitleBar();
   int MainWindow();
   int LocalWindow();
   int RemoteWindow();
@@ -61,7 +62,7 @@ class Render {
   static void OnConnectionStatusCb(ConnectionStatus status, void *user_data);
 
   static void NetStatusReport(TraversalMode mode, const unsigned short send,
-                             const unsigned short receive, void *user_ptr);
+                              const unsigned short receive, void *user_ptr);
 
  private:
   int ProcessMouseKeyEven(SDL_Event &ev);
@@ -123,10 +124,12 @@ class Render {
   bool is_client_mode_ = false;
 
  private:
+  int title_bar_width_ = 960;
+  int title_bar_height_ = 30;
   int screen_width_ = 1280;
   int screen_height_ = 720;
   int main_window_width_default_ = 960;
-  int main_window_height_default_ = 540;
+  int main_window_height_default_ = 570;
   int main_window_width_ = 960;
   int main_window_height_ = 540;
   int main_window_width_last_ = 960;
@@ -137,6 +140,8 @@ class Render {
   int stream_window_height_last_ = 720;
   int main_window_width_before_fullscreen_ = 1280;
   int main_window_height_before_fullscreen_ = 720;
+  int main_window_width_before_maximized_ = 960;
+  int main_window_height_before_maximized_ = 570;
   int menu_window_height_ = 30;
   int control_window_min_width_ = 40;
   int control_window_height_ = 40;
@@ -190,6 +195,7 @@ class Render {
   bool streaming_ = false;
   bool show_about_window_ = false;
   bool show_connection_status_window_ = false;
+  bool window_maximized_ = false;
 
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;
@@ -207,6 +213,7 @@ class Render {
   std::string signal_status_str_ = "";
   std::string connection_status_str_ = "";
   bool signal_connected_ = false;
+  bool p2p_mode_ = true;
 
  private:
   PeerPtr *peer_ = nullptr;
