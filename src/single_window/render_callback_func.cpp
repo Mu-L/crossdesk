@@ -1,5 +1,6 @@
 #include "device_controller.h"
 #include "localization.h"
+#include "rd_log.h"
 #include "render.h"
 
 // Refresh Event
@@ -230,7 +231,17 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
   }
 }
 
-void Render::NetStatusReport(TraversalMode mode, const unsigned short send,
-                             const unsigned short receive, void *user_ptr) {
-  printf("Net mode: [%d]\n", mode);
+void Render::NetStatusReport(int TransmissionId, TraversalMode mode,
+                             const unsigned short send,
+                             const unsigned short receive, void *user_data) {
+  Render *render = (Render *)user_data;
+  if (TransmissionId != 0) {
+    std::string client_id = std::to_string(TransmissionId);
+    strncpy(render->client_id_, client_id.c_str(), sizeof(client_id));
+    render->SaveSettingsIntoCacheFile();
+    LOG_INFO("Transmission id: [{}]", TransmissionId);
+  }
+  if (mode != TraversalMode::UnknownMode) {
+    LOG_INFO("Net mode: [{}]", int(mode));
+  }
 }

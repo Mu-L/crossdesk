@@ -60,8 +60,9 @@ class Render {
 
   static void OnConnectionStatusCb(ConnectionStatus status, void *user_data);
 
-  static void NetStatusReport(TraversalMode mode, const unsigned short send,
-                              const unsigned short receive, void *user_ptr);
+  static void NetStatusReport(int TransmissionId, TraversalMode mode,
+                              const unsigned short send,
+                              const unsigned short receive, void *user_data);
 
   static SDL_HitTestResult HitTestCallback(SDL_Window *window,
                                            const SDL_Point *area, void *data);
@@ -89,6 +90,7 @@ class Render {
 
  private:
   typedef struct {
+    char client_id[10];
     char password[7];
     int language;
     int video_quality;
@@ -118,7 +120,6 @@ class Render {
   char input_password_tmp_[7] = "";
   char input_password_[7] = "";
   std::string random_password_ = "";
-  std::string password_saved_ = "";
   std::string remote_password_ = "";
   std::string local_id_ = "";
   char remote_id_[20] = "";
@@ -251,6 +252,8 @@ class Render {
 #endif
 
  private:
+  char client_id_[10] = "";
+  std::string password_saved_ = "";
   int language_button_value_ = 0;
   int video_quality_button_value_ = 0;
   int video_encode_format_button_value_ = 0;

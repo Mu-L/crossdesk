@@ -73,6 +73,7 @@ int Render::SaveSettingsIntoCacheFile() {
   }
 
   fseek(cd_cache_file_, 0, SEEK_SET);
+  strncpy(cd_cache_.client_id, client_id_, sizeof(client_id_));
   strncpy(cd_cache_.password, password_saved_.c_str(),
           password_saved_.length());
   memcpy(&cd_cache_.language, &language_button_value_,
@@ -98,6 +99,8 @@ int Render::LoadSettingsIntoCacheFile() {
   fseek(cd_cache_file_, 0, SEEK_SET);
   fread(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
   fclose(cd_cache_file_);
+
+  strncpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
   password_saved_ = cd_cache_.password;
   language_button_value_ = cd_cache_.language;
   video_quality_button_value_ = cd_cache_.video_quality;
@@ -241,10 +244,9 @@ int Render::CreateConnectionPeer() {
 
   peer_ = CreatePeer(&params_);
   if (peer_) {
-    LOG_INFO("Create peer instance successful");
-    local_id_ = mac_addr_str_;
-    Init(peer_, local_id_.c_str());
-    LOG_INFO("Peer init finish");
+    LOG_INFO("[{}] Create peer instance successful", client_id_);
+    Init(peer_, client_id_);
+    LOG_INFO("[{}] Peer init finish", client_id_);
   } else {
     LOG_INFO("Create peer instance failed");
   }
@@ -396,10 +398,9 @@ int Render::Run() {
   while (!exit_) {
     if (SignalStatus::SignalConnected == signal_status_ &&
         !is_create_connection_) {
-      is_create_connection_ = CreateConnection(peer_, mac_addr_str_.c_str(),
-                                               password_saved_.c_str())
-                                  ? false
-                                  : true;
+      is_create_connection_ =
+          CreateConnection(peer_, client_id_, password_saved_.c_str()) ? false
+                                                                       : true;
       LOG_INFO("Connected with signal server, create p2p connection");
     }
 

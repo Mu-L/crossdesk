@@ -61,8 +61,7 @@ int Render::RemoteWindow() {
             peer_reserved_ = CreatePeer(&params_);
             if (peer_reserved_) {
               LOG_INFO("Create peer[reserved] instance successful");
-              std::string local_id = "C-" + mac_addr_str_;
-              Init(peer_reserved_, local_id.c_str());
+              Init(peer_reserved_, "");
               LOG_INFO("Peer[reserved] init finish");
             } else {
               LOG_INFO("Create peer[reserved] instance failed");

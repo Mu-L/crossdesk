@@ -47,9 +47,17 @@ int Render::LocalWindow() {
       ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+
+      std::string client_id_show = "";
+      for (int i = 0; i < sizeof(client_id_); i++) {
+        client_id_show += client_id_[i];
+        if (i == 2 || i == 5) {
+          client_id_show += " ";
+        }
+      }
+
       ImGui::InputText(
-          "##local_id", (char *)mac_addr_str_.c_str(),
-          mac_addr_str_.length() + 1,
+          "##local_id", (char *)client_id_show.c_str(), sizeof(client_id_show),
           ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_ReadOnly);
       ImGui::PopStyleVar();
 
@@ -61,7 +69,7 @@ int Render::LocalWindow() {
 
       if (ImGui::Button(ICON_FA_COPY, ImVec2(35, 38))) {
         local_id_copied_ = true;
-        ImGui::SetClipboardText(mac_addr_str_.c_str());
+        ImGui::SetClipboardText(client_id_);
         copy_start_time_ = ImGui::GetTime();
       }
 
