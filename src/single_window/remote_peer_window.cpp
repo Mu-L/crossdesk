@@ -57,11 +57,13 @@ int Render::RemoteWindow() {
       int ret = -1;
       if (signal_connected_) {
         if (!connection_established_) {
-          if (remote_id_ == local_id_ && !peer_reserved_) {
+          if (0 == strcmp(remote_id_, client_id_) && !peer_reserved_) {
             peer_reserved_ = CreatePeer(&params_);
             if (peer_reserved_) {
               LOG_INFO("Create peer[reserved] instance successful");
-              Init(peer_reserved_, "");
+              std::string client_id = "C-";
+              client_id += client_id_;
+              Init(peer_reserved_, client_id.c_str());
               LOG_INFO("Peer[reserved] init finish");
             } else {
               LOG_INFO("Create peer[reserved] instance failed");
