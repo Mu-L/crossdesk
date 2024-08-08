@@ -46,12 +46,14 @@ int Render::RemoteWindow() {
     ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
     ImGui::SetWindowFontScale(1.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
-    ImGui::InputText(
+    bool enter_pressed = ImGui::InputText(
         "##remote_id_", remote_id_, IM_ARRAYSIZE(remote_id_),
-        ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CharsNoBlank);
+        ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CharsNoBlank |
+            ImGuiInputTextFlags_EnterReturnsTrue);
     ImGui::PopStyleVar();
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 38)) || rejoin_) {
+    if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 38)) ||
+        enter_pressed || rejoin_) {
       connect_button_pressed_ = true;
       connection_status_ = ConnectionStatus::Connecting;
       int ret = -1;

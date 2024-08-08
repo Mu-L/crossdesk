@@ -81,14 +81,17 @@ int Render::ConnectionStatusWindow() {
         ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH / 2);
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
-        ImGui::InputText("##password", (char *)remote_password_.c_str(), 7,
-                         ImGuiInputTextFlags_CharsNoBlank);
+        bool enter_pressed =
+            ImGui::InputText("##password", (char *)remote_password_.c_str(), 7,
+                             ImGuiInputTextFlags_CharsNoBlank |
+                                 ImGuiInputTextFlags_EnterReturnsTrue);
         ImGui::PopStyleVar();
 
         ImGui::SetCursorPosX(window_width * 0.315f);
         ImGui::SetCursorPosY(window_height * 0.75f);
         // OK
-        if (ImGui::Button(
+        if (enter_pressed ||
+            ImGui::Button(
                 localization::ok[localization_language_index_].c_str())) {
           show_connection_status_window_ = true;
           password_validating_ = true;
