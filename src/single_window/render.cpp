@@ -88,15 +88,36 @@ int Render::SaveSettingsIntoCacheFile() {
   fwrite(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
   fclose(cd_cache_file_);
 
+  config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
+  config_center_.SetVideoQuality(
+      (ConfigCenter::VIDEO_QUALITY)video_quality_button_value_);
+  config_center_.SetVideoEncodeFormat(
+      (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
+  config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
+
   LOG_INFO("Save settings into cache file success");
 
   return 0;
 }
 
-int Render::LoadSettingsIntoCacheFile() {
+int Render::LoadSettingsFromCacheFile() {
   std::lock_guard<std::mutex> lock(cd_cache_mutex_);
   cd_cache_file_ = fopen("cache.cd", "r+");
   if (!cd_cache_file_) {
+    LOG_INFO("Init cache file by using default settings");
+    password_saved_ = "";
+    language_button_value_ = 0;
+    video_quality_button_value_ = 0;
+    video_encode_format_button_value_ = 1;
+    enable_hardware_video_codec_ = false;
+
+    config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
+    config_center_.SetVideoQuality(
+        (ConfigCenter::VIDEO_QUALITY)video_quality_button_value_);
+    config_center_.SetVideoEncodeFormat(
+        (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
+    config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
+
     return -1;
   }
 
@@ -130,12 +151,12 @@ int Render::StartScreenCapture() {
   rect.top = 0;
   rect.right = screen_width_;
   rect.bottom = screen_height_;
-  last_frame_time_ = std::chrono::high_resolution_clock::now();
+  last_frame_time_ = std::chrono::steady_clock::now();
 
   int screen_capturer_init_ret = screen_capturer_->Init(
       rect, 60,
       [this](unsigned char *data, int size, int width, int height) -> void {
-        auto now_time = std::chrono::high_resolution_clock::now();
+        auto now_time = std::chrono::steady_clock::now();
         std::chrono::duration<double> duration = now_time - last_frame_time_;
         auto tc = duration.count() * 1000;
 
@@ -261,7 +282,7 @@ int Render::CreateConnectionPeer() {
 }
 
 int Render::Run() {
-  LoadSettingsIntoCacheFile();
+  LoadSettingsFromCacheFile();
 
   localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
   localization_language_index_ = language_button_value_;

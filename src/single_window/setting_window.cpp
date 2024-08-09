@@ -199,7 +199,7 @@ int Render::SettingWindow() {
         settings_window_pos_reset_ = true;
 
         // Recreate peer instance
-        LoadSettingsIntoCacheFile();
+        LoadSettingsFromCacheFile();
 
         // Recreate peer instance
         {

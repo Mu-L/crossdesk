@@ -75,7 +75,7 @@ class Render {
 
  private:
   int SaveSettingsIntoCacheFile();
-  int LoadSettingsIntoCacheFile();
+  int LoadSettingsFromCacheFile();
 
   int StartScreenCapture();
   int StopScreenCapture();

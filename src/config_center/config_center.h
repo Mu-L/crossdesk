@@ -33,7 +33,7 @@ class ConfigCenter {
   // Default value should be same with parameters in localization.h
   LANGUAGE language_ = LANGUAGE::CHINESE;
   VIDEO_QUALITY video_quality_ = VIDEO_QUALITY::MEDIUM;
-  VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::H264;
+  VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::AV1;
   bool hardware_video_codec_ = false;
 };
 
