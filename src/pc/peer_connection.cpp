@@ -233,56 +233,39 @@ int PeerConnection::CreateVideoCodec(bool hardware_acceleration) {
 
   if (av1_encoding_) {
     video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, true);
-    LOG_INFO("Only support software encoding for AV1");
+    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, true);
+    LOG_WARN("Only support software codec for AV1");
   } else {
-    video_encoder_ =
-        VideoEncoderFactory::CreateVideoEncoder(hardware_acceleration_, false);
-    if (hardware_acceleration_ && !video_encoder_) {
-      LOG_WARN(
-          "Hardware accelerated encoder not available, use default software "
-          "encoder");
-      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
-      if (!video_encoder_) {
-        LOG_ERROR(
-            "Hardware accelerated encoder and software encoder both not "
-            "available");
-        return -1;
+    if (hardware_acceleration_) {
+      if (0 == InitNvCodecApi()) {
+        video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(true, false);
+        video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(true, false);
+      } else {
+        LOG_WARN(
+            "Hardware accelerated codec not available, use default software "
+            "codec");
+        video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+        video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
       }
-    }
-  }
-  if (0 != video_encoder_->Init()) {
-    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
-    if (!video_encoder_ || 0 != video_encoder_->Init()) {
-      LOG_ERROR("Encoder init failed");
-      return -1;
     }
   }
 
-  if (av1_encoding_) {
-    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, true);
-    LOG_INFO("Only support software decoding for AV1");
-  } else {
-    video_decoder_ =
-        VideoDecoderFactory::CreateVideoDecoder(hardware_acceleration_, false);
-    if (hardware_acceleration_ && !video_decoder_) {
-      LOG_WARN(
-          "Hardware accelerated decoder not available, use default software "
-          "decoder");
-      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
-      if (!video_decoder_) {
-        LOG_ERROR(
-            "Hardware accelerated decoder and software decoder both not "
-            "available");
-        return -1;
-      }
-    }
+  if (!video_encoder_) {
+    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+    LOG_ERROR("Create encoder failed, try to use software H.264 encoder");
   }
-  if (0 != video_decoder_->Init()) {
+  if (!video_encoder_ || 0 != video_encoder_->Init()) {
+    LOG_ERROR("Encoder init failed");
+    return -1;
+  }
+
+  if (!video_decoder_) {
     video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
-    if (!video_decoder_ || video_decoder_->Init()) {
-      LOG_ERROR("Decoder init failed");
-      return -1;
-    }
+    LOG_ERROR("Create decoder failed, try to use software H.264 decoder");
+  }
+  if (!video_decoder_ || video_decoder_->Init()) {
+    LOG_ERROR("Decoder init failed");
+    return -1;
   }
 
   video_codec_inited_ = true;
@@ -622,6 +605,10 @@ int PeerConnection::RequestTransmissionMemberList(
 }
 
 int PeerConnection::Destroy() {
+  if (ws_transport_) {
+    ws_transport_->Close(0, "destroy");
+  }
+
   ice_transmission_list_.clear();
   if (nv12_data_) {
     delete nv12_data_;

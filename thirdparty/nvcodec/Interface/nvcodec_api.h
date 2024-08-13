@@ -118,21 +118,21 @@ static int InitNvCodecApi() {
   HMODULE nvcuda_dll = LoadLibrary(TEXT("nvcuda.dll"));
   if (nvcuda_dll == NULL) {
     std::cerr << "Unable to load nvcuda.dll!" << std::endl;
-    return 1;
+    return -1;
   }
 
   cuInit_ld = (TcuInit)GetProcAddress(nvcuda_dll, "cuInit");
   if (cuInit_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuDeviceGet_ld = (TcuDeviceGet)GetProcAddress(nvcuda_dll, "cuDeviceGet");
   if (cuDeviceGet_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuDeviceGetCount_ld =
@@ -140,14 +140,14 @@ static int InitNvCodecApi() {
   if (cuDeviceGetCount_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuCtxCreate_ld = (TcuCtxCreate)GetProcAddress(nvcuda_dll, "cuCtxCreate");
   if (cuCtxCreate_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuGetErrorName_ld =
@@ -155,7 +155,7 @@ static int InitNvCodecApi() {
   if (cuGetErrorName_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuCtxPushCurrent_ld =
@@ -163,7 +163,7 @@ static int InitNvCodecApi() {
   if (cuCtxPushCurrent_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuCtxPopCurrent_ld =
@@ -171,13 +171,13 @@ static int InitNvCodecApi() {
   if (cuCtxPopCurrent_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
   cuMemAlloc_ld = (TcuMemAlloc)GetProcAddress(nvcuda_dll, "cuMemAlloc");
   if (cuMemAlloc_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuMemAllocPitch_ld =
@@ -185,14 +185,14 @@ static int InitNvCodecApi() {
   if (cuMemAllocPitch_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuMemFree_ld = (TcuMemFree)GetProcAddress(nvcuda_dll, "cuMemFree");
   if (cuMemFree_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuMemcpy2DAsync_ld =
@@ -200,7 +200,7 @@ static int InitNvCodecApi() {
   if (cuMemcpy2DAsync_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuStreamSynchronize_ld =
@@ -208,14 +208,14 @@ static int InitNvCodecApi() {
   if (cuStreamSynchronize_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuMemcpy2D_ld = (TcuMemcpy2D)GetProcAddress(nvcuda_dll, "cuMemcpy2D");
   if (cuMemcpy2D_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuMemcpy2DUnaligned_ld =
@@ -223,14 +223,14 @@ static int InitNvCodecApi() {
   if (cuMemcpy2DUnaligned_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   //
   HMODULE nvcuvid_dll = LoadLibrary(TEXT("nvcuvid.dll"));
   if (nvcuvid_dll == NULL) {
     std::cerr << "Unable to load nvcuvid.dll!" << std::endl;
-    return 1;
+    return -1;
   }
 
   cuvidCtxLockCreate_ld =
@@ -238,7 +238,7 @@ static int InitNvCodecApi() {
   if (cuvidCtxLockCreate_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidGetDecoderCaps_ld =
@@ -246,7 +246,7 @@ static int InitNvCodecApi() {
   if (cuvidGetDecoderCaps_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidCreateDecoder_ld =
@@ -254,7 +254,7 @@ static int InitNvCodecApi() {
   if (cuvidCreateDecoder_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidDestroyDecoder_ld =
@@ -262,7 +262,7 @@ static int InitNvCodecApi() {
   if (cuvidDestroyDecoder_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidDecodePicture_ld =
@@ -270,7 +270,7 @@ static int InitNvCodecApi() {
   if (cuvidDecodePicture_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidGetDecodeStatus_ld =
@@ -278,7 +278,7 @@ static int InitNvCodecApi() {
   if (cuvidGetDecodeStatus_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidReconfigureDecoder_ld = (TcuvidReconfigureDecoder)GetProcAddress(
@@ -286,7 +286,7 @@ static int InitNvCodecApi() {
   if (cuvidReconfigureDecoder_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidMapVideoFrame64_ld =
@@ -294,7 +294,7 @@ static int InitNvCodecApi() {
   if (cuvidMapVideoFrame64_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidUnmapVideoFrame64_ld = (TcuvidUnmapVideoFrame64)GetProcAddress(
@@ -302,7 +302,7 @@ static int InitNvCodecApi() {
   if (cuvidUnmapVideoFrame64_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidCtxLockDestroy_ld =
@@ -310,7 +310,7 @@ static int InitNvCodecApi() {
   if (cuvidCtxLockDestroy_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidCreateVideoParser_ld = (TcuvidCreateVideoParser)GetProcAddress(
@@ -318,7 +318,7 @@ static int InitNvCodecApi() {
   if (cuvidCreateVideoParser_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidParseVideoData_ld =
@@ -326,7 +326,7 @@ static int InitNvCodecApi() {
   if (cuvidParseVideoData_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   cuvidDestroyVideoParser_ld = (TcuvidDestroyVideoParser)GetProcAddress(
@@ -334,14 +334,14 @@ static int InitNvCodecApi() {
   if (cuvidDestroyVideoParser_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   //
   HMODULE nvEncodeAPI64_dll = LoadLibrary(TEXT("nvEncodeAPI64.dll"));
   if (nvEncodeAPI64_dll == NULL) {
     std::cerr << "Unable to load nvEncodeAPI64.dll!" << std::endl;
-    return 1;
+    return -1;
   }
 
   NvEncodeAPICreateInstance_ld = (TNvEncodeAPICreateInstance)GetProcAddress(
@@ -349,7 +349,7 @@ static int InitNvCodecApi() {
   if (NvEncodeAPICreateInstance_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   NvEncodeAPIGetMaxSupportedVersion_ld =
@@ -358,7 +358,7 @@ static int InitNvCodecApi() {
   if (NvEncodeAPIGetMaxSupportedVersion_ld == NULL) {
     std::cerr << "Unable to find function!" << std::endl;
     FreeLibrary(nvcuda_dll);
-    return 1;
+    return -1;
   }
 
   return 0;
