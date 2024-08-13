@@ -127,7 +127,7 @@ int Render::LoadSettingsFromCacheFile() {
   fread(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
   fclose(cd_cache_file_);
 
-  memset(&cd_cache_.client_id, 0, sizeof(cd_cache_.client_id));
+  memset(&client_id_, 0, sizeof(client_id_));
   strncpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
   password_saved_ = cd_cache_.password;
   language_button_value_ = cd_cache_.language;
