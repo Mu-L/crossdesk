@@ -39,11 +39,12 @@ PeerPtr *CreatePeer(const Params *params) {
   return peer_ptr;
 }
 
-void DestroyPeer(PeerPtr *peer_ptr) {
-  peer_ptr->peer_connection->Destroy();
-  delete peer_ptr;
-  peer_ptr = nullptr;
-  LOG_INFO("Destroy peer");
+void DestroyPeer(PeerPtr **peer_ptr) {
+  (*peer_ptr)->peer_connection->Destroy();
+  delete (*peer_ptr)->peer_connection;
+  (*peer_ptr)->peer_connection = nullptr;
+  delete *peer_ptr;
+  *peer_ptr = nullptr;
 }
 
 int Init(PeerPtr *peer_ptr, const char *user_id) {

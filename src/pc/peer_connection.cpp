@@ -25,6 +25,10 @@ PeerConnection::~PeerConnection() {
   video_codec_inited_ = false;
   audio_codec_inited_ = false;
   load_nvcodec_dll_success = false;
+
+  user_data_ = nullptr;
+
+  ice_transmission_list_.clear();
 }
 
 int PeerConnection::Init(PeerConnectionParams params,
@@ -218,9 +222,12 @@ int PeerConnection::CreateVideoCodec(bool hardware_acceleration) {
   hardware_acceleration_ = hardware_acceleration;
 
   if (av1_encoding_) {
+    if (hardware_acceleration_) {
+      hardware_acceleration_ = false;
+      LOG_WARN("Only support software codec for AV1");
+    }
     video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, true);
     video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, true);
-    LOG_WARN("Only support software codec for AV1");
   } else {
 #ifdef __APPLE__
     if (hardware_acceleration_) {
@@ -244,6 +251,9 @@ int PeerConnection::CreateVideoCodec(bool hardware_acceleration) {
         video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
         video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
       }
+    } else {
+      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
     }
 #endif
   }
@@ -604,7 +614,8 @@ int PeerConnection::RequestTransmissionMemberList(
 
 int PeerConnection::Destroy() {
   if (ws_transport_) {
-    ws_transport_->Close(0, "destroy");
+    LOG_INFO("Close websocket")
+    ws_transport_->Close();
   }
 
   ice_transmission_list_.clear();
