@@ -145,11 +145,15 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
   RemoteAction remote_action;
   memcpy(&remote_action, data, sizeof(remote_action));
 
-#if MOUSE_CONTROL
-  if (render->mouse_controller_) {
+  if (ControlType::mouse == remote_action.type && render->mouse_controller_) {
     render->mouse_controller_->SendCommand(remote_action);
+  } else if (ControlType::audio_capture == remote_action.type) {
+    if (remote_action.a) {
+      render->StartSpeakerCapture();
+    } else {
+      render->StopSpeakerCapture();
+    }
   }
-#endif
 }
 
 void Render::OnSignalStatusCb(SignalStatus status, void *user_data) {

@@ -152,79 +152,16 @@ int Render::LoadSettingsFromCacheFile() {
   return 0;
 }
 
-int Render::StartScreenCapture() {
-  screen_capturer_ = (ScreenCapturer *)screen_capturer_factory_->Create();
-  ScreenCapturer::RECORD_DESKTOP_RECT rect;
-  rect.left = 0;
-  rect.top = 0;
-  rect.right = screen_width_;
-  rect.bottom = screen_height_;
-  last_frame_time_ = std::chrono::steady_clock::now();
-
-  int screen_capturer_init_ret = screen_capturer_->Init(
-      rect, 60,
-      [this](unsigned char *data, int size, int width, int height) -> void {
-        auto now_time = std::chrono::steady_clock::now();
-        std::chrono::duration<double> duration = now_time - last_frame_time_;
-        auto tc = duration.count() * 1000;
-
-        if (tc >= 0 && connection_established_) {
-          SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
-                   NV12_BUFFER_SIZE);
-          last_frame_time_ = now_time;
-        }
-      });
-
-  if (0 == screen_capturer_init_ret) {
-    screen_capturer_->Start();
-  } else {
-    screen_capturer_->Destroy();
-    delete screen_capturer_;
-    screen_capturer_ = nullptr;
-  }
-
-  return 0;
-}
-
-int Render::StopScreenCapture() {
-  if (screen_capturer_) {
-    LOG_INFO("Stop screen capturer")
-    screen_capturer_->Stop();
-    screen_capturer_->Destroy();
-    delete screen_capturer_;
-    screen_capturer_ = nullptr;
-  }
-
-  return 0;
-}
-
 int Render::StartSpeakerCapture() {
-  speaker_capturer_ = (SpeakerCapturer *)speaker_capturer_factory_->Create();
-
-  int speaker_capturer_init_ret =
-      speaker_capturer_->Init([this](unsigned char *data, size_t size) -> void {
-        if (connection_established_) {
-          SendData(peer_, DATA_TYPE::AUDIO, (const char *)data, size);
-        }
-      });
-
-  if (0 == speaker_capturer_init_ret) {
+  if (speaker_capturer_) {
     speaker_capturer_->Start();
-  } else {
-    speaker_capturer_->Destroy();
-    delete speaker_capturer_;
-    speaker_capturer_ = nullptr;
   }
-
   return 0;
 }
 
 int Render::StopSpeakerCapture() {
   if (speaker_capturer_) {
-    LOG_INFO("Destroy speaker capturer")
-    speaker_capturer_->Destroy();
-    delete speaker_capturer_;
-    speaker_capturer_ = nullptr;
+    speaker_capturer_->Stop();
   }
 
   return 0;
@@ -419,22 +356,62 @@ int Render::Run() {
   {
     nv12_buffer_ = new char[NV12_BUFFER_SIZE];
 
-    // Screen capture
+    // Screen capture init
     screen_capturer_factory_ = new ScreenCapturerFactory();
+    screen_capturer_ = (ScreenCapturer *)screen_capturer_factory_->Create();
+    ScreenCapturer::RECORD_DESKTOP_RECT rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = screen_width_;
+    rect.bottom = screen_height_;
+    last_frame_time_ = std::chrono::steady_clock::now();
 
-    // Speaker capture
+    int screen_capturer_init_ret = screen_capturer_->Init(
+        rect, 60,
+        [this](unsigned char *data, int size, int width, int height) -> void {
+          auto now_time = std::chrono::steady_clock::now();
+          std::chrono::duration<double> duration = now_time - last_frame_time_;
+          auto tc = duration.count() * 1000;
+
+          if (tc >= 0 && connection_established_) {
+            SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
+                     NV12_BUFFER_SIZE);
+            last_frame_time_ = now_time;
+          }
+        });
+
+    if (0 == screen_capturer_init_ret) {
+      screen_capturer_->Start();
+    } else {
+      screen_capturer_->Destroy();
+      delete screen_capturer_;
+      screen_capturer_ = nullptr;
+    }
+
+    // Speaker capture init
     speaker_capturer_factory_ = new SpeakerCapturerFactory();
+    speaker_capturer_ = (SpeakerCapturer *)speaker_capturer_factory_->Create();
+    int speaker_capturer_init_ret = speaker_capturer_->Init(
+        [this](unsigned char *data, size_t size) -> void {
+          if (connection_established_) {
+            SendData(peer_, DATA_TYPE::AUDIO, (const char *)data, size);
+          }
+        });
+
+    if (0 != speaker_capturer_init_ret) {
+      speaker_capturer_->Destroy();
+      delete speaker_capturer_;
+      speaker_capturer_ = nullptr;
+    }
 
     // Mouse control
     device_controller_factory_ = new DeviceControllerFactory();
   }
 
-  StartSpeakerCapture();
-
   // Main loop
   while (!exit_) {
     if (SignalStatus::SignalConnected == signal_status_ &&
-        !is_create_connection_) {
+        !is_create_connection_ && password_inited_) {
       LOG_INFO("Connected with signal server, create p2p connection");
       is_create_connection_ =
           CreateConnection(peer_, client_id_, password_saved_.c_str()) ? false
@@ -463,13 +440,13 @@ int Render::Run() {
       localization_language_index_last_ = localization_language_index_;
     }
 
-    if (start_screen_capture_ && !screen_capture_is_started_) {
-      StartScreenCapture();
-      screen_capture_is_started_ = true;
-    } else if (!start_screen_capture_ && screen_capture_is_started_) {
-      StopScreenCapture();
-      screen_capture_is_started_ = false;
-    }
+    // if (start_screen_capture_ && !screen_capture_is_started_) {
+    //   StartScreenCapture();
+    //   screen_capture_is_started_ = true;
+    // } else if (!start_screen_capture_ && screen_capture_is_started_) {
+    //   StopScreenCapture();
+    //   screen_capture_is_started_ = false;
+    // }
 
     if (start_mouse_control_ && !mouse_control_is_started_) {
       StartMouseControl();
@@ -621,6 +598,39 @@ int Render::Run() {
   }
 
   // Cleanup
+  if (screen_capturer_) {
+    screen_capturer_->Destroy();
+    delete screen_capturer_;
+    screen_capturer_ = nullptr;
+  }
+
+  if (speaker_capturer_) {
+    speaker_capturer_->Destroy();
+    delete speaker_capturer_;
+    speaker_capturer_ = nullptr;
+  }
+
+  if (mouse_controller_) {
+    mouse_controller_->Destroy();
+    delete mouse_controller_;
+    mouse_controller_ = nullptr;
+  }
+
+  if (screen_capturer_factory_) {
+    delete screen_capturer_factory_;
+    screen_capturer_factory_ = nullptr;
+  }
+
+  if (speaker_capturer_factory_) {
+    delete speaker_capturer_factory_;
+    speaker_capturer_factory_ = nullptr;
+  }
+
+  if (device_controller_factory_) {
+    delete device_controller_factory_;
+    device_controller_factory_ = nullptr;
+  }
+
   if (is_create_connection_) {
     LOG_INFO("[{}] Leave connection [{}]", client_id_, client_id_);
     LeaveConnection(peer_, client_id_);

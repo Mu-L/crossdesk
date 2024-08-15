@@ -48,6 +48,12 @@ int Render::ControlBar() {
             localization::audio_capture[localization_language_index_];
       }
       audio_capture_button_pressed_ = !audio_capture_button_pressed_;
+
+      RemoteAction remote_action;
+      remote_action.type = ControlType::audio_capture;
+      remote_action.a = audio_capture_button_pressed_;
+      SendData(peer_, DATA_TYPE::DATA, (const char *)&remote_action,
+               sizeof(remote_action));
     }
 
     ImGui::SameLine();

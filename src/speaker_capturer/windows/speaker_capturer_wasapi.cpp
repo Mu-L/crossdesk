@@ -88,10 +88,13 @@ int SpeakerCapturerWasapi::Start() {
 }
 
 int SpeakerCapturerWasapi::Stop() {
-  ma_device_uninit(&device_);
+  ma_device_stop(&device_);
   return 0;
 }
 
-int SpeakerCapturerWasapi::Destroy() { return 0; }
+int SpeakerCapturerWasapi::Destroy() {
+  ma_device_uninit(&device_);
+  return 0;
+}
 
 int SpeakerCapturerWasapi::Pause() { return 0; }

@@ -9,7 +9,7 @@
 
 #include <stdio.h>
 
-typedef enum { mouse = 0, keyboard } ControlType;
+typedef enum { mouse = 0, keyboard, audio_capture } ControlType;
 typedef enum { move = 0, left_down, left_up, right_down, right_up } MouseFlag;
 typedef enum { key_down = 0, key_up } KeyFlag;
 typedef struct {
@@ -28,6 +28,7 @@ typedef struct {
   union {
     Mouse m;
     Key k;
+    bool a;
   };
 } RemoteAction;
 
