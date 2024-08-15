@@ -19,7 +19,7 @@ end
 add_requires("spdlog 1.14.1", {system = false})
 add_requires("imgui v1.91.0", {configs = {sdl2 = true, sdl2_renderer = true}})
 add_requires("libyuv")
-add_requires("miniaudio")
+add_requires("miniaudio 0.11.21")
 
 if is_os("windows") then
     add_links("Shell32", "windowsapp", "dwmapi", "User32", "kernel32",

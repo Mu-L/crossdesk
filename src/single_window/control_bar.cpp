@@ -11,7 +11,7 @@ int Render::ControlBar() {
 
   if (control_bar_expand_) {
     ImGui::SetCursorPosX(is_control_bar_in_left_ ? (control_window_width_ + 5)
-                                                 : 87);
+                                                 : 53);
     // Mouse control
     std::string mouse = ICON_FA_COMPUTER_MOUSE;
     if (ImGui::Button(mouse.c_str(), ImVec2(25, 25))) {
@@ -28,6 +28,26 @@ int Render::ControlBar() {
             localization::control_mouse[localization_language_index_];
       }
       mouse_control_button_pressed_ = !mouse_control_button_pressed_;
+    }
+
+    ImGui::SameLine();
+    // Audio capture
+    std::string audio = audio_capture_button_pressed_ ? ICON_FA_VOLUME_HIGH
+                                                      : ICON_FA_VOLUME_XMARK;
+    if (ImGui::Button(audio.c_str(), ImVec2(25, 25))) {
+      if (mouse_control_button_label_ ==
+              localization::audio_capture[localization_language_index_] &&
+          connection_established_) {
+        audio_capture_button_pressed_ = true;
+        audio_capture_ = true;
+        audio_capture_button_label_ =
+            localization::mute[localization_language_index_];
+      } else {
+        control_mouse_ = false;
+        audio_capture_button_label_ =
+            localization::audio_capture[localization_language_index_];
+      }
+      audio_capture_button_pressed_ = !audio_capture_button_pressed_;
     }
 
     ImGui::SameLine();
