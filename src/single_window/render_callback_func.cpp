@@ -21,7 +21,7 @@ int Render::ProcessMouseKeyEven(SDL_Event &ev) {
 
   RemoteAction remote_action;
   remote_action.m.x = (size_t)(ev.button.x * ratio);
-  remote_action.m.y = (size_t)(ev.button.y * ratio);
+  remote_action.m.y = (size_t)((ev.button.y - title_bar_height_) * ratio);
 
   if (SDL_KEYDOWN == ev.type)  // SDL_KEYUP
   {
