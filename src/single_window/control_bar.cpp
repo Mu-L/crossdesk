@@ -13,8 +13,11 @@ int Render::ControlBar() {
     ImGui::SetCursorPosX(is_control_bar_in_left_ ? (control_window_width_ + 5)
                                                  : 53);
     // Mouse control
-    std::string mouse =
-        mouse_control_button_pressed_ ? ICON_FA_HAND_BACK_FIST : ICON_FA_HAND;
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    float disable_mouse_x = ImGui::GetCursorScreenPos().x + 4;
+    float disable_mouse_y = ImGui::GetCursorScreenPos().y + 4.0f;
+    std::string mouse = mouse_control_button_pressed_ ? ICON_FA_COMPUTER_MOUSE
+                                                      : ICON_FA_COMPUTER_MOUSE;
     if (ImGui::Button(mouse.c_str(), ImVec2(25, 25))) {
       if (connection_established_) {
         control_mouse_ = true;
@@ -27,10 +30,26 @@ int Render::ControlBar() {
               ? localization::release_mouse[localization_language_index_]
               : localization::control_mouse[localization_language_index_];
     }
+    if (!mouse_control_button_pressed_) {
+      draw_list->AddLine(
+          ImVec2(disable_mouse_x, disable_mouse_y),
+          ImVec2(disable_mouse_x + 16.0f, disable_mouse_y + 14.2f),
+          IM_COL32(0, 0, 0, 255), 2.0f);
+      draw_list->AddLine(
+          ImVec2(disable_mouse_x - 1.2f, disable_mouse_y + 1.2f),
+          ImVec2(disable_mouse_x + 15.3f, disable_mouse_y + 15.4f),
+          ImGui::IsItemHovered() ? IM_COL32(66, 150, 250, 255)
+                                 : IM_COL32(179, 213, 253, 255),
+          2.0f);
+    }
 
     ImGui::SameLine();
     // Audio capture
-    std::string audio = audio_capture_button_pressed_ ? ICON_FA_VOLUME_XMARK
+    float disable_audio_x = ImGui::GetCursorScreenPos().x + 4;
+    float disable_audio_y = ImGui::GetCursorScreenPos().y + 4.0f;
+    // std::string audio = audio_capture_button_pressed_ ? ICON_FA_VOLUME_HIGH
+    //                                                   : ICON_FA_VOLUME_XMARK;
+    std::string audio = audio_capture_button_pressed_ ? ICON_FA_VOLUME_HIGH
                                                       : ICON_FA_VOLUME_HIGH;
     if (ImGui::Button(audio.c_str(), ImVec2(25, 25))) {
       if (connection_established_) {
@@ -47,8 +66,20 @@ int Render::ControlBar() {
       RemoteAction remote_action;
       remote_action.type = ControlType::audio_capture;
       remote_action.a = audio_capture_button_pressed_;
-      SendData(peer_, DATA_TYPE::DATA, (const char *)&remote_action,
+      SendData(peer_, DATA_TYPE::DATA, (const char*)&remote_action,
                sizeof(remote_action));
+    }
+    if (!audio_capture_button_pressed_) {
+      draw_list->AddLine(
+          ImVec2(disable_audio_x, disable_audio_y),
+          ImVec2(disable_audio_x + 16.0f, disable_audio_y + 14.2f),
+          IM_COL32(0, 0, 0, 255), 2.0f);
+      draw_list->AddLine(
+          ImVec2(disable_audio_x - 1.2f, disable_audio_y + 1.2f),
+          ImVec2(disable_audio_x + 15.3f, disable_audio_y + 15.4f),
+          ImGui::IsItemHovered() ? IM_COL32(66, 150, 250, 255)
+                                 : IM_COL32(179, 213, 253, 255),
+          2.0f);
     }
 
     ImGui::SameLine();
