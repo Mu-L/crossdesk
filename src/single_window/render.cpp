@@ -328,7 +328,7 @@ int Render::Run() {
   stream_render_rect_.x = 0;
   stream_render_rect_.y = title_bar_height_;
   stream_render_rect_.w = main_window_width_;
-  stream_render_rect_.h = main_window_height_;
+  stream_render_rect_.h = main_window_height_ - title_bar_height_;
 
   SDL_DisplayMode DM;
   SDL_GetCurrentDisplayMode(0, &DM);
@@ -491,7 +491,6 @@ int Render::Run() {
     ImGui::PushStyleColor(
         ImGuiCol_WindowBg,
         ImVec4(1.0f, 1.0f, 1.0f, fullscreen_button_pressed_ ? 0 : 1.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(
         ImVec2(main_window_width_,
@@ -502,7 +501,6 @@ int Render::Run() {
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
                      ImGuiWindowFlags_NoBringToFrontOnFocus);
-    ImGui::PopStyleVar();
     ImGui::PopStyleColor();
 
     if (!fullscreen_button_pressed_) {

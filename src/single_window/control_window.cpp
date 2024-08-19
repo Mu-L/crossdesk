@@ -121,5 +121,19 @@ int Render::ControlWindow() {
   ImGui::PopStyleVar(4);
   ImGui::PopStyleColor();
 
+  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(
+      ImVec2(main_window_width_, main_window_height_ - title_bar_height_),
+      ImGuiCond_Always);
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+  ImGui::PushStyleColor(ImGuiCol_Border,
+                        ImVec4(178 / 255.0f, 178 / 255.0f, 178 / 255.0f, 1.0f));
+  ImGui::Begin("VideoBg", nullptr,
+               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
+                   ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PopStyleColor(2);
+  ImGui::End();
+
   return 0;
 }

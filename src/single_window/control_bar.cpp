@@ -5,16 +5,24 @@
 #include "render.h"
 
 int Render::ControlBar() {
-  ImVec2 bar_pos = ImGui::GetWindowPos();
-
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
   if (control_bar_expand_) {
-    ImGui::SetCursorPosX(is_control_bar_in_left_ ? (control_window_width_ + 5)
-                                                 : 53);
+    ImGui::SetCursorPosX(
+        is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 53.0f);
     // Mouse control
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    float disable_mouse_x = ImGui::GetCursorScreenPos().x + 4;
+
+    if (is_control_bar_in_left_) {
+      draw_list->AddLine(
+          ImVec2(ImGui::GetCursorScreenPos().x - 5.0f,
+                 ImGui::GetCursorScreenPos().y - 7.0f),
+          ImVec2(ImGui::GetCursorScreenPos().x - 5.0f,
+                 ImGui::GetCursorScreenPos().y - 7.0f + control_window_height_),
+          IM_COL32(178, 178, 178, 255), 1.0f);
+    }
+
+    float disable_mouse_x = ImGui::GetCursorScreenPos().x + 4.0f;
     float disable_mouse_y = ImGui::GetCursorScreenPos().y + 4.0f;
     std::string mouse = mouse_control_button_pressed_ ? ICON_FA_COMPUTER_MOUSE
                                                       : ICON_FA_COMPUTER_MOUSE;
@@ -96,10 +104,19 @@ int Render::ControlBar() {
     }
 
     ImGui::SameLine();
+
+    if (!is_control_bar_in_left_) {
+      draw_list->AddLine(
+          ImVec2(ImGui::GetCursorScreenPos().x - 3.0f,
+                 ImGui::GetCursorScreenPos().y - 7.0f),
+          ImVec2(ImGui::GetCursorScreenPos().x - 3.0f,
+                 ImGui::GetCursorScreenPos().y - 7.0f + control_window_height_),
+          IM_COL32(178, 178, 178, 255), 1.0f);
+    }
   }
 
   ImGui::SetCursorPosX(
-      is_control_bar_in_left_ ? (control_window_width_ * 2 - 18) : 3);
+      is_control_bar_in_left_ ? (control_window_width_ * 2 - 18.0f) : 3.0f);
 
   std::string control_bar =
       control_bar_expand_

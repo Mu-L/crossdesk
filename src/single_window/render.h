@@ -135,7 +135,7 @@ class Render {
   int main_window_width_default_ = 960;
   int main_window_height_default_ = 570;
   int main_window_width_ = 960;
-  int main_window_height_ = 540;
+  int main_window_height_ = 570;
   int main_window_width_last_ = 960;
   int main_window_height_last_ = 540;
   int stream_window_width_ = 1280;
