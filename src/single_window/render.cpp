@@ -553,6 +553,10 @@ int Render::Run() {
           LOG_INFO("Quit program");
           exit_ = true;
         }
+      } else if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED) {
+      } else if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+      } else if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
+        window_maximized_ = false;
       } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         SDL_GetWindowSize(main_window_, &main_window_width_,
                           &main_window_height_);

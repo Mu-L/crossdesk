@@ -94,7 +94,7 @@ int Render::TitleBar() {
         if (ImGui::Button(window_restore_button.c_str(),
                           ImVec2(BUTTON_PADDING, 30))) {
           SDL_RestoreWindow(main_window_);
-          window_maximized_ = !window_maximized_;
+          window_maximized_ = false;
         }
         draw_list->AddRect(ImVec2(pos_x_top, pos_y_top),
                            ImVec2(pos_x_top + 12, pos_y_top + 12),
