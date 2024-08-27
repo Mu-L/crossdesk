@@ -272,6 +272,7 @@ int Render::CreateConnectionPeer() {
                                  ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
                              ? true
                              : false;
+  params_.enable_turn = true;
   params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
   params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
   params_.on_receive_data_buffer = OnReceiveDataBufferCb;

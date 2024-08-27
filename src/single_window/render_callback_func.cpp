@@ -198,6 +198,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
   } else if (ConnectionStatus::Failed == status) {
     render->connection_status_str_ = "Failed";
     render->password_validating_time_ = 0;
+    LOG_ERROR("rtc connection failed");
   } else if (ConnectionStatus::Closed == status) {
     render->connection_status_str_ = "Closed";
     render->password_validating_time_ = 0;
