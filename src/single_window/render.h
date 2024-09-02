@@ -258,11 +258,13 @@ class Render {
   int video_quality_button_value_ = 0;
   int video_encode_format_button_value_ = 0;
   bool enable_hardware_video_codec_ = false;
+  bool enable_turn_ = false;
 
   int language_button_value_last_ = 0;
   int video_quality_button_value_last_ = 0;
   int video_encode_format_button_value_last_ = 0;
   bool enable_hardware_video_codec_last_ = false;
+  bool enable_turn_last_ = false;
 
  private:
   std::atomic<bool> start_screen_capture_{false};

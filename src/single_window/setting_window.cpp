@@ -141,12 +141,29 @@ int Render::SettingWindow() {
                         &enable_hardware_video_codec_);
       }
 
+      ImGui::Separator();
+
+      {
+        ImGui::SetCursorPosY(152);
+        ImGui::Text(
+            "%s",
+            localization::enable_turn[localization_language_index_].c_str());
+
+        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+          ImGui::SetCursorPosX(ENABLE_TURN_CHECKBOX_PADDING_CN);
+        } else {
+          ImGui::SetCursorPosX(ENABLE_TURN_CHECKBOX_PADDING_EN);
+        }
+        ImGui::SetCursorPosY(150);
+        ImGui::Checkbox("##enable_turn", &enable_turn_);
+      }
+
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
         ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_CN);
       } else {
         ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_EN);
       }
-      ImGui::SetCursorPosY(160.0f);
+      ImGui::SetCursorPosY(190.0f);
       ImGui::PopStyleVar();
 
       // OK
@@ -195,6 +212,14 @@ int Render::SettingWindow() {
         }
         enable_hardware_video_codec_last_ = enable_hardware_video_codec_;
 
+        // TURN mode
+        if (enable_turn_) {
+          config_center_.SetTurn(true);
+        } else {
+          config_center_.SetTurn(false);
+        }
+        enable_turn_last_ = enable_turn_;
+
         SaveSettingsIntoCacheFile();
         settings_window_pos_reset_ = true;
 
@@ -231,6 +256,10 @@ int Render::SettingWindow() {
 
         if (enable_hardware_video_codec_ != enable_hardware_video_codec_last_) {
           enable_hardware_video_codec_ = enable_hardware_video_codec_last_;
+        }
+
+        if (enable_turn_ != enable_turn_last_) {
+          enable_turn_ = enable_turn_last_;
         }
 
         settings_window_pos_reset_ = true;

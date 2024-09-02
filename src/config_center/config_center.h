@@ -22,12 +22,14 @@ class ConfigCenter {
   int SetVideoQuality(VIDEO_QUALITY video_quality);
   int SetVideoEncodeFormat(VIDEO_ENCODE_FORMAT video_encode_format);
   int SetHardwareVideoCodec(bool hardware_video_codec);
+  int SetTurn(bool enable_turn);
 
  public:
   LANGUAGE GetLanguage();
   VIDEO_QUALITY GetVideoQuality();
   VIDEO_ENCODE_FORMAT GetVideoEncodeFormat();
   bool IsHardwareVideoCodec();
+  bool IsEnableTurn();
 
  private:
   // Default value should be same with parameters in localization.h
@@ -35,6 +37,7 @@ class ConfigCenter {
   VIDEO_QUALITY video_quality_ = VIDEO_QUALITY::MEDIUM;
   VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::AV1;
   bool hardware_video_codec_ = false;
+  bool enable_turn_ = false;
 };
 
 #endif

@@ -45,6 +45,8 @@ static std::vector<std::string> av1 = {u8"AV1", "AV1"};
 static std::vector<std::string> h264 = {u8"H.264", "H.264"};
 static std::vector<std::string> enable_hardware_video_codec = {
     u8"启用硬件编解码器:", "Enable Hardware Video Codec:"};
+static std::vector<std::string> enable_turn = {u8"启用中继服务:",
+                                               "Enable TURN Service:"};
 
 static std::vector<std::string> ok = {u8"确认", "OK"};
 static std::vector<std::string> cancel = {u8"取消", "Cancel"};
