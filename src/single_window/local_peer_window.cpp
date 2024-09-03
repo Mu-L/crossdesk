@@ -266,17 +266,23 @@ int Render::LocalWindow() {
         ImGui::SetCursorPosY(window_height * 0.75f);
 
         // OK
-        if (enter_pressed ||
-            ImGui::Button(
-                localization::ok[localization_language_index_].c_str())) {
-          show_reset_password_window_ = false;
-          LOG_INFO("Generate new password and save into cache file");
-          strncpy(password_saved_, new_password_, sizeof(password_saved_));
-          memset(new_password_, 0, sizeof(new_password_));
-          SaveSettingsIntoCacheFile();
-          LeaveConnection(peer_, client_id_);
-          is_create_connection_ = false;
-          focus_on_input_widget_ = true;
+        if (ImGui::Button(
+                localization::ok[localization_language_index_].c_str()) ||
+            enter_pressed) {
+          if (6 != strlen(new_password_)) {
+            LOG_ERROR("Invalid password length");
+            show_reset_password_window_ = true;
+            focus_on_input_widget_ = true;
+          } else {
+            show_reset_password_window_ = false;
+            LOG_INFO("Generate new password and save into cache file");
+            strncpy(password_saved_, new_password_, sizeof(password_saved_));
+            memset(new_password_, 0, sizeof(new_password_));
+            SaveSettingsIntoCacheFile();
+            LeaveConnection(peer_, client_id_);
+            is_create_connection_ = false;
+            focus_on_input_widget_ = true;
+          }
         }
 
         ImGui::SameLine();

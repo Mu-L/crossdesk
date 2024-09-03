@@ -51,8 +51,9 @@ static std::vector<std::string> enable_turn = {u8"启用中继服务:",
 static std::vector<std::string> ok = {u8"确认", "OK"};
 static std::vector<std::string> cancel = {u8"取消", "Cancel"};
 
-static std::vector<std::string> new_password = {u8"请输入新密码:",
-                                                "Please input new password:"};
+static std::vector<std::string> new_password = {
+    u8"请输入六位密码:", "Please input a six-char password:"};
+
 static std::vector<std::string> input_password = {u8"请输入密码:",
                                                   "Please input password:"};
 static std::vector<std::string> validate_password = {u8"验证密码中...",
