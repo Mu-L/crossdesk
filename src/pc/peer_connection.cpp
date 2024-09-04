@@ -131,6 +131,10 @@ int PeerConnection::Init(PeerConnectionParams params,
       ws_status_ = WsStatus::WsReconnecting;
       signal_status_ = SignalStatus::SignalReconnecting;
       on_signal_status_(SignalStatus::SignalReconnecting, user_data_);
+    } else if (WsStatus::WsServerClosed == ws_status) {
+      ws_status_ = WsStatus::WsServerClosed;
+      signal_status_ = SignalStatus::SignalServerClosed;
+      on_signal_status_(SignalStatus::SignalServerClosed, user_data_);
     }
   };
 

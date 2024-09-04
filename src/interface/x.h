@@ -29,7 +29,8 @@ enum SignalStatus {
   SignalConnected,
   SignalFailed,
   SignalClosed,
-  SignalReconnecting
+  SignalReconnecting,
+  SignalServerClosed
 };
 
 enum TraversalMode { P2P = 0, Relay, UnknownMode };

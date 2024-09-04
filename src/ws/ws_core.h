@@ -15,7 +15,14 @@
 
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 
-enum WsStatus { WsOpening = 0, WsOpened, WsFailed, WsClosed, WsReconnecting };
+enum WsStatus {
+  WsOpening = 0,
+  WsOpened,
+  WsFailed,
+  WsClosed,
+  WsReconnecting,
+  WsServerClosed
+};
 
 class WsCore {
  public:
@@ -59,10 +66,11 @@ class WsCore {
   websocketpp::connection_hdl connection_handle_;
   std::thread m_thread_;
   std::thread ping_thread_;
-  bool running_ = true;
+  std::atomic<bool> running_{false};
   std::mutex mtx_;
   unsigned int interval_ = 3;
   std::condition_variable cond_var_;
+  bool heartbeat_started_ = false;
 
   WsStatus ws_status_ = WsStatus::WsClosed;
   int timeout_count_ = 0;

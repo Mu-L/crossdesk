@@ -23,6 +23,7 @@ WsCore::~WsCore() {
   cond_var_.notify_one();
   if (ping_thread_.joinable()) {
     ping_thread_.join();
+    heartbeat_started_ = false;
   }
 
   m_endpoint_.stop_perpetual();
@@ -109,13 +110,17 @@ void WsCore::Ping(websocketpp::connection_hdl hdl) {
                          [this] { return !running_; });
     }
 
-    auto con = m_endpoint_.get_con_from_hdl(hdl);
-    if (con && con->get_state() == websocketpp::session::state::open) {
-      websocketpp::lib::error_code ec;
-      m_endpoint_.ping(hdl, "", ec);
-      if (ec) {
-        LOG_ERROR("Ping error: {}", ec.message());
-        break;
+    if (hdl.expired()) {
+      LOG_WARN("Websocket connection expired, reconnecting...");
+    } else {
+      auto con = m_endpoint_.get_con_from_hdl(hdl);
+      if (con && con->get_state() == websocketpp::session::state::open) {
+        websocketpp::lib::error_code ec;
+        m_endpoint_.ping(hdl, "", ec);
+        if (ec) {
+          LOG_ERROR("Ping error: {}", ec.message());
+          break;
+        }
       }
     }
 
@@ -129,7 +134,19 @@ void WsCore::OnOpen(client *c, websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsOpened;
   OnWsStatus(WsStatus::WsOpened);
 
-  ping_thread_ = std::thread(&WsCore::Ping, this, hdl);
+  if (!heartbeat_started_) {
+    heartbeat_started_ = true;
+    running_ = true;
+    ping_thread_ = std::thread(&WsCore::Ping, this, hdl);
+  } else {
+    running_ = false;
+    cond_var_.notify_one();
+    if (ping_thread_.joinable()) {
+      ping_thread_.join();
+      running_ = true;
+      ping_thread_ = std::thread(&WsCore::Ping, this, hdl);
+    }
+  }
 }
 
 void WsCore::OnFail(client *c, websocketpp::connection_hdl hdl) {
@@ -140,9 +157,11 @@ void WsCore::OnFail(client *c, websocketpp::connection_hdl hdl) {
 }
 
 void WsCore::OnClose(client *c, websocketpp::connection_hdl hdl) {
-  ws_status_ = WsStatus::WsClosed;
+  ws_status_ = WsStatus::WsServerClosed;
   if (running_) {
-    OnWsStatus(WsStatus::WsClosed);
+    OnWsStatus(WsStatus::WsServerClosed);
+    // try to reconnect
+    Connect(uri_);
   }
 }
 
