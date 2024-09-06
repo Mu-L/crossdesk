@@ -1,5 +1,7 @@
 #include "screen_capturer_avf.h"
 
+#include <ApplicationServices/ApplicationServices.h>
+
 #include <iostream>
 
 #include "rd_log.h"
@@ -41,6 +43,13 @@ ScreenCapturerAvf::~ScreenCapturerAvf() {
     av_packet_free(&packet_);
     packet_ = nullptr;
   }
+
+#if 1
+  if (img_convert_ctx_) {
+    sws_freeContext(img_convert_ctx_);
+    img_convert_ctx_ = nullptr;
+  }
+#endif
 }
 
 int ScreenCapturerAvf::Init(const int fps, cb_desktop_data cb) {
@@ -58,11 +67,11 @@ int ScreenCapturerAvf::Init(const int fps, cb_desktop_data cb) {
   av_dict_set(&options_, "framerate", "60", 0);
   av_dict_set(&options_, "pixel_format", "nv12", 0);
   // show remote cursor
-  av_dict_set(&options_, "capture_cursor", "0", 0);
+  av_dict_set(&options_, "capture_cursor", "1", 0);
   // Make the grabbed area follow the mouse
   // av_dict_set(&options_, "follow_mouse", "centered", 0);
   // Video frame size. The default is to capture the full screen
-  // av_dict_set(&options_, "video_size", "1280x720", 0);
+  // av_dict_set(&options_, "video_size", "1440x900", 0);
   ifmt_ = (AVInputFormat *)av_find_input_format("avfoundation");
   if (!ifmt_) {
     printf("Couldn't find_input_format\n");
@@ -110,9 +119,19 @@ int ScreenCapturerAvf::Init(const int fps, cb_desktop_data cb) {
   const int screen_h = pFormatCtx_->streams[videoindex_]->codecpar->height;
 
   pFrame_ = av_frame_alloc();
-
   pFrame_->width = screen_w;
   pFrame_->height = screen_h;
+
+#if 1
+  pFrame_resized_ = av_frame_alloc();
+  pFrame_resized_->width = CGDisplayPixelsWide(CGMainDisplayID());
+  pFrame_resized_->height = CGDisplayPixelsHigh(CGMainDisplayID());
+
+  img_convert_ctx_ =
+      sws_getContext(pFrame_->width, pFrame_->height, pCodecCtx_->pix_fmt,
+                     pFrame_resized_->width, pFrame_resized_->height,
+                     AV_PIX_FMT_NV12, SWS_BICUBIC, NULL, NULL, NULL);
+#endif
 
   if (!nv12_frame_) {
     nv12_frame_ = new unsigned char[screen_w * screen_h * 3 / 2];
@@ -145,15 +164,30 @@ int ScreenCapturerAvf::Start() {
           got_picture_ = avcodec_receive_frame(pCodecCtx_, pFrame_);
 
           if (!got_picture_) {
-            memcpy(nv12_frame_, pFrame_->data[0],
-                   pFrame_->linesize[0] * pFrame_->height);
-            memcpy(nv12_frame_ + pFrame_->linesize[0] * pFrame_->height,
-                   pFrame_->data[1],
-                   pFrame_->linesize[1] * pFrame_->height / 2);
+#if 0 
+              memcpy(nv12_frame_, pFrame_->data[0],
+                     pFrame_->linesize[0] * pFrame_->height);
+              memcpy(nv12_frame_ + pFrame_->linesize[0] * pFrame_->height,
+                     pFrame_->data[1],
+                     pFrame_->linesize[1] * pFrame_->height / 2);
+              LOG_ERROR("size {} {}", pFrame_->width, pFrame_->height);
+              _on_data((unsigned char *)nv12_frame_,
+                       pFrame_->width * pFrame_->height * 3 / 2, pFrame_->width,
+                       pFrame_->height);
+#else
+            av_image_fill_arrays(pFrame_resized_->data,
+                                 pFrame_resized_->linesize, nv12_frame_,
+                                 AV_PIX_FMT_NV12, pFrame_resized_->width,
+                                 pFrame_resized_->height, 1);
+
+            sws_scale(img_convert_ctx_, pFrame_->data, pFrame_->linesize, 0,
+                      pFrame_->height, pFrame_resized_->data,
+                      pFrame_resized_->linesize);
 
             _on_data((unsigned char *)nv12_frame_,
-                     pFrame_->width * pFrame_->height * 3 / 2, pFrame_->width,
-                     pFrame_->height);
+                     pFrame_resized_->width * pFrame_resized_->height * 3 / 2,
+                     pFrame_resized_->width, pFrame_resized_->height);
+#endif
           }
         }
       }

@@ -18,8 +18,8 @@ int MouseController::Init(int screen_width, int screen_height) {
 int MouseController::Destroy() { return 0; }
 
 int MouseController::SendCommand(RemoteAction remote_action) {
-  int mouse_pos_x = remote_action.m.x * screen_width_ / 1280;
-  int mouse_pos_y = remote_action.m.y * screen_height_ / 720;
+  int mouse_pos_x = remote_action.m.x;
+  int mouse_pos_y = remote_action.m.y;
 
   if (remote_action.type == ControlType::mouse) {
     CGEventRef mouse_event;

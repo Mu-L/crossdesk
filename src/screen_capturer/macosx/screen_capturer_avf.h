@@ -75,7 +75,9 @@ class ScreenCapturerAvf : public ScreenCapturer {
   AVDictionary *options_ = nullptr;
   AVInputFormat *ifmt_ = nullptr;
   AVFrame *pFrame_ = nullptr;
+  AVFrame *pFrame_resized_ = nullptr;
   AVPacket *packet_ = nullptr;
+  struct SwsContext *img_convert_ctx_ = nullptr;
   unsigned char *nv12_frame_ = nullptr;
 
   // thread
