@@ -20,8 +20,8 @@ int MouseController::SendCommand(RemoteAction remote_action) {
 
   if (remote_action.type == ControlType::mouse) {
     ip.type = INPUT_MOUSE;
-    ip.mi.dx = remote_action.m.x * screen_width_ / 1280;
-    ip.mi.dy = remote_action.m.y * screen_height_ / 720;
+    ip.mi.dx = remote_action.m.x;
+    ip.mi.dy = remote_action.m.y;
     if (remote_action.m.flag == MouseFlag::left_down) {
       ip.mi.dwFlags = MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_ABSOLUTE;
     } else if (remote_action.m.flag == MouseFlag::left_up) {

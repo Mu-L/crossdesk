@@ -67,7 +67,7 @@ int ScreenCapturerAvf::Init(const int fps, cb_desktop_data cb) {
   av_dict_set(&options_, "framerate", "60", 0);
   av_dict_set(&options_, "pixel_format", "nv12", 0);
   // show remote cursor
-  av_dict_set(&options_, "capture_cursor", "1", 0);
+  av_dict_set(&options_, "capture_cursor", "0", 0);
   // Make the grabbed area follow the mouse
   // av_dict_set(&options_, "follow_mouse", "centered", 0);
   // Video frame size. The default is to capture the full screen
