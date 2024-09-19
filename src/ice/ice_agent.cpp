@@ -89,7 +89,9 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
       LOG_ERROR("Failed to add stream");
     }
 
-    nice_agent_set_stream_name(agent_, stream_id_, "video");
+    if (has_video_stream_) {
+      nice_agent_set_stream_name(agent_, stream_id_, "video");
+    }
 
     if (enable_turn_) {
       nice_agent_set_relay_info(agent_, stream_id_, n_components_,
@@ -147,11 +149,6 @@ int IceAgent::DestroyIceAgent() {
   return 0;
 }
 
-const char *IceAgent::GetLocalStreamSdp() {
-  local_sdp_ = nice_agent_generate_local_stream_sdp(agent_, stream_id_, true);
-  return local_sdp_.c_str();
-}
-
 const char *IceAgent::GenerateLocalSdp() {
   if (!nice_inited_) {
     LOG_ERROR("Nice agent has not been initialized");
@@ -168,9 +165,57 @@ const char *IceAgent::GenerateLocalSdp() {
     return nullptr;
   }
 
-  local_sdp_ = nice_agent_generate_local_sdp(agent_);
+  video_stream_sdp_ = nice_agent_generate_local_sdp(agent_);
+  audio_stream_sdp_ = video_stream_sdp_;
+  data_stream_sdp_ = video_stream_sdp_;
+  local_sdp_ = video_stream_sdp_;
+
+  if (has_audio_stream_) {
+    std::string to_replace = "video";
+    std::string replacement = "audio";
+    size_t pos = 0;
+    while ((pos = audio_stream_sdp_.find(to_replace, pos)) !=
+           std::string::npos) {
+      audio_stream_sdp_.replace(pos, to_replace.length(), replacement);
+      pos += replacement.length();
+    }
+    local_sdp_ += audio_stream_sdp_;
+  }
+
+  if (has_data_stream_) {
+    std::string to_replace = "video";
+    std::string replacement = "data";
+    size_t pos = 0;
+    while ((pos = data_stream_sdp_.find(to_replace, pos)) !=
+           std::string::npos) {
+      data_stream_sdp_.replace(pos, to_replace.length(), replacement);
+      pos += replacement.length();
+    }
+    local_sdp_ += data_stream_sdp_;
+  }
+
   LOG_INFO("Generate local sdp:[\n{}]", local_sdp_.c_str());
 
+  return local_sdp_.c_str();
+}
+
+const char *IceAgent::GetLocalStreamSdp(uint32_t stream_id) {
+  if (!nice_inited_) {
+    LOG_ERROR("Nice agent has not been initialized");
+    return nullptr;
+  }
+
+  if (nullptr == agent_) {
+    LOG_ERROR("Nice agent is nullptr");
+    return nullptr;
+  }
+
+  if (destroyed_) {
+    LOG_ERROR("Nice agent is destroyed");
+    return nullptr;
+  }
+
+  local_sdp_ = nice_agent_generate_local_stream_sdp(agent_, stream_id, true);
   return local_sdp_.c_str();
 }
 

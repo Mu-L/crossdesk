@@ -43,9 +43,9 @@ class IceAgent {
 
   int DestroyIceAgent();
 
-  const char* GetLocalStreamSdp();
-
   const char* GenerateLocalSdp();
+
+  const char* GetLocalStreamSdp(uint32_t stream_id);
 
   int SetRemoteSdp(const char* remote_sdp);
 
@@ -70,6 +70,17 @@ class IceAgent {
   std::string turn_username_ = "";
   std::string turn_password_ = "";
 
+  bool has_video_stream_ = true;
+  uint32_t n_video_streams_ = 1;
+  std::string video_stream_sdp_;
+  bool has_audio_stream_ = true;
+  uint32_t n_audio_streams_ = 1;
+  std::string audio_stream_sdp_;
+  bool has_data_stream_ = true;
+  uint32_t n_data_streams_ = 1;
+  std::string data_stream_sdp_;
+
+ public:
   std::thread nice_thread_;
   std::atomic<NiceAgent*> agent_{nullptr};
   std::atomic<GMainLoop*> gloop_{nullptr};

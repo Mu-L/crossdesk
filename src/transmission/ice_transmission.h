@@ -104,6 +104,9 @@ class IceTransmission {
   int SendAnswer();
 
  private:
+  int AppendLocalCapabilitiesToSdp(std::string &remote_sdp);
+  std::string GetLocalCapabilitiesToSdp(const std::string &remote_sdp);
+
   RtpPacket::PAYLOAD_TYPE GetAceptedVideoPayloadType(
       const std::string &remote_sdp);
   RtpPacket::PAYLOAD_TYPE GetAceptedAudioPayloadType(

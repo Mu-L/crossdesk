@@ -380,35 +380,30 @@ int IceTransmission::GatherCandidates() {
 }
 
 int IceTransmission::SetRemoteSdp(const std::string &remote_sdp) {
-  ice_agent_->SetRemoteSdp(remote_sdp.c_str());
-  // LOG_INFO("[{}] set remote sdp", user_id_);
-
   // GetAceptedVideoPayloadType(remote_sdp);
   // GetAceptedAudioPayloadType(remote_sdp);
 
-  remote_ice_username_ = GetIceUsername(remote_sdp);
+  std::string media_stream_sdp = GetLocalCapabilitiesToSdp(remote_sdp);
+  LOG_ERROR("media_stream_sdp: [{}] [{}]", media_stream_sdp, remote_sdp);
+
+  ice_agent_->SetRemoteSdp(media_stream_sdp.c_str());
+  // LOG_INFO("[{}] set remote sdp", user_id_);
+
+  remote_ice_username_ = GetIceUsername(media_stream_sdp);
   return 0;
 }
 
 int IceTransmission::SendOffer() {
-  local_sdp_ = use_trickle_ice_ ? ice_agent_->GetLocalStreamSdp()
-                                : ice_agent_->GenerateLocalSdp();
+  local_sdp_ = ice_agent_->GenerateLocalSdp();
 
-  std::string toReplace = "ICE/SDP";
-  std::string replacement = "UDP/TLS/RTP/SAVPF 111 114 115 116 123 124 125";
-
-  size_t pos = 0;
-  while ((pos = local_sdp_.find(toReplace, pos)) != std::string::npos) {
-    local_sdp_.replace(pos, toReplace.length(), replacement);
-    pos += replacement.length();
-  }
+  AppendLocalCapabilitiesToSdp(local_sdp_);
 
   json message = {{"type", "offer"},
                   {"transmission_id", transmission_id_},
                   {"user_id", user_id_},
                   {"remote_user_id", remote_user_id_},
                   {"sdp", local_sdp_.c_str()}};
-  LOG_INFO("Send offer with sdp:\n[\n{}]", local_sdp_.c_str());
+  // LOG_INFO("Send offer with sdp:\n[\n{}]", local_sdp_.c_str());
   if (ice_ws_transport_) {
     ice_ws_transport_->Send(message.dump());
     LOG_INFO("[{}->{}] send offer", user_id_, remote_user_id_);
@@ -417,14 +412,13 @@ int IceTransmission::SendOffer() {
 }
 
 int IceTransmission::SendAnswer() {
-  local_sdp_ = use_trickle_ice_ ? ice_agent_->GetLocalStreamSdp()
-                                : ice_agent_->GenerateLocalSdp();
+  local_sdp_ = ice_agent_->GenerateLocalSdp();
   json message = {{"type", "answer"},
                   {"transmission_id", transmission_id_},
                   {"user_id", user_id_},
                   {"remote_user_id", remote_user_id_},
                   {"sdp", local_sdp_.c_str()}};
-  LOG_INFO("Send answer with sdp:\n[\n{}]", local_sdp_.c_str());
+  // LOG_INFO("Send answer with sdp:\n[\n{}]", local_sdp_.c_str());
   if (ice_ws_transport_) {
     ice_ws_transport_->Send(message.dump());
     LOG_INFO("[{}->{}] send answer", user_id_, remote_user_id_);
@@ -433,18 +427,78 @@ int IceTransmission::SendAnswer() {
   return 0;
 }
 
-// int IceTransmission::AppendLocalCapabilitiesToSdp() {
-//   std::string toReplace = "ICE/SDP";
-//   std::string replacement = "UDP/TLS/RTP/SAVPF 111 114 115 116 123 124 125";
+int IceTransmission::AppendLocalCapabilitiesToSdp(std::string &remote_sdp) {
+  std::string to_replace = "ICE/SDP";
+  std::string video_capabilities = "UDP/TLS/RTP/SAVPF 96 97 98 99";
+  std::string audio_capabilities = "UDP/TLS/RTP/SAVPF 111";
+  std::string data_capabilities = "UDP/TLS/RTP/SAVPF 127";
 
-//   size_t pos = 0;
-//   while ((pos = local_sdp_.find(toReplace, pos)) != std::string::npos) {
-//     local_sdp_.replace(pos, toReplace.length(), replacement);
-//     pos += replacement.length();
-//   }
+  std::size_t video_start = remote_sdp.find("m=video");
+  std::size_t video_end = remote_sdp.find("\n", video_start);
+  std::size_t audio_start = remote_sdp.find("m=audio");
+  std::size_t audio_end = remote_sdp.find("\n", audio_start);
+  std::size_t data_start = remote_sdp.find("m=data");
+  std::size_t data_end = remote_sdp.find("\n", data_start);
 
-//   return 0;
-// }
+  size_t pos = 0;
+  if (video_start != std::string::npos && video_end != std::string::npos) {
+    if ((pos = local_sdp_.find(to_replace, video_start)) != std::string::npos) {
+      local_sdp_.replace(pos, to_replace.length(), video_capabilities);
+      pos += video_capabilities.length();
+    }
+  }
+
+  if (audio_start != std::string::npos && audio_end != std::string::npos) {
+    if ((pos = local_sdp_.find(to_replace, audio_start)) != std::string::npos) {
+      local_sdp_.replace(pos, to_replace.length(), audio_capabilities);
+      pos += audio_capabilities.length();
+    }
+  }
+
+  if (data_start != std::string::npos && data_end != std::string::npos) {
+    if ((pos = local_sdp_.find(to_replace, data_start)) != std::string::npos) {
+      local_sdp_.replace(pos, to_replace.length(), data_capabilities);
+      pos += data_capabilities.length();
+    }
+  }
+
+  return 0;
+}
+
+std::string IceTransmission::GetLocalCapabilitiesToSdp(
+    const std::string &remote_sdp) {
+  std::string media_stream_sdp;
+  std::size_t video_start = remote_sdp.find("m=video");
+  std::size_t video_end = remote_sdp.find("m=audio");
+  std::size_t audio_start = video_end;
+  std::size_t audio_end = remote_sdp.find("m=data");
+  std::size_t data_start = audio_end;
+  std::size_t data_end = remote_sdp.find("a=candidate");
+  std::size_t candidate_start = data_end;
+
+  if ((video_start != std::string::npos && video_end != std::string::npos) ||
+      (audio_start != std::string::npos && audio_end != std::string::npos) ||
+      (data_start != std::string::npos && data_end != std::string::npos)) {
+    if (video_start != std::string::npos && video_end != std::string::npos) {
+      media_stream_sdp =
+          remote_sdp.substr(video_start, video_end - video_start);
+    } else if (audio_start != std::string::npos &&
+               audio_end != std::string::npos) {
+      media_stream_sdp =
+          remote_sdp.substr(audio_start, audio_end - audio_start);
+    } else {
+      media_stream_sdp = remote_sdp.substr(data_start, data_end - data_start);
+    }
+
+    if (candidate_start != std::string::npos) {
+      media_stream_sdp += remote_sdp.substr(candidate_start);
+    }
+  } else {
+    return remote_sdp;
+  }
+
+  return media_stream_sdp;
+}
 
 RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedVideoPayloadType(
     const std::string &remote_sdp) {
