@@ -112,6 +112,7 @@ target("media")
         "src/media/video/decode/openh264/*.cpp",
         "src/media/video/encode/aom/*.cpp",
         "src/media/video/decode/dav1d/*.cpp",
+        "src/media/video/decode/aom/*.cpp",
         "src/media/nvcodec/*.cpp")
         add_includedirs("src/media/video/encode",
         "src/media/video/decode",
@@ -121,6 +122,7 @@ target("media")
         "src/media/video/decode/openh264",
         "src/media/video/encode/aom",
         "src/media/video/decode/dav1d",
+        "src/media/video/decode/aom",
         "src/media/nvcodec",
         "thirdparty/nvcodec/interface", {public = true})
         add_includedirs(path.join(os.getenv("CUDA_PATH"), "include"), {public = true})
@@ -133,6 +135,7 @@ target("media")
         "src/media/video/decode/openh264/*.cpp",
         "src/media/video/encode/aom/*.cpp",
         "src/media/video/decode/dav1d/*.cpp",
+        "src/media/video/decode/aom/*.cpp",
         "src/media/nvcodec/*.cpp")
         add_includedirs("src/media/video/encode",
         "src/media/video/decode",
@@ -142,6 +145,7 @@ target("media")
         "src/media/video/decode/openh264",
         "src/media/video/encode/aom",
         "src/media/video/decode/dav1d",
+        "src/media/video/decode/aom",
         "src/media/nvcodec",
         "thirdparty/nvcodec/interface", {public = true})
         add_includedirs(path.join(os.getenv("CUDA_PATH"), "include"), {public = true})
@@ -151,13 +155,15 @@ target("media")
         "src/media/video/encode/openh264/*.cpp",
         "src/media/video/decode/openh264/*.cpp",
         "src/media/video/encode/aom/*.cpp",
-        "src/media/video/decode/dav1d/*.cpp")
+        "src/media/video/decode/dav1d/*.cpp",
+        "src/media/video/decode/aom/*.cpp")
         add_includedirs("src/media/video/encode",
         "src/media/video/decode",
         "src/media/video/encode/openh264",
         "src/media/video/decode/openh264",
         "src/media/video/encode/aom",
-        "src/media/video/decode/dav1d", {public = true})
+        "src/media/video/decode/dav1d",
+        "src/media/video/decode/aom", {public = true})
     end
     add_files("src/media/audio/encode/*.cpp",
         "src/media/audio/decode/*.cpp")

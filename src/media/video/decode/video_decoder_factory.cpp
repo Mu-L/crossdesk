@@ -1,13 +1,13 @@
 #include "video_decoder_factory.h"
 
-#if __APPLE__
+#include "aom/aom_av1_decoder.h"
 #include "dav1d/dav1d_av1_decoder.h"
 #include "openh264/openh264_decoder.h"
+
+#if __APPLE__
 #else
-#include "dav1d/dav1d_av1_decoder.h"
 #include "nvcodec/nvidia_video_decoder.h"
 #include "nvcodec_api.h"
-#include "openh264/openh264_decoder.h"
 #endif
 
 #include "log.h"
@@ -21,6 +21,8 @@ std::unique_ptr<VideoDecoder> VideoDecoderFactory::CreateVideoDecoder(
   if (av1_encoding) {
     LOG_INFO("Use dav1d decoder");
     return std::make_unique<Dav1dAv1Decoder>(Dav1dAv1Decoder());
+    // LOG_INFO("Use aom decoder");
+    // return std::make_unique<AomAv1Decoder>(AomAv1Decoder());
   } else {
 #if __APPLE__
     return std::make_unique<OpenH264Decoder>(OpenH264Decoder());

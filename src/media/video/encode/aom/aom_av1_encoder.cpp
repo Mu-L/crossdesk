@@ -129,9 +129,7 @@ int AomAv1Encoder::Init() {
   aom_codec_err_t ret = aom_codec_enc_config_default(
       aom_codec_av1_cx(), &aom_av1_encoder_config_, kUsageProfile);
   if (ret != AOM_CODEC_OK) {
-    LOG_ERROR(
-        "AomAv1Encoder::EncodeInit returned {} on aom_codec_enc_config_default",
-        (int)ret);
+    LOG_ERROR("Failed to get config: {}", aom_codec_err_to_string(ret));
     return -1;
   }
 
