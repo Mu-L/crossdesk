@@ -6,7 +6,7 @@
 #include "log.h"
 
 #define SAVE_RECEIVED_NV12_STREAM 0
-#define SAVE_ENCODED_AV1_STREAM 0
+#define SAVE_ENCODED_AV1_STREAM 1
 
 #define SET_ENCODER_PARAM_OR_RETURN_ERROR(param_id, param_value) \
   do {                                                           \

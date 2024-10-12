@@ -15,6 +15,19 @@
 #include "rtp_packet.h"
 
 namespace obu {
+
+typedef enum {
+  OBU_SEQUENCE_HEADER = 1,
+  OBU_TEMPORAL_DELIMITER = 2,
+  OBU_FRAME_HEADER = 3,
+  OBU_TILE_GROUP = 4,
+  OBU_METADATA = 5,
+  OBU_FRAME = 6,
+  OBU_REDUNDANT_FRAME_HEADER = 7,
+  OBU_TILE_LIST = 8,
+  OBU_PADDING = 15,
+} OBU_TYPE;
+
 std::vector<Obu> ParseObus(uint8_t* payload, int payload_size);
 
 std::vector<Packet> Packetize(std::vector<Obu> obus);
