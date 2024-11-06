@@ -949,7 +949,7 @@ STBIWDEF unsigned char *stbi_zlib_compress(unsigned char *data, int data_len,
 #ifdef STBIW_ZLIB_COMPRESS
   // user provided a zlib compress implementation, use that
   return STBIW_ZLIB_COMPRESS(data, data_len, out_len, quality);
-#else   // use builtin
+#else  // use builtin
   static unsigned short lengthc[] = {
       3,  4,  5,  6,  7,  8,  9,  10, 11,  13,  15,  17,  19,  23,  27,
       31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 259};

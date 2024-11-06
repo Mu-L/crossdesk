@@ -126,6 +126,7 @@ bool LoadTextureFromFile(const char* file_name, SDL_Renderer* renderer,
   bool ret = LoadTextureFromMemory(file_data, file_size, renderer, out_texture,
                                    out_width, out_height);
   IM_FREE(file_data);
+  fclose(f);
   return ret;
 }
 
@@ -277,7 +278,7 @@ int Render::StartSpeakerCapture() {
     int speaker_capturer_init_ret = speaker_capturer_->Init(
         [this](unsigned char* data, size_t size) -> void {
           if (connection_established_) {
-            SendData(peer_, DATA_TYPE::AUDIO, (const char*)data, size);
+            // SendData(peer_, DATA_TYPE::AUDIO, (const char*)data, size);
           }
         });
 
@@ -700,6 +701,47 @@ int Render::DrawMainWindow() {
   return 0;
 }
 
+void ScaleYUV420pToABGR(char* dst_buffer_, int video_width_, int video_height_,
+                        int scaled_video_width_, int scaled_video_height_,
+                        char* argb_buffer_) {
+  int src_y_size = video_width_ * video_height_;
+  int src_uv_size = (video_width_ + 1) / 2 * (video_height_ + 1) / 2;
+  int dst_y_size = scaled_video_width_ * scaled_video_height_;
+  int dst_uv_size =
+      (scaled_video_width_ + 1) / 2 * (scaled_video_height_ + 1) / 2;
+
+  uint8_t* src_y = reinterpret_cast<uint8_t*>(dst_buffer_);
+  uint8_t* src_u = src_y + src_y_size;
+  uint8_t* src_v = src_u + src_uv_size;
+
+  std::unique_ptr<uint8_t[]> dst_y(new uint8_t[dst_y_size]);
+  std::unique_ptr<uint8_t[]> dst_u(new uint8_t[dst_uv_size]);
+  std::unique_ptr<uint8_t[]> dst_v(new uint8_t[dst_uv_size]);
+
+  try {
+    libyuv::I420Scale(src_y, video_width_, src_u, (video_width_ + 1) / 2, src_v,
+                      (video_width_ + 1) / 2, video_width_, video_height_,
+                      dst_y.get(), scaled_video_width_, dst_u.get(),
+                      (scaled_video_width_ + 1) / 2, dst_v.get(),
+                      (scaled_video_width_ + 1) / 2, scaled_video_width_,
+                      scaled_video_height_, libyuv::kFilterBilinear);
+  } catch (const std::exception& e) {
+    LOG_ERROR("I420Scale failed: %s", e.what());
+    return;
+  }
+
+  try {
+    libyuv::I420ToABGR(
+        dst_y.get(), scaled_video_width_, dst_u.get(),
+        (scaled_video_width_ + 1) / 2, dst_v.get(),
+        (scaled_video_width_ + 1) / 2, reinterpret_cast<uint8_t*>(argb_buffer_),
+        scaled_video_width_ * 4, scaled_video_width_, scaled_video_height_);
+  } catch (const std::exception& e) {
+    LOG_ERROR("I420ToBGRA failed: %s", e.what());
+    return;
+  }
+}
+
 int Render::DrawStreamWindow() {
   if (!stream_ctx_) {
     LOG_ERROR("Stream context is null");
@@ -745,6 +787,11 @@ int Render::Run() {
 
   localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
   localization_language_index_ = language_button_value_;
+  if (localization_language_index_ != 0 && localization_language_index_ != 1) {
+    localization_language_index_ = 0;
+    LOG_ERROR("Invalid language index: [{}], use [0] by default",
+              localization_language_index_);
+  }
 
   // Setup SDL
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER |
@@ -795,6 +842,11 @@ int Render::Run() {
   CreateMainWindow();
   SetupMainWindow();
 
+  const int scaled_video_width_ = 128;
+  const int scaled_video_height_ = 72;
+  char* argb_buffer_ =
+      new char[scaled_video_width_ * scaled_video_height_ * 40];
+
   // Main loop
   while (!exit_) {
     if (!label_inited_ ||
@@ -825,44 +877,6 @@ int Render::Run() {
       localization_language_index_last_ = localization_language_index_;
     }
 
-    {
-      const int scaled_video_width_ = 128;
-      const int scaled_video_height_ = 72;
-      // uint8_t scaled_yuv_data =
-      //     new uint8_t[scaled_video_width_ * scaled_video_height_ * 3 / 2];
-      // uint8_t* rgb_data =
-      //     new uint8_t[scaled_video_width_ * scaled_video_height_ * 3];
-
-      uint8_t
-          scaled_yuv_data[scaled_video_width_ * scaled_video_height_ * 3 / 2];
-      uint8_t rgb_data[scaled_video_width_ * scaled_video_height_ * 3];
-
-      libyuv::I420Scale(
-          dst_buffer_, video_width_, dst_buffer_ + video_width_ * video_height_,
-          video_width_ / 2, dst_buffer_ + video_width_ * video_height_ * 5 / 4,
-          video_width_ / 2, video_width_, video_height_, scaled_yuv_data,
-          scaled_video_width_,
-          scaled_yuv_data + scaled_video_width_ * scaled_video_height_,
-          scaled_video_width_ / 2,
-          scaled_yuv_data + scaled_video_width_ * scaled_video_height_ * 5 / 4,
-          scaled_video_width_ / 2, scaled_video_width_, scaled_video_width_,
-          libyuv::FilterMode::kFilterNone);
-
-      libyuv::I420ToRGB24(
-          scaled_yuv_data, scaled_video_width_,
-          scaled_yuv_data + scaled_video_width_ * scaled_video_height_,
-          scaled_video_width_ / 2,
-          scaled_yuv_data + scaled_video_width_ * scaled_video_height_ * 5 / 4,
-          scaled_video_width_ / 2, rgb_data, scaled_video_width_ * 3,
-          scaled_video_width_, scaled_video_height_);
-      stbi_write_png("RecentConnectionImage01.png", scaled_video_width_,
-                     scaled_video_height_, 3, rgb_data,
-                     scaled_video_width_ * 3);
-
-      // delete[] scaled_yuv_data;
-      // delete[] rgb_data;
-    }
-
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       {
@@ -889,6 +903,16 @@ int Render::Run() {
           DestroyStreamWindow();
           DestroyStreamWindowContext();
 
+          if (dst_buffer_) {
+            ScaleYUV420pToABGR((char*)dst_buffer_, video_width_, video_height_,
+                               scaled_video_width_, scaled_video_height_,
+                               argb_buffer_);
+            stbi_write_png("RecentConnectionImage01.png", scaled_video_width_,
+                           scaled_video_height_, 4, argb_buffer_,
+                           scaled_video_width_ * 4);
+            LOG_ERROR("RecentConnectionImage01.png saved");
+          }
+
           LOG_INFO("[{}] Leave connection [{}]", client_id_, remote_id_);
           LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_,
                           remote_id_.c_str());
@@ -905,49 +929,11 @@ int Render::Run() {
           audio_capture_button_pressed_ = false;
           fullscreen_button_pressed_ = false;
           reload_recent_connections_ = true;
+
           SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
           memset(audio_buffer_, 0, 720);
           SDL_SetWindowSize(main_window_, main_window_width_default_,
                             main_window_height_default_);
-
-          // {
-          //   int scaled_video_width_ = 128;
-          //   int scaled_video_height_ = 72;
-          //   uint8_t* scaled_yuv_data =
-          //       new uint8_t[scaled_video_width_ * scaled_video_height_ * 3 /
-          //       2];
-          //   uint8_t* rgb_data =
-          //       new uint8_t[scaled_video_width_ * scaled_video_height_ * 3];
-
-          //   libyuv::I420Scale(
-          //       dst_buffer_, video_width_,
-          //       dst_buffer_ + video_width_ * video_height_, video_width_ / 2,
-          //       dst_buffer_ + video_width_ * video_height_ * 5 / 4,
-          //       video_width_ / 2, video_width_, video_height_,
-          //       scaled_yuv_data, scaled_video_width_, scaled_yuv_data +
-          //       scaled_video_width_ * scaled_video_height_,
-          //       scaled_video_width_ / 2,
-          //       scaled_yuv_data +
-          //           scaled_video_width_ * scaled_video_height_ * 5 / 4,
-          //       scaled_video_width_ / 2, scaled_video_width_,
-          //       scaled_video_width_, libyuv::FilterMode::kFilterNone);
-
-          //   libyuv::I420ToRGB24(
-          //       scaled_yuv_data, scaled_video_width_,
-          //       scaled_yuv_data + scaled_video_width_ * scaled_video_height_,
-          //       scaled_video_width_ / 2,
-          //       scaled_yuv_data +
-          //           scaled_video_width_ * scaled_video_height_ * 5 / 4,
-          //       scaled_video_width_ / 2, rgb_data, scaled_video_width_ * 3,
-          //       scaled_video_width_, scaled_video_height_);
-          //   stbi_write_png("RecentConnectionImage01.jpg",
-          //   scaled_video_width_,
-          //                  scaled_video_height_, 3, rgb_data,
-          //                  scaled_video_width_ * 3);
-
-          //   delete[] scaled_yuv_data;
-          //   delete[] rgb_data;
-          // }
 
           // SDL_Rect display_bounds;
           // SDL_GetDisplayBounds(0, &display_bounds);
@@ -1026,13 +1012,17 @@ int Render::Run() {
       }
     }
 
-    if (reload_recent_connections_) {
+    if (reload_recent_connections_ && main_renderer_) {
       bool ret = LoadTextureFromFile(
           "RecentConnectionImage01.png", main_renderer_,
           &recent_connection_texture_, &recent_connection_image_width_,
           &recent_connection_image_height_);
       if (!ret) {
         LOG_ERROR("Load recent connections image failed");
+      } else {
+        LOG_ERROR("Load recent connections image width: {}, height: {}",
+                  recent_connection_image_width_,
+                  recent_connection_image_height_);
       }
       reload_recent_connections_ = false;
     }
@@ -1074,6 +1064,8 @@ int Render::Run() {
     //   start_time_ = end_time_;
     // }
   }
+
+  delete[] argb_buffer_;
 
   // Cleanup
   if (screen_capturer_) {
