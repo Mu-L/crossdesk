@@ -161,27 +161,31 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
       if (entry.path().extension() == image_extensions) {
         thumbnails_sorted_by_write_time_[last_write_time] = entry.path();
       }
-
-      for (const auto& pair : thumbnails_sorted_by_write_time_) {
-        thumbnails_path.push_back(pair.second);
-      }
     }
+  }
+
+  for (auto it = thumbnails_sorted_by_write_time_.rbegin();
+       it != thumbnails_sorted_by_write_time_.rend(); ++it) {
+    thumbnails_path.push_back(it->second);
   }
 
   return thumbnails_path;
 }
 
-int Thumbnail::LoadThumbnail(SDL_Renderer* renderer, SDL_Texture** texture,
-                             int* width, int* height) {
+int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
+                             std::vector<SDL_Texture*>& textures, int* width,
+                             int* height) {
   std::vector<std::filesystem::path> image_path =
       FindThumbnailPath(image_path_);
 
   if (image_path.size() == 0) {
-    LOG_INFO("No thumbnail saved", image_path_);
     return -1;
   } else {
-    LoadTextureFromFile(image_path[0].string().c_str(), renderer, texture,
-                        width, height);
+    for (int i = 0; i < image_path.size(); i++) {
+      textures.push_back(nullptr);
+      LoadTextureFromFile(image_path[i].string().c_str(), renderer,
+                          &(textures[i]), width, height);
+    }
     return 0;
   }
 }

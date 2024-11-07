@@ -22,8 +22,8 @@ class Thumbnail {
                       const std::string& host_name,
                       const std::string& remote_id);
 
-  int LoadThumbnail(SDL_Renderer* renderer, SDL_Texture** texture, int* width,
-                    int* height);
+  int LoadThumbnail(SDL_Renderer* renderer, std::vector<SDL_Texture*>& textures,
+                    int* width, int* height);
 
  private:
   std::vector<std::filesystem::path> FindThumbnailPath(

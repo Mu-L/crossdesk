@@ -75,8 +75,11 @@ int Render::MainWindow() {
 }
 
 int Render::ShowRecentConnections() {
-  ImGui::Image((ImTextureID)(intptr_t)recent_connection_texture_,
-               ImVec2((float)recent_connection_image_width_,
-                      (float)recent_connection_image_height_));
+  for (int i = 0; i < recent_connection_textures_.size(); i++) {
+    ImGui::Image((ImTextureID)(intptr_t)recent_connection_textures_[i],
+                 ImVec2((float)recent_connection_image_width_,
+                        (float)recent_connection_image_height_));
+    ImGui::SameLine();
+  }
   return 0;
 }

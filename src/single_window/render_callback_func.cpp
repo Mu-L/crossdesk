@@ -268,6 +268,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
       render->start_mouse_control_ = true;
     }
     if (!render->hostname_sent_) {
+      // TODO: self and remote hostname
       std::string host_name = GetHostName();
       RemoteAction remote_action;
       remote_action.type = ControlType::host_infomation;

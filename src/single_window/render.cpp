@@ -912,7 +912,7 @@ int Render::Run() {
       uint32_t now_time = SDL_GetTicks();
       if (now_time - recent_connection_image_save_time_ >= 1000) {
         int ret = thumbnail_.LoadThumbnail(
-            main_renderer_, &recent_connection_texture_,
+            main_renderer_, recent_connection_textures_,
             &recent_connection_image_width_, &recent_connection_image_height_);
         if (!ret) {
           LOG_INFO("Load recent connection thumbnails");
