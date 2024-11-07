@@ -225,7 +225,7 @@ class Render {
   bool stream_window_inited_ = false;
 
   // recent connections
-  std::vector<SDL_Texture *> recent_connection_textures_;
+  std::map<std::string, SDL_Texture *> recent_connection_textures_;
   int recent_connection_image_width_ = 128;
   int recent_connection_image_height_ = 72;
   uint32_t recent_connection_image_save_time_ = 0;

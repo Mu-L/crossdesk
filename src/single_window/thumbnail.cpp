@@ -173,8 +173,8 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
 }
 
 int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
-                             std::vector<SDL_Texture*>& textures, int* width,
-                             int* height) {
+                             std::map<std::string, SDL_Texture*>& textures,
+                             int* width, int* height) {
   std::vector<std::filesystem::path> image_path =
       FindThumbnailPath(image_path_);
 
@@ -182,10 +182,14 @@ int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
     return -1;
   } else {
     for (int i = 0; i < image_path.size(); i++) {
-      textures.push_back(nullptr);
+      size_t pos1 = image_path[i].string().find('\\') + 1;
+      size_t pos2 = image_path[i].string().rfind('@');
+      std::string host_name = image_path[i].string().substr(pos1, pos2 - pos1);
+      textures[host_name] = nullptr;
       LoadTextureFromFile(image_path[i].string().c_str(), renderer,
-                          &(textures[i]), width, height);
+                          &(textures[host_name]), width, height);
     }
     return 0;
   }
+  return 0;
 }

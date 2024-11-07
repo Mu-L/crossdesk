@@ -55,6 +55,7 @@ int Render::MainWindow() {
   ImGui::TextColored(
       ImVec4(0.0f, 0.0f, 0.0f, 0.5f), "%s",
       localization::recent_connections[localization_language_index_].c_str());
+  ImGui::SetWindowFontScale(1.0f);
 
   draw_list->AddLine(
       ImVec2(25.0f, title_bar_height_ + local_window_height_ + 35.0f),
@@ -75,11 +76,35 @@ int Render::MainWindow() {
 }
 
 int Render::ShowRecentConnections() {
-  for (int i = 0; i < recent_connection_textures_.size(); i++) {
-    ImGui::Image((ImTextureID)(intptr_t)recent_connection_textures_[i],
+  for (auto it = recent_connection_textures_.begin();
+       it != recent_connection_textures_.end(); ++it) {
+    std::string recent_connection_sub_window_name =
+        "RecentConnectionsSubWindow" + it->first;
+    ImGui::BeginChild(recent_connection_sub_window_name.c_str(),
+                      ImVec2(recent_connection_image_width_ + 16.0f,
+                             recent_connection_image_height_ + 32.0f),
+                      ImGuiChildFlags_Border,
+                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                          ImGuiWindowFlags_NoMove |
+                          ImGuiWindowFlags_NoTitleBar |
+                          ImGuiWindowFlags_NoBringToFrontOnFocus |
+                          ImGuiWindowFlags_NoScrollbar);
+    ImGui::Image((ImTextureID)(intptr_t)it->second,
                  ImVec2((float)recent_connection_image_width_,
                         (float)recent_connection_image_height_));
+    ImGui::SetWindowFontScale(0.4f);
+
+    ImVec2 window_size = ImGui::GetWindowSize();
+    ImVec2 text_size = ImGui::CalcTextSize(it->first.c_str());
+    ImVec2 pos = ImGui::GetCursorPos();
+    pos.x = (window_size.x - text_size.x) / 2.0f;
+    ImGui::SetCursorPos(pos);
+
+    ImGui::Text("%s", it->first.c_str());
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::EndChild();
     ImGui::SameLine();
   }
+
   return 0;
 }
