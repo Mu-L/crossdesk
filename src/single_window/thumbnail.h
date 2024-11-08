@@ -26,6 +26,8 @@ class Thumbnail {
                     std::map<std::string, SDL_Texture*>& textures, int* width,
                     int* height);
 
+  int DeleteThumbnail(const std::string& file_path);
+
  private:
   std::vector<std::filesystem::path> FindThumbnailPath(
       const std::filesystem::path& directory);

@@ -226,8 +226,8 @@ class Render {
 
   // recent connections
   std::map<std::string, SDL_Texture *> recent_connection_textures_;
-  int recent_connection_image_width_ = 128;
-  int recent_connection_image_height_ = 72;
+  int recent_connection_image_width_ = 160;
+  int recent_connection_image_height_ = 90;
   uint32_t recent_connection_image_save_time_ = 0;
 
   // video window

@@ -175,6 +175,7 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
 int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
                              std::map<std::string, SDL_Texture*>& textures,
                              int* width, int* height) {
+  textures.clear();
   std::vector<std::filesystem::path> image_path =
       FindThumbnailPath(image_path_);
 
@@ -182,14 +183,27 @@ int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
     return -1;
   } else {
     for (int i = 0; i < image_path.size(); i++) {
-      size_t pos1 = image_path[i].string().find('\\') + 1;
-      size_t pos2 = image_path[i].string().rfind('@');
-      std::string host_name = image_path[i].string().substr(pos1, pos2 - pos1);
-      textures[host_name] = nullptr;
+      // size_t pos1 = image_path[i].string().find('\\') + 1;
+      // size_t pos2 = image_path[i].string().rfind('@');
+      // std::string host_name = image_path[i].string().substr(pos1, pos2 -
+      // pos1);
+      std::string image_p = image_path[i].string();
+      textures[image_p] = nullptr;
       LoadTextureFromFile(image_path[i].string().c_str(), renderer,
-                          &(textures[host_name]), width, height);
+                          &(textures[image_p]), width, height);
     }
     return 0;
   }
   return 0;
+}
+
+int Thumbnail::DeleteThumbnail(const std::string& file_path) {
+  if (std::filesystem::exists(file_path)) {
+    std::filesystem::remove(file_path);
+    LOG_INFO("File [{}] removed successfully", file_path);
+    return 0;
+  } else {
+    LOG_ERROR("File [{}] does not exist", file_path);
+    return -1;
+  }
 }
