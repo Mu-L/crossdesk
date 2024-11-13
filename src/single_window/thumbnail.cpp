@@ -3,6 +3,7 @@
 #include <openssl/aes.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 
 #include <chrono>
 #include <fstream>
@@ -63,7 +64,17 @@ void ScaleYUV420pToABGR(char* dst_buffer_, int video_width_, int video_height_,
   }
 }
 
-Thumbnail::Thumbnail() { std::filesystem::create_directory(image_path_); }
+Thumbnail::Thumbnail() {
+  RAND_bytes(aes128_key_, sizeof(aes128_key_));
+  RAND_bytes(aes128_iv_, sizeof(aes128_iv_));
+  std::filesystem::create_directory(image_path_);
+}
+
+Thumbnail::Thumbnail(unsigned char* aes128_key, unsigned char* aes128_iv) {
+  memcpy(aes128_key_, aes128_key, sizeof(aes128_key_));
+  memcpy(aes128_iv_, aes128_iv, sizeof(aes128_iv_));
+  std::filesystem::create_directory(image_path_);
+}
 
 Thumbnail::~Thumbnail() {
   if (rgba_buffer_) {
@@ -95,7 +106,7 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
       image_name = remote_id + "Y" + password + host_name;
     }
 
-    std::string ciphertext = AES_encrypt(image_name, key_, iv_);
+    std::string ciphertext = AES_encrypt(image_name, aes128_key_, aes128_iv_);
     std::string file_path = image_path_ + ciphertext;
     stbi_write_png(file_path.data(), thumbnail_width_, thumbnail_height_, 4,
                    rgba_buffer_, thumbnail_width_ * 4);
@@ -214,7 +225,7 @@ int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
       size_t pos1 = image_paths[i].string().find('/') + 1;
       std::string cipher_image_name = image_paths[i].string().substr(pos1);
       std::string original_image_name =
-          AES_decrypt(cipher_image_name, key_, iv_);
+          AES_decrypt(cipher_image_name, aes128_key_, aes128_iv_);
       std::string image_path = image_path_ + cipher_image_name;
       textures[original_image_name] = nullptr;
       LoadTextureFromFile(image_path.c_str(), renderer,
@@ -226,7 +237,7 @@ int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
 }
 
 int Thumbnail::DeleteThumbnail(const std::string& file_name) {
-  std::string ciphertext = AES_encrypt(file_name, key_, iv_);
+  std::string ciphertext = AES_encrypt(file_name, aes128_key_, aes128_iv_);
   std::string file_path = image_path_ + ciphertext;
   if (std::filesystem::exists(file_path)) {
     std::filesystem::remove(file_path);
@@ -234,6 +245,19 @@ int Thumbnail::DeleteThumbnail(const std::string& file_name) {
   } else {
     return -1;
   }
+}
+
+int Thumbnail::DeleteAllFilesInDirectory() {
+  if (std::filesystem::exists(image_path_) &&
+      std::filesystem::is_directory(image_path_)) {
+    for (const auto& entry : std::filesystem::directory_iterator(image_path_)) {
+      if (std::filesystem::is_regular_file(entry.status())) {
+        std::filesystem::remove(entry.path());
+      }
+    }
+    return 0;
+  }
+  return -1;
 }
 
 std::string Thumbnail::AES_encrypt(const std::string& plaintext,

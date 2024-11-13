@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <fstream>
 #include <string>
 
 #include "../../thirdparty/projectx/src/interface/x.h"
@@ -122,10 +123,13 @@ class Render {
     int video_quality;
     int video_encode_format;
     bool enable_hardware_video_codec;
+
+    unsigned char key[16];
+    unsigned char iv[16];
   } CDCache;
 
  private:
-  FILE *cd_cache_file_ = nullptr;
+  std::ifstream cd_cache_file_;
   CDCache cd_cache_;
   std::mutex cd_cache_mutex_;
 
@@ -238,9 +242,10 @@ class Render {
   SDL_Rect stream_render_rect_;
   uint32_t stream_pixformat_ = 0;
   std::string host_name_ = "";
-  std::string image_path_ = "thumbnails";
 
-  Thumbnail thumbnail_;
+  unsigned char aes128_key_[16];
+  unsigned char aes128_iv_[16];
+  std::unique_ptr<Thumbnail> thumbnail_;
 
   bool resizable_ = false;
   bool label_inited_ = false;

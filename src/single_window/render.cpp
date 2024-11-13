@@ -74,13 +74,13 @@ Render::Render() {}
 Render::~Render() {}
 
 int Render::SaveSettingsIntoCacheFile() {
-  std::lock_guard<std::mutex> lock(cd_cache_mutex_);
-  cd_cache_file_ = fopen("cache.cd", "w+");
+  cd_cache_mutex_.lock();
+  std::ofstream cd_cache_file_("cache.cd", std::ios::binary);
   if (!cd_cache_file_) {
+    cd_cache_mutex_.unlock();
     return -1;
   }
 
-  fseek(cd_cache_file_, 0, SEEK_SET);
   memset(&cd_cache_.client_id, 0, sizeof(cd_cache_.client_id));
   strncpy(cd_cache_.client_id, client_id_, sizeof(client_id_));
   memset(&cd_cache_.password, 0, sizeof(cd_cache_.password));
@@ -93,8 +93,10 @@ int Render::SaveSettingsIntoCacheFile() {
          sizeof(video_encode_format_button_value_));
   memcpy(&cd_cache_.enable_hardware_video_codec, &enable_hardware_video_codec_,
          sizeof(enable_hardware_video_codec_));
-  fwrite(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
-  fclose(cd_cache_file_);
+
+  cd_cache_file_.write(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
+  cd_cache_file_.close();
+  cd_cache_mutex_.unlock();
 
   config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
   config_center_.SetVideoQuality(
@@ -109,11 +111,15 @@ int Render::SaveSettingsIntoCacheFile() {
 }
 
 int Render::LoadSettingsFromCacheFile() {
-  std::lock_guard<std::mutex> lock(cd_cache_mutex_);
-  cd_cache_file_ = fopen("cache.cd", "r+");
+  cd_cache_mutex_.lock();
+  std::ifstream cd_cache_file_("cache.cd", std::ios::binary);
   if (!cd_cache_file_) {
+    cd_cache_mutex_.unlock();
+
     LOG_INFO("Init cache file by using default settings");
     memset(password_saved_, 0, sizeof(password_saved_));
+    memset(aes128_key_, 0, sizeof(aes128_key_));
+    memset(aes128_iv_, 0, sizeof(aes128_iv_));
     language_button_value_ = 0;
     video_quality_button_value_ = 0;
     video_encode_format_button_value_ = 1;
@@ -126,12 +132,18 @@ int Render::LoadSettingsFromCacheFile() {
         (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
     config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
 
+    thumbnail_ = std::make_unique<Thumbnail>();
+    thumbnail_->GetKeyAndIv(aes128_key_, aes128_iv_);
+    thumbnail_->DeleteAllFilesInDirectory();
+
+    SaveSettingsIntoCacheFile();
+
     return -1;
   }
 
-  fseek(cd_cache_file_, 0, SEEK_SET);
-  fread(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
-  fclose(cd_cache_file_);
+  cd_cache_file_.read(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
+  cd_cache_file_.close();
+  cd_cache_mutex_.unlock();
 
   memset(&client_id_, 0, sizeof(client_id_));
   strncpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
@@ -139,6 +151,12 @@ int Render::LoadSettingsFromCacheFile() {
   if (0 != strcmp(password_saved_, "") && 7 == sizeof(password_saved_)) {
     password_inited_ = true;
   }
+
+  memcpy(aes128_key_, cd_cache_.key, sizeof(cd_cache_.key));
+  memcpy(aes128_iv_, cd_cache_.iv, sizeof(cd_cache_.iv));
+
+  thumbnail_ = std::make_unique<Thumbnail>(aes128_key_, aes128_iv_);
+
   language_button_value_ = cd_cache_.language;
   video_quality_button_value_ = cd_cache_.video_quality;
   video_encode_format_button_value_ = cd_cache_.video_encode_format;
@@ -802,7 +820,7 @@ int Render::Run() {
           DestroyStreamWindowContext();
 
           if (dst_buffer_) {
-            thumbnail_.SaveToThumbnail(
+            thumbnail_->SaveToThumbnail(
                 (char*)dst_buffer_, video_width_, video_height_, remote_id_,
                 host_name_, remember_password_ ? remote_password_ : "");
             recent_connection_image_save_time_ = SDL_GetTicks();
@@ -911,7 +929,7 @@ int Render::Run() {
       // loal recent connection thumbnails after saving for 1 second
       uint32_t now_time = SDL_GetTicks();
       if (now_time - recent_connection_image_save_time_ >= 1000) {
-        int ret = thumbnail_.LoadThumbnail(
+        int ret = thumbnail_->LoadThumbnail(
             main_renderer_, recent_connection_textures_,
             &recent_connection_image_width_, &recent_connection_image_height_);
         if (!ret) {

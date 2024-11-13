@@ -154,7 +154,7 @@ int Render::ShowRecentConnections() {
     }
 
     if (delete_connection_) {
-      if (!thumbnail_.DeleteThumbnail(it->first)) {
+      if (!thumbnail_->DeleteThumbnail(it->first)) {
         reload_recent_connections_ = true;
         delete_connection_ = false;
       }
