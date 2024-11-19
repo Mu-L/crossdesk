@@ -25,16 +25,22 @@ static std::vector<std::string> connect = {u8"连接", "Connect"};
 static std::vector<std::string> recent_connections = {u8"近期连接",
                                                       "Recent Connections"};
 static std::vector<std::string> disconnect = {u8"断开连接", "Disconnect"};
-static std::vector<std::string> fullscreen = {u8" 全屏", " Fullscreen"};
+static std::vector<std::string> fullscreen = {u8"全屏", " Fullscreen"};
 static std::vector<std::string> show_net_traffic_stats = {
     u8"显示流量统计", "Show Net Traffic Stats"};
 static std::vector<std::string> hide_net_traffic_stats = {
     u8"隐藏流量统计", "Hide Net Traffic Stats"};
-static std::vector<std::string> exit_fullscreen = {u8" 退出全屏",
-                                                   " Exit fullscreen"};
-static std::vector<std::string> control_mouse = {u8" 控制", " Control"};
-static std::vector<std::string> release_mouse = {u8" 释放", " Release"};
-static std::vector<std::string> audio_capture = {u8" 声音", " Audio"};
+static std::vector<std::string> video = {u8"视频", "Video"};
+static std::vector<std::string> audio = {u8"音频", "Audio"};
+static std::vector<std::string> data = {u8"数据", "Data"};
+static std::vector<std::string> total = {u8"总计", "Total"};
+static std::vector<std::string> in = {u8"输入", "In"};
+static std::vector<std::string> out = {u8"输出", "Out"};
+static std::vector<std::string> exit_fullscreen = {u8"退出全屏",
+                                                   "Exit fullscreen"};
+static std::vector<std::string> control_mouse = {u8"控制", "Control"};
+static std::vector<std::string> release_mouse = {u8"释放", "Release"};
+static std::vector<std::string> audio_capture = {u8"声音", "Audio"};
 static std::vector<std::string> mute = {u8" 静音", " Mute"};
 static std::vector<std::string> settings = {u8"设置", "Settings"};
 static std::vector<std::string> language = {u8"语言:", "Language:"};

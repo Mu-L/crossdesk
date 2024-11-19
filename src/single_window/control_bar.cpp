@@ -3,12 +3,30 @@
 #include "rd_log.h"
 #include "render.h"
 
+int CountDigits(int number) {
+  if (number == 0) return 1;
+  return std::floor(std::log10(std::abs(number))) + 1;
+}
+
+int BitrateDisplay(uint64_t bitrate) {
+  int num_of_digits = CountDigits(bitrate);
+  if (num_of_digits <= 3) {
+    ImGui::Text("%d bps", bitrate / 1000);
+  } else if (num_of_digits > 3 && num_of_digits <= 6) {
+    ImGui::Text("%d kbps", bitrate / 1000);
+  } else {
+    ImGui::Text("%d mbps", bitrate / 1000000);
+  }
+  return 0;
+}
+
 int Render::ControlBar() {
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
+  ImVec2 mouse_button_pos = ImVec2(0, 0);
   if (control_bar_expand_) {
     ImGui::SetCursorPosX(
-        is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 41.0f);
+        is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 38.0f);
     // mouse control button
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
@@ -21,6 +39,7 @@ int Render::ControlBar() {
           IM_COL32(178, 178, 178, 255), 1.0f);
     }
 
+    mouse_button_pos = ImGui::GetCursorScreenPos();
     float disable_mouse_x = ImGui::GetCursorScreenPos().x + 4.0f;
     float disable_mouse_y = ImGui::GetCursorScreenPos().y + 4.0f;
     std::string mouse = mouse_control_button_pressed_ ? ICON_FA_COMPUTER_MOUSE
@@ -87,9 +106,17 @@ int Render::ControlBar() {
 
     ImGui::SameLine();
     // net traffic stats button
+    bool button_color_style_pushed = false;
+    if (net_traffic_stats_button_pressed_) {
+      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(66 / 255.0f, 150 / 255.0f,
+                                                    250 / 255.0f, 1.0f));
+      button_color_style_pushed = true;
+    }
     std::string net_traffic_stats = ICON_FA_SIGNAL;
     if (ImGui::Button(net_traffic_stats.c_str(), ImVec2(25, 25))) {
       net_traffic_stats_button_pressed_ = !net_traffic_stats_button_pressed_;
+      control_window_height_is_changing_ = true;
+      net_traffic_stats_button_pressed_time_ = ImGui::GetTime();
       net_traffic_stats_button_label_ =
           net_traffic_stats_button_pressed_
               ? localization::hide_net_traffic_stats
@@ -97,9 +124,9 @@ int Render::ControlBar() {
               : localization::show_net_traffic_stats
                     [localization_language_index_];
     }
-
-    if (net_traffic_stats_button_pressed_) {
-      NetTrafficStats();
+    if (button_color_style_pushed) {
+      ImGui::PopStyleColor();
+      button_color_style_pushed = false;
     }
 
     ImGui::SameLine();
@@ -141,7 +168,7 @@ int Render::ControlBar() {
   }
 
   ImGui::SetCursorPosX(
-      is_control_bar_in_left_ ? (control_window_width_ * 2 - 18.0f) : 3.0f);
+      is_control_bar_in_left_ ? (control_window_width_ * 2 - 20.0f) : 5.0f);
 
   std::string control_bar =
       control_bar_expand_
@@ -152,6 +179,15 @@ int Render::ControlBar() {
     control_bar_expand_ = !control_bar_expand_;
     control_bar_button_pressed_time_ = ImGui::GetTime();
     control_window_width_is_changing_ = true;
+
+    if (!control_bar_expand_) {
+      control_window_height_ = 40;
+      net_traffic_stats_button_pressed_ = false;
+    }
+  }
+
+  if (net_traffic_stats_button_pressed_ && control_bar_expand_) {
+    NetTrafficStats(mouse_button_pos);
   }
 
   ImGui::PopStyleVar();
@@ -159,75 +195,54 @@ int Render::ControlBar() {
   return 0;
 }
 
-int Render::NetTrafficStats() {
-  const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  ImGui::SetNextWindowPos(ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                                  connection_status_window_width_) /
-                                     2,
-                                 (viewport->WorkSize.y - viewport->WorkPos.y -
-                                  connection_status_window_height_) /
-                                     2));
+int Render::NetTrafficStats(ImVec2 mouse_button_pos) {
+  ImGui::SetCursorPos(ImVec2(
+      is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 5.0f, 40.0f));
 
-  ImGui::SetNextWindowSize(ImVec2(connection_status_window_width_,
-                                  connection_status_window_height_));
-  ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0, 1.0, 1.0, 1.0));
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
-
-  ImGui::Begin("NetTrafficStatsWindow", nullptr,
-               ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                   ImGuiWindowFlags_NoSavedSettings);
-  ImGui::PopStyleVar(2);
-  ImGui::PopStyleColor();
-
-  if (ImGui::BeginTable("split", 3)) {
-    int row = 0;
+  if (ImGui::BeginTable("split", 3, ImGuiTableFlags_BordersH,
+                        ImVec2(control_window_max_width_ - 10.0f,
+                               control_window_max_height_ - 40.0f))) {
     ImGui::TableNextColumn();
     ImGui::Text(" ");
     ImGui::TableNextColumn();
-    ImGui::Text("In");
+    ImGui::Text(localization::in[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    ImGui::Text("Out");
+    ImGui::Text(localization::out[localization_language_index_].c_str());
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text("Video");
+    ImGui::Text(localization::video[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    ImGui::Text("%d", net_traffic_stats_.video_in);
+    BitrateDisplay(net_traffic_stats_.video_in);
     ImGui::TableNextColumn();
-    ImGui::Text("%d", net_traffic_stats_.video_out);
+    BitrateDisplay(net_traffic_stats_.video_out);
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text("Audio");
+    ImGui::Text(localization::audio[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    ImGui::Text("%d", net_traffic_stats_.audio_in);
+    BitrateDisplay(net_traffic_stats_.audio_in);
     ImGui::TableNextColumn();
-    ImGui::Text("%d", net_traffic_stats_.audio_out);
+    BitrateDisplay(net_traffic_stats_.audio_out);
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text("Total");
+    ImGui::Text(localization::data[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    ImGui::Text("%d", net_traffic_stats_.total_in);
+    BitrateDisplay(net_traffic_stats_.data_in);
     ImGui::TableNextColumn();
-    ImGui::Text("%d", net_traffic_stats_.total_out);
+    BitrateDisplay(net_traffic_stats_.data_out);
+
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+    ImGui::Text(localization::total[localization_language_index_].c_str());
+    ImGui::TableNextColumn();
+    BitrateDisplay(net_traffic_stats_.total_in);
+    ImGui::TableNextColumn();
+    BitrateDisplay(net_traffic_stats_.total_out);
+
     ImGui::EndTable();
   }
 
-  ImGui::SetCursorPosX(connection_status_window_width_ * 6 / 19);
-  ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
-
-  // ok
-  ImGui::SetWindowFontScale(0.5f);
-  if (ImGui::Button(localization::ok[localization_language_index_].c_str()) ||
-      ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-    net_traffic_stats_button_pressed_ = false;
-  }
-
-  ImGui::End();
-  ImGui::PopStyleVar();
   return 0;
 }

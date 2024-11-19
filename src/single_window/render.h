@@ -64,7 +64,7 @@ class Render {
   int DrawMainWindow();
   int DrawStreamWindow();
   int ConfirmDeleteConnection();
-  int NetTrafficStats();
+  int NetTrafficStats(ImVec2 mouse_button_pos);
 
  public:
   static void OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
@@ -184,6 +184,8 @@ class Render {
   int main_window_height_before_maximized_ = 480;
   int control_window_min_width_ = 20;
   int control_window_max_width_ = 200;
+  int control_window_min_height_ = 40;
+  int control_window_max_height_ = 150;
   int control_window_width_ = 200;
   int control_window_height_ = 40;
   int local_window_width_ = 320;
@@ -285,7 +287,9 @@ class Render {
   bool streaming_ = false;
   bool is_client_mode_ = false;
   bool is_control_bar_in_left_ = true;
+  bool is_control_bar_in_top_ = true;
   bool control_window_width_is_changing_ = false;
+  bool control_window_height_is_changing_ = false;
   bool reload_recent_connections_ = true;
   bool hostname_sent_ = false;
   bool show_confirm_delete_connection_ = false;
@@ -295,6 +299,7 @@ class Render {
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;
   double control_bar_button_pressed_time_ = 0;
+  double net_traffic_stats_button_pressed_time_ = 0;
 
   ImVec2 control_winodw_pos_;
 

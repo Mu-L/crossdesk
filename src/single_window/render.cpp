@@ -69,7 +69,16 @@ SDL_HitTestResult Render::HitTestCallback(SDL_Window* window,
   return SDL_HITTEST_NORMAL;
 }
 
-Render::Render() {}
+Render::Render() {
+  net_traffic_stats_.video_in = 0;
+  net_traffic_stats_.video_out = 0;
+  net_traffic_stats_.audio_in = 0;
+  net_traffic_stats_.audio_out = 0;
+  net_traffic_stats_.data_in = 0;
+  net_traffic_stats_.data_out = 0;
+  net_traffic_stats_.total_in = 0;
+  net_traffic_stats_.total_out = 0;
+}
 
 Render::~Render() {}
 
@@ -511,8 +520,7 @@ int Render::SetupFontAndStyle(bool is_main_window) {
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   io.ConfigFlags |=
-      ImGuiConfigFlags_NavEnableGamepad;             // Enable Gamepad Controls
-  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
+      ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
 
   // Load Fonts
   ImFontConfig config;

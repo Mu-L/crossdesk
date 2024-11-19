@@ -351,7 +351,7 @@ void Render::NetStatusReport(const char *client_id, size_t client_id_size,
     LOG_INFO("Net mode: [{}]", int(render->traversal_mode_));
   }
 
-  if (net_traffic_stats) {
+  if (net_traffic_stats && nullptr == strstr(client_id, "C-")) {
     render->net_traffic_stats_.video_in = net_traffic_stats->video_in;
     render->net_traffic_stats_.video_out = net_traffic_stats->video_out;
     render->net_traffic_stats_.audio_in = net_traffic_stats->audio_in;

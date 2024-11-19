@@ -17,6 +17,21 @@ int Render::ControlWindow() {
     }
   }
 
+  time_duration = ImGui::GetTime() - net_traffic_stats_button_pressed_time_;
+  if (control_window_height_is_changing_) {
+    if (control_bar_expand_ && net_traffic_stats_button_pressed_) {
+      control_window_height_ =
+          control_window_min_height_ +
+          (control_window_max_height_ - control_window_min_height_) * 4 *
+              time_duration;
+    } else if (control_bar_expand_ && !net_traffic_stats_button_pressed_) {
+      control_window_height_ =
+          control_window_max_height_ -
+          (control_window_max_height_ - control_window_min_height_) * 4 *
+              time_duration;
+    }
+  }
+
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1, 1, 1, 1));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
@@ -93,6 +108,24 @@ int Render::ControlWindow() {
       }
       ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiCond_Always);
       is_control_bar_in_left_ = false;
+    }
+  }
+
+  if (control_bar_expand_ && control_window_height_is_changing_) {
+    if (net_traffic_stats_button_pressed_) {
+      if (control_window_height_ >= control_window_max_height_) {
+        control_window_height_ = control_window_max_height_;
+        control_window_height_is_changing_ = false;
+      } else {
+        control_window_height_is_changing_ = true;
+      }
+    } else {
+      if (control_window_height_ <= control_window_min_height_) {
+        control_window_height_ = control_window_min_height_;
+        control_window_height_is_changing_ = false;
+      } else {
+        control_window_height_is_changing_ = true;
+      }
     }
   }
 
