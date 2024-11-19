@@ -11,11 +11,11 @@ int CountDigits(int number) {
 int BitrateDisplay(uint64_t bitrate) {
   int num_of_digits = CountDigits(bitrate);
   if (num_of_digits <= 3) {
-    ImGui::Text("%d bps", bitrate / 1000);
+    ImGui::Text("%d bps", bitrate);
   } else if (num_of_digits > 3 && num_of_digits <= 6) {
     ImGui::Text("%d kbps", bitrate / 1000);
   } else {
-    ImGui::Text("%d mbps", bitrate / 1000000);
+    ImGui::Text("%.1f mbps", bitrate / 1000000.0f);
   }
   return 0;
 }
