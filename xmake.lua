@@ -17,7 +17,7 @@ if is_mode("debug") then
 end
 
 add_requires("spdlog 1.14.1", {system = false})
-add_requires("imgui v1.91.4-docking", {configs = {sdl2 = true, sdl2_renderer = true}})
+add_requires("imgui v1.91.5-docking", {configs = {sdl2 = true, sdl2_renderer = true}})
 add_requires("miniaudio 0.11.21")
 add_requires("openssl3 3.3.2", {system = false})
 

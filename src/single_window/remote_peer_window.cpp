@@ -61,10 +61,9 @@ int Render::RemoteWindow() {
       }
       bool enter_pressed = ImGui::InputText(
           "##remote_id_", remote_id_display_, IM_ARRAYSIZE(remote_id_display_),
-          ImGuiInputTextFlags_CharsUppercase |
+          ImGuiInputTextFlags_CharsDecimal |
               ImGuiInputTextFlags_EnterReturnsTrue |
-              ImGuiInputTextFlags_CallbackEdit |
-              ImGuiInputTextFlags_CharsNoBlank,
+              ImGuiInputTextFlags_CallbackEdit,
           InputTextCallback);
 
       ImGui::PopStyleVar();
