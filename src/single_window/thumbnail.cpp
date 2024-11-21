@@ -40,28 +40,18 @@ void ScaleYUV420pToABGR(char* dst_buffer_, int video_width_, int video_height_,
   std::unique_ptr<uint8_t[]> dst_u(new uint8_t[dst_uv_size]);
   std::unique_ptr<uint8_t[]> dst_v(new uint8_t[dst_uv_size]);
 
-  try {
-    libyuv::I420Scale(src_y, video_width_, src_u, (video_width_ + 1) / 2, src_v,
-                      (video_width_ + 1) / 2, video_width_, video_height_,
-                      dst_y.get(), scaled_video_width_, dst_u.get(),
-                      (scaled_video_width_ + 1) / 2, dst_v.get(),
-                      (scaled_video_width_ + 1) / 2, scaled_video_width_,
-                      scaled_video_height_, libyuv::kFilterBilinear);
-  } catch (const std::exception& e) {
-    LOG_ERROR("I420Scale failed: %s", e.what());
-    return;
-  }
+  libyuv::I420Scale(src_y, video_width_, src_u, (video_width_ + 1) / 2, src_v,
+                    (video_width_ + 1) / 2, video_width_, video_height_,
+                    dst_y.get(), scaled_video_width_, dst_u.get(),
+                    (scaled_video_width_ + 1) / 2, dst_v.get(),
+                    (scaled_video_width_ + 1) / 2, scaled_video_width_,
+                    scaled_video_height_, libyuv::kFilterBilinear);
 
-  try {
-    libyuv::I420ToABGR(
-        dst_y.get(), scaled_video_width_, dst_u.get(),
-        (scaled_video_width_ + 1) / 2, dst_v.get(),
-        (scaled_video_width_ + 1) / 2, reinterpret_cast<uint8_t*>(rgba_buffer_),
-        scaled_video_width_ * 4, scaled_video_width_, scaled_video_height_);
-  } catch (const std::exception& e) {
-    LOG_ERROR("I420ToRGBA failed: %s", e.what());
-    return;
-  }
+  libyuv::I420ToABGR(
+      dst_y.get(), scaled_video_width_, dst_u.get(),
+      (scaled_video_width_ + 1) / 2, dst_v.get(), (scaled_video_width_ + 1) / 2,
+      reinterpret_cast<uint8_t*>(rgba_buffer_), scaled_video_width_ * 4,
+      scaled_video_width_, scaled_video_height_);
 }
 
 Thumbnail::Thumbnail() {
@@ -360,7 +350,7 @@ std::string Thumbnail::AES_decrypt(const std::string& ciphertext,
   ret =
       EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &plaintext_final_len);
   if (1 != ret) {
-    LOG_ERROR("Error in EVP_DecryptFinal_ex, ret [{}]", ret);
+    LOG_ERROR("Error in EVP_DecryptFinal_ex");
 
     EVP_CIPHER_CTX_free(ctx);
     return ciphertext;

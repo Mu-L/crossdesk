@@ -93,6 +93,7 @@ int Render::SaveSettingsIntoCacheFile() {
          sizeof(video_encode_format_button_value_));
   memcpy(&cd_cache_.enable_hardware_video_codec, &enable_hardware_video_codec_,
          sizeof(enable_hardware_video_codec_));
+  memcpy(&cd_cache_.enable_turn, &enable_turn_, sizeof(enable_turn_));
 
   cd_cache_file_.write(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
   cd_cache_file_.close();
@@ -104,6 +105,7 @@ int Render::SaveSettingsIntoCacheFile() {
   config_center_.SetVideoEncodeFormat(
       (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
   config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
+  config_center_.SetTurn(enable_turn_);
 
   LOG_INFO("Save settings into cache file success");
 
@@ -124,6 +126,7 @@ int Render::LoadSettingsFromCacheFile() {
     video_quality_button_value_ = 0;
     video_encode_format_button_value_ = 1;
     enable_hardware_video_codec_ = false;
+    enable_turn_ = false;
 
     config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
     config_center_.SetVideoQuality(
@@ -131,6 +134,7 @@ int Render::LoadSettingsFromCacheFile() {
     config_center_.SetVideoEncodeFormat(
         (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
     config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
+    config_center_.SetTurn(enable_turn_);
 
     thumbnail_ = std::make_unique<Thumbnail>();
     thumbnail_->GetKeyAndIv(aes128_key_, aes128_iv_);
@@ -161,11 +165,13 @@ int Render::LoadSettingsFromCacheFile() {
   video_quality_button_value_ = cd_cache_.video_quality;
   video_encode_format_button_value_ = cd_cache_.video_encode_format;
   enable_hardware_video_codec_ = cd_cache_.enable_hardware_video_codec;
+  enable_turn_ = cd_cache_.enable_turn;
 
   language_button_value_last_ = language_button_value_;
   video_quality_button_value_last_ = video_quality_button_value_;
   video_encode_format_button_value_last_ = video_encode_format_button_value_;
   enable_hardware_video_codec_last_ = enable_hardware_video_codec_;
+  enable_turn_last_ = enable_turn_;
 
   config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
   config_center_.SetVideoQuality(
@@ -173,6 +179,7 @@ int Render::LoadSettingsFromCacheFile() {
   config_center_.SetVideoEncodeFormat(
       (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
   config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
+  config_center_.SetTurn(enable_turn_);
 
   LOG_INFO("Load settings from cache file");
 

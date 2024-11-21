@@ -127,6 +127,7 @@ class Render {
     int video_quality;
     int video_encode_format;
     bool enable_hardware_video_codec;
+    bool enable_turn;
 
     unsigned char key[16];
     unsigned char iv[16];
