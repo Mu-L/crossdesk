@@ -53,3 +53,16 @@ int KeyboardCapturer::Unhook() {
   UnhookWindowsHookEx(keyboard_hook_);
   return 0;
 }
+
+int KeyboardCapturer::SendKeyboardCommand(int key_code, bool is_down) {
+  INPUT input = {0};
+  input.type = INPUT_KEYBOARD;
+  input.ki.wVk = key_code;
+
+  if (!is_down) {
+    input.ki.dwFlags = KEYEVENTF_KEYUP;
+  }
+  SendInput(1, &input, sizeof(INPUT));
+
+  return 0;
+}

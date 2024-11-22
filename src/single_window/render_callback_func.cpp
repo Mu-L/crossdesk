@@ -103,7 +103,9 @@ int Render::SendKeyEvent(int key_code, bool is_down) {
 }
 
 int Render::ProcessKeyEvent(int key_code, bool is_down) {
-  LOG_ERROR("key code [{}], is down [{}]", key_code, is_down);
+  if (keyboard_capturer_) {
+    keyboard_capturer_->SendKeyboardCommand(key_code, is_down);
+  }
 
   return 0;
 }

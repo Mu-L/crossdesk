@@ -9,3 +9,7 @@ int KeyboardCapturer::Hook(OnKeyAction on_key_action, void *user_ptr) {
 }
 
 int KeyboardCapturer::Unhook() { return 0; }
+
+int KeyboardCapturer::SendKeyboardCommand(int key_code, bool is_down) {
+  return 0;
+}

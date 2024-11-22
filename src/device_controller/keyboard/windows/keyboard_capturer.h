@@ -19,6 +19,7 @@ class KeyboardCapturer : public DeviceController {
  public:
   virtual int Hook(OnKeyAction on_key_action, void *user_ptr);
   virtual int Unhook();
+  virtual int SendKeyboardCommand(int key_code, bool is_down);
 
  private:
   HHOOK keyboard_hook_ = nullptr;
