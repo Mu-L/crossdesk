@@ -104,9 +104,6 @@ class PeerConnection {
  private:
   int Login();
 
-  int CreateVideoCodec(bool av1, bool hardware_acceleration);
-  int CreateAudioCodec();
-
   void ProcessSignal(const std::string &signal);
 
   int RequestTransmissionMemberList(const std::string &transmission_id,
@@ -168,12 +165,7 @@ class PeerConnection {
   std::map<std::string, std::unique_ptr<IceTransmission>>
       ice_transmission_list_;
   std::map<std::string, bool> is_ice_transmission_ready_;
-  std::function<void(const char *, size_t, const std::string &)>
-      on_receive_video_ = nullptr;
-  std::function<void(const char *, size_t, const std::string &)>
-      on_receive_audio_ = nullptr;
-  std::function<void(const char *, size_t, const std::string &)>
-      on_receive_data_ = nullptr;
+
   std::function<void(std::string, const std::string &)> on_ice_status_change_ =
       nullptr;
   std::function<void(const std::string &, IceTransmission::TraversalType,
@@ -199,18 +191,7 @@ class PeerConnection {
   std::string password_;
 
  private:
-  std::unique_ptr<VideoEncoder> video_encoder_ = nullptr;
-  std::unique_ptr<VideoDecoder> video_decoder_ = nullptr;
-  bool hardware_accelerated_encode_ = false;
-  bool hardware_accelerated_decode_ = false;
   bool b_force_i_frame_ = false;
-  bool video_codec_inited_ = false;
-  bool load_nvcodec_dll_success = false;
-
- private:
-  std::unique_ptr<AudioEncoder> audio_encoder_ = nullptr;
-  std::unique_ptr<AudioDecoder> audio_decoder_ = nullptr;
-  bool audio_codec_inited_ = false;
 
  private:
   std::thread ice_worker_;

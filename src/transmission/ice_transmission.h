@@ -9,6 +9,8 @@
 
 #include <iostream>
 
+#include "audio_decoder.h"
+#include "audio_encoder.h"
 #include "congestion_control.h"
 #include "ice_agent.h"
 #include "io_statistics.h"
@@ -21,11 +23,14 @@
 #include "rtp_packet.h"
 #include "rtp_video_receiver.h"
 #include "rtp_video_sender.h"
+#include "video_decoder_factory.h"
+#include "video_encoder_factory.h"
 #include "ws_client.h"
 
 class IceTransmission {
  public:
   typedef enum { VIDEO = 96, AUDIO = 97, DATA = 127 } DATA_TYPE;
+  typedef enum { H264 = 96, AV1 = 99 } VIDEO_TYPE;
   enum VideoFrameType {
     kEmptyFrame = 0,
     kVideoFrameKey = 3,
@@ -39,12 +44,14 @@ class IceTransmission {
                   std::string &user_id, std::string &remote_user_id,
                   std::shared_ptr<WsClient> ice_ws_transmission,
                   std::function<void(std::string, const std::string &)>
-                      on_ice_status_change);
+                      on_ice_status_change,
+                  void *user_data);
   ~IceTransmission();
 
  public:
-  int SetLocalCapabilities(bool use_trickle_ice, bool use_reliable_ice,
-                           bool enable_turn, bool force_turn,
+  int SetLocalCapabilities(bool hardware_acceleration, bool use_trickle_ice,
+                           bool use_reliable_ice, bool enable_turn,
+                           bool force_turn,
                            std::vector<int> &video_payload_types,
                            std::vector<int> &audio_payload_types);
 
@@ -57,19 +64,22 @@ class IceTransmission {
   int DestroyIceTransmission();
 
   void SetOnReceiveVideoFunc(
-      std::function<void(const char *, size_t, const std::string &)>
+      std::function<void(const XVideoFrame *, const char *, const size_t,
+                         void *)>
           on_receive_video) {
     on_receive_video_ = on_receive_video;
   }
 
   void SetOnReceiveAudioFunc(
-      std::function<void(const char *, size_t, const std::string &)>
+      std::function<void(const char *, size_t, const char *, const size_t,
+                         void *)>
           on_receive_audio) {
     on_receive_audio_ = on_receive_audio;
   }
 
   void SetOnReceiveDataFunc(
-      std::function<void(const char *, size_t, const std::string &)>
+      std::function<void(const char *, size_t, const char *, const size_t,
+                         void *)>
           on_receive_data) {
     on_receive_data_ = on_receive_data;
   }
@@ -87,9 +97,7 @@ class IceTransmission {
 
   int SetTransmissionId(const std::string &transmission_id);
 
-  int SendData(DATA_TYPE type, const char *data, size_t size);
-
-  int SendVideoData(VideoFrameType frame_type, const char *data, size_t size);
+  int SendVideoData(const XVideoFrame *video_frame);
 
   int SendAudioData(const char *data, size_t size);
 
@@ -119,6 +127,10 @@ class IceTransmission {
 
   int CreateMediaCodec();
 
+  int CreateVideoCodec(RtpPacket::PAYLOAD_TYPE video_pt,
+                       bool hardware_acceleration);
+  int CreateAudioCodec();
+
  private:
   uint8_t CheckIsRtcpPacket(const char *buffer, size_t size);
   uint8_t CheckIsVideoPacket(const char *buffer, size_t size);
@@ -147,20 +159,23 @@ class IceTransmission {
   std::string remote_ice_username_ = "";
   NiceComponentState state_ = NICE_COMPONENT_STATE_DISCONNECTED;
   TraversalType traversal_type_ = TraversalType::TP2P;
+  void *user_data_ = nullptr;
 
  private:
   std::unique_ptr<IceAgent> ice_agent_ = nullptr;
   bool is_closed_ = false;
   std::shared_ptr<WsClient> ice_ws_transport_ = nullptr;
   CongestionControl *congestion_control_ = nullptr;
-  std::function<void(const char *, size_t, const std::string &)>
+  std::function<void(const XVideoFrame *, const char *, const size_t, void *)>
       on_receive_video_ = nullptr;
-  std::function<void(const char *, size_t, const std::string &)>
+  std::function<void(const char *, size_t, const char *, const size_t, void *)>
       on_receive_audio_ = nullptr;
-  std::function<void(const char *, size_t, const std::string &)>
+  std::function<void(const char *, size_t, const char *, const size_t, void *)>
       on_receive_data_ = nullptr;
+
   std::function<void(std::string, const std::string &)> on_ice_status_change_ =
       nullptr;
+
   std::function<void(const std::string &, TraversalType, const uint64_t,
                      const uint64_t, const uint64_t, const uint64_t,
                      const uint64_t, const uint64_t, const uint64_t,
@@ -200,6 +215,19 @@ class IceTransmission {
       RtpPacket::PAYLOAD_TYPE::UNDEFINED;
   RtpPacket::PAYLOAD_TYPE negotiated_data_pt_ =
       RtpPacket::PAYLOAD_TYPE::UNDEFINED;
+
+ private:
+  std::unique_ptr<VideoEncoder> video_encoder_ = nullptr;
+  std::unique_ptr<VideoDecoder> video_decoder_ = nullptr;
+  bool b_force_i_frame_ = false;
+  bool video_codec_inited_ = false;
+  bool load_nvcodec_dll_success_ = false;
+  bool hardware_acceleration_ = false;
+
+ private:
+  std::unique_ptr<AudioEncoder> audio_encoder_ = nullptr;
+  std::unique_ptr<AudioDecoder> audio_decoder_ = nullptr;
+  bool audio_codec_inited_ = false;
 };
 
 #endif

@@ -98,23 +98,6 @@ int LeaveConnection(PeerPtr *peer_ptr, const char *transmission_id) {
   return 0;
 }
 
-int SendData(PeerPtr *peer_ptr, DATA_TYPE data_type, const char *data,
-             size_t size) {
-  if (!peer_ptr) {
-    LOG_ERROR("peer_ptr not created");
-    return -1;
-  }
-
-  if (DATA_TYPE::VIDEO == data_type) {
-    peer_ptr->peer_connection->SendVideoData(data, size);
-  } else if (DATA_TYPE::AUDIO == data_type) {
-    peer_ptr->peer_connection->SendAudioData(data, size);
-  } else if (DATA_TYPE::DATA == data_type) {
-    peer_ptr->peer_connection->SendUserData(data, size);
-  }
-  return 0;
-}
-
 DLLAPI int SendVideoFrame(PeerPtr *peer_ptr, const XVideoFrame *video_frame) {
   if (!peer_ptr) {
     LOG_ERROR("peer_ptr not created");
@@ -124,9 +107,44 @@ DLLAPI int SendVideoFrame(PeerPtr *peer_ptr, const XVideoFrame *video_frame) {
   if (!video_frame) {
     LOG_ERROR("Invaild video frame");
     return -1;
+  } else if (!video_frame->data || video_frame->size <= 0) {
+    LOG_ERROR("Invaild video frame");
+    return -1;
   }
 
   peer_ptr->peer_connection->SendVideoData(video_frame);
+
+  return 0;
+}
+
+DLLAPI int SendAudioFrame(PeerPtr *peer_ptr, const char *data, size_t size) {
+  if (!peer_ptr) {
+    LOG_ERROR("peer_ptr not created");
+    return -1;
+  }
+
+  if (!data || size <= 0) {
+    LOG_ERROR("Invaild video frame");
+    return -1;
+  }
+
+  peer_ptr->peer_connection->SendAudioData(data, size);
+
+  return 0;
+}
+
+int SendData(PeerPtr *peer_ptr, const char *data, size_t size) {
+  if (!peer_ptr) {
+    LOG_ERROR("peer_ptr not created");
+    return -1;
+  }
+
+  if (!data || size <= 0) {
+    LOG_ERROR("Invaild data");
+    return -1;
+  }
+
+  peer_ptr->peer_connection->SendUserData(data, size);
 
   return 0;
 }

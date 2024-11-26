@@ -184,13 +184,13 @@ target("statistics")
 
 target("transmission")
     set_kind("object")
-    add_deps("log", "ws", "ice", "qos", "rtp", "rtcp", "statistics")
+    add_deps("log", "ws", "ice", "qos", "rtp", "rtcp", "statistics", "media")
     add_files("src/transmission/*.cpp")
     add_includedirs("src/ws", "src/ice", "src/qos", {public = true})
 
 target("pc")
     set_kind("object")
-    add_deps("log", "ws", "ice", "transmission", "inih", "common", "media")
+    add_deps("log", "ws", "ice", "transmission", "inih", "common")
     add_files("src/pc/*.cpp")
     add_includedirs("src/transmission", "src/interface", {public = true})
 

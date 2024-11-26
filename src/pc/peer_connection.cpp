@@ -7,11 +7,6 @@
 #include "log.h"
 #include "nlohmann/json.hpp"
 
-#if __APPLE__
-#else
-#include "nvcodec_api.h"
-#endif
-
 using nlohmann::json;
 
 PeerConnection::PeerConnection() {}
@@ -21,10 +16,6 @@ PeerConnection::~PeerConnection() {
     delete nv12_data_;
     nv12_data_ = nullptr;
   }
-
-  video_codec_inited_ = false;
-  audio_codec_inited_ = false;
-  load_nvcodec_dll_success = false;
 
   user_data_ = nullptr;
 }
@@ -143,41 +134,6 @@ int PeerConnection::Init(PeerConnectionParams params,
     }
   };
 
-  on_receive_video_ = [this](const char *data, size_t size,
-                             const std::string &user_id) {
-    int num_frame_returned = video_decoder_->Decode(
-        (uint8_t *)data, size, [this, user_id](VideoFrame video_frame) {
-          if (on_receive_video_frame_) {
-            XVideoFrame x_video_frame;
-            x_video_frame.data = (const char *)video_frame.Buffer();
-            x_video_frame.width = video_frame.Width();
-            x_video_frame.height = video_frame.Height();
-            x_video_frame.size = video_frame.Size();
-            on_receive_video_frame_(&x_video_frame, user_id.data(),
-                                    user_id.size(), user_data_);
-          }
-        });
-  };
-
-  on_receive_audio_ = [this](const char *data, size_t size,
-                             const std::string &user_id) {
-    int num_frame_returned = audio_decoder_->Decode(
-        (uint8_t *)data, size, [this, user_id](uint8_t *data, int size) {
-          if (on_receive_audio_buffer_) {
-            on_receive_audio_buffer_((const char *)data, size, user_id.data(),
-                                     user_id.size(), user_data_);
-          }
-        });
-  };
-
-  on_receive_data_ = [this](const char *data, size_t size,
-                            const std::string &user_id) {
-    if (on_receive_data_buffer_) {
-      on_receive_data_buffer_(data, size, user_id.data(), user_id.size(),
-                              user_data_);
-    }
-  };
-
   on_ice_status_change_ = [this](std::string ice_status,
                                  const std::string &user_id) {
     if ("connecting" == ice_status) {
@@ -274,102 +230,6 @@ int PeerConnection::Init(PeerConnectionParams params,
   LOG_INFO("[{}] Init finish", user_id);
 
   inited_ = true;
-  return 0;
-}
-
-int PeerConnection::CreateVideoCodec(bool av1, bool hardware_acceleration) {
-  if (video_codec_inited_) {
-    return 0;
-  }
-
-  hardware_acceleration_ = hardware_acceleration;
-
-  if (av1) {
-    if (hardware_acceleration_) {
-      hardware_acceleration_ = false;
-      LOG_WARN("Only support software codec for AV1");
-    }
-    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, true);
-    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, true);
-  } else {
-#ifdef __APPLE__
-    if (hardware_acceleration_) {
-      hardware_acceleration_ = false;
-      LOG_WARN(
-          "MacOS not support hardware acceleration, use default software "
-          "codec");
-      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
-      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
-    } else {
-      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
-      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
-    }
-#else
-    if (hardware_acceleration_) {
-      if (0 == LoadNvCodecDll()) {
-        load_nvcodec_dll_success = true;
-        video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(true, false);
-        video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(true, false);
-      } else {
-        LOG_WARN(
-            "Hardware accelerated codec not available, use default software "
-            "codec");
-        video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
-        video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
-      }
-    } else {
-      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
-      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
-    }
-#endif
-  }
-
-  if (!video_encoder_) {
-    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
-    LOG_ERROR("Create encoder failed, try to use software H.264 encoder");
-  }
-  if (!video_encoder_ || 0 != video_encoder_->Init()) {
-    LOG_ERROR("Encoder init failed");
-    return -1;
-  }
-
-  if (!video_decoder_) {
-    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
-    LOG_ERROR("Create decoder failed, try to use software H.264 decoder");
-  }
-  if (!video_decoder_ || video_decoder_->Init()) {
-    LOG_ERROR("Decoder init failed");
-    return -1;
-  }
-
-  video_codec_inited_ = true;
-  LOG_INFO("Create video codec [{}|{}] finish",
-           video_encoder_->GetEncoderName(), video_decoder_->GetDecoderName());
-
-  return 0;
-}
-
-int PeerConnection::CreateAudioCodec() {
-  if (audio_codec_inited_) {
-    return 0;
-  }
-
-  audio_encoder_ = std::make_unique<AudioEncoder>(AudioEncoder(48000, 1, 480));
-  if (!audio_encoder_ || 0 != audio_encoder_->Init()) {
-    LOG_ERROR("Audio encoder init failed");
-    return -1;
-  }
-
-  audio_decoder_ = std::make_unique<AudioDecoder>(AudioDecoder(48000, 1, 480));
-  if (!audio_decoder_ || 0 != audio_decoder_->Init()) {
-    LOG_ERROR("Audio decoder init failed");
-    return -1;
-  }
-
-  audio_codec_inited_ = true;
-  LOG_INFO("Create audio codec [{}|{}] finish",
-           audio_encoder_->GetEncoderName(), audio_decoder_->GetDecoderName());
-
   return 0;
 }
 
@@ -494,12 +354,6 @@ int PeerConnection::Destroy() {
     nv12_data_ = nullptr;
   }
 
-#ifdef __APPLE__
-#else
-  if (hardware_acceleration_ && load_nvcodec_dll_success) {
-    ReleaseNvCodecDll();
-  }
-#endif
   return 0;
 }
 
@@ -527,36 +381,18 @@ SignalStatus PeerConnection::GetSignalStatus() {
   return signal_status_;
 }
 
-int PeerConnection::SendVideoData(const char *data, size_t size) {
+// media send
+int PeerConnection::SendVideoData(const XVideoFrame *video_frame) {
   if (ice_transmission_list_.empty()) {
     return -1;
   }
 
-  if (b_force_i_frame_) {
-    LOG_INFO("Force I frame");
-    video_encoder_->ForceIdr();
-    b_force_i_frame_ = false;
-  }
+  for (auto &ice_trans : ice_transmission_list_) {
+    if (!is_ice_transmission_ready_[ice_trans.first]) {
+      continue;
+    }
 
-  int ret = video_encoder_->Encode(
-      (uint8_t *)data, size,
-      [this](char *encoded_frame, size_t size,
-             VideoEncoder::VideoFrameType frame_type) -> int {
-        for (auto &ice_trans : ice_transmission_list_) {
-          if (!is_ice_transmission_ready_[ice_trans.first]) {
-            continue;
-          }
-          // LOG_ERROR("Send frame size: [{}]", size);
-          ice_trans.second->SendVideoData(
-              static_cast<IceTransmission::VideoFrameType>(frame_type),
-              encoded_frame, size);
-        }
-        return 0;
-      });
-
-  if (0 != ret) {
-    LOG_ERROR("Encode failed");
-    return -1;
+    ice_trans.second->SendVideoData(video_frame);
   }
 
   return 0;
@@ -567,19 +403,12 @@ int PeerConnection::SendAudioData(const char *data, size_t size) {
     return -1;
   }
 
-  int ret = audio_encoder_->Encode(
-      (uint8_t *)data, size,
-      [this](char *encoded_audio_buffer, size_t size) -> int {
-        for (auto &ice_trans : ice_transmission_list_) {
-          if (!is_ice_transmission_ready_[ice_trans.first]) {
-            continue;
-          }
-          // LOG_ERROR("opus frame size: [{}]", size);
-          ice_trans.second->SendData(IceTransmission::DATA_TYPE::AUDIO,
-                                     encoded_audio_buffer, size);
-        }
-        return 0;
-      });
+  for (auto &ice_trans : ice_transmission_list_) {
+    if (!is_ice_transmission_ready_[ice_trans.first]) {
+      continue;
+    }
+    ice_trans.second->SendAudioData(data, size);
+  }
 
   return 0;
 }
@@ -589,43 +418,8 @@ int PeerConnection::SendUserData(const char *data, size_t size) {
     if (!is_ice_transmission_ready_[ice_trans.first]) {
       continue;
     }
-    ice_trans.second->SendData(IceTransmission::DATA_TYPE::DATA, data, size);
+    ice_trans.second->SendUserData(data, size);
   }
-  return 0;
-}
-
-int PeerConnection::SendVideoData(const XVideoFrame *video_frame) {
-  if (ice_transmission_list_.empty()) {
-    return -1;
-  }
-
-  if (b_force_i_frame_) {
-    video_encoder_->ForceIdr();
-    LOG_INFO("Force I frame");
-    b_force_i_frame_ = false;
-  }
-
-  int ret = video_encoder_->Encode(
-      video_frame,
-      [this](char *encoded_frame, size_t size,
-             VideoEncoder::VideoFrameType frame_type) -> int {
-        for (auto &ice_trans : ice_transmission_list_) {
-          if (!is_ice_transmission_ready_[ice_trans.first]) {
-            continue;
-          }
-          // LOG_ERROR("Send frame size: [{}]", size);
-          ice_trans.second->SendVideoData(
-              static_cast<IceTransmission::VideoFrameType>(frame_type),
-              encoded_frame, size);
-        }
-        return 0;
-      });
-
-  if (0 != ret) {
-    LOG_ERROR("Encode failed");
-    return -1;
-  }
-
   return 0;
 }
 
@@ -842,20 +636,21 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
 
       for (auto &remote_user_id : user_id_list) {
         ice_transmission_list_[remote_user_id] =
-            std::make_unique<IceTransmission>(true, transmission_id, user_id_,
-                                              remote_user_id, ws_transport_,
-                                              on_ice_status_change_);
+            std::make_unique<IceTransmission>(
+                true, transmission_id, user_id_, remote_user_id, ws_transport_,
+                on_ice_status_change_, user_data_);
 
         ice_transmission_list_[remote_user_id]->SetLocalCapabilities(
-            trickle_ice_, reliable_ice_, enable_turn_, false,
-            video_payload_types_, audio_payload_types_);
+            hardware_acceleration_, trickle_ice_, reliable_ice_, enable_turn_,
+            false, video_payload_types_, audio_payload_types_);
 
         ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
-            on_receive_video_);
+            on_receive_video_frame_);
         ice_transmission_list_[remote_user_id]->SetOnReceiveAudioFunc(
-            on_receive_audio_);
+            on_receive_audio_buffer_);
         ice_transmission_list_[remote_user_id]->SetOnReceiveDataFunc(
-            on_receive_data_);
+            on_receive_data_buffer_);
+
         ice_transmission_list_[remote_user_id]->SetOnReceiveNetStatusReportFunc(
             on_net_status_report_);
 
@@ -889,20 +684,21 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
           ice_transmission_list_.find(remote_user_id)) {
         // Enable TURN for answer peer by default
         ice_transmission_list_[remote_user_id] =
-            std::make_unique<IceTransmission>(false, transmission_id, user_id_,
-                                              remote_user_id, ws_transport_,
-                                              on_ice_status_change_);
+            std::make_unique<IceTransmission>(
+                false, transmission_id, user_id_, remote_user_id, ws_transport_,
+                on_ice_status_change_, user_data_);
 
         ice_transmission_list_[remote_user_id]->SetLocalCapabilities(
-            trickle_ice_, reliable_ice_, enable_turn_, false,
-            video_payload_types_, audio_payload_types_);
+            hardware_acceleration_, trickle_ice_, reliable_ice_, enable_turn_,
+            false, video_payload_types_, audio_payload_types_);
 
         ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
-            on_receive_video_);
+            on_receive_video_frame_);
         ice_transmission_list_[remote_user_id]->SetOnReceiveAudioFunc(
-            on_receive_audio_);
+            on_receive_audio_buffer_);
         ice_transmission_list_[remote_user_id]->SetOnReceiveDataFunc(
-            on_receive_data_);
+            on_receive_data_buffer_);
+
         ice_transmission_list_[remote_user_id]->SetOnReceiveNetStatusReportFunc(
             on_net_status_report_);
 
@@ -921,18 +717,6 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
       if (0 != ret) {
         NegotiationFailed();
         break;
-      } else {
-        std::vector<RtpPacket::PAYLOAD_TYPE> negotiated_payload_types =
-            ice_transmission_list_[remote_user_id]->GetNegotiatedCapabilities();
-        if (0 != CreateVideoCodec(RtpPacket::PAYLOAD_TYPE::AV1 ==
-                                      negotiated_payload_types[0],
-                                  hardware_acceleration_)) {
-          LOG_ERROR("Create video codec failed");
-        }
-
-        if (0 != CreateAudioCodec()) {
-          LOG_ERROR("Create audio codec failed");
-        }
       }
 
       if (trickle_ice_) {
@@ -953,19 +737,6 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
         if (0 != ret) {
           Leave(remote_transmission_id_);
           break;
-        } else {
-          std::vector<RtpPacket::PAYLOAD_TYPE> negotiated_payload_types =
-              ice_transmission_list_[remote_user_id]
-                  ->GetNegotiatedCapabilities();
-          if (0 != CreateVideoCodec(RtpPacket::PAYLOAD_TYPE::AV1 ==
-                                        negotiated_payload_types[0],
-                                    hardware_acceleration_)) {
-            LOG_ERROR("Create video codec failed");
-          }
-
-          if (0 != CreateAudioCodec()) {
-            LOG_ERROR("Create audio codec failed");
-          }
         }
 
         if (trickle_ice_) {

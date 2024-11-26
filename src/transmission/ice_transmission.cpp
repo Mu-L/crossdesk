@@ -8,26 +8,44 @@
 #include "common.h"
 #include "ikcp.h"
 #include "log.h"
+#if __APPLE__
+#else
+#include "nvcodec_api.h"
+#endif
 
 using nlohmann::json;
 
 IceTransmission::IceTransmission(
     bool offer_peer, std::string &transmission_id, std::string &user_id,
     std::string &remote_user_id, std::shared_ptr<WsClient> ice_ws_transmission,
-    std::function<void(std::string, const std::string &)> on_ice_status_change)
+    std::function<void(std::string, const std::string &)> on_ice_status_change,
+    void *user_data)
     : offer_peer_(offer_peer),
       transmission_id_(transmission_id),
       user_id_(user_id),
       remote_user_id_(remote_user_id),
       ice_ws_transport_(ice_ws_transmission),
-      on_ice_status_change_(on_ice_status_change) {}
+      on_ice_status_change_(on_ice_status_change),
+      user_data_(user_data) {}
 
-IceTransmission::~IceTransmission() {}
+IceTransmission::~IceTransmission() {
+  video_codec_inited_ = false;
+  audio_codec_inited_ = false;
+  load_nvcodec_dll_success_ = false;
+
+#ifdef __APPLE__
+#else
+  if (hardware_acceleration_ && load_nvcodec_dll_success_) {
+    ReleaseNvCodecDll();
+  }
+#endif
+}
 
 int IceTransmission::SetLocalCapabilities(
-    bool use_trickle_ice, bool use_reliable_ice, bool enable_turn,
-    bool force_turn, std::vector<int> &video_payload_types,
+    bool hardware_acceleration, bool use_trickle_ice, bool use_reliable_ice,
+    bool enable_turn, bool force_turn, std::vector<int> &video_payload_types,
     std::vector<int> &audio_payload_types) {
+  hardware_acceleration_ = hardware_acceleration;
   use_trickle_ice_ = use_trickle_ice;
   use_reliable_ice_ = use_reliable_ice;
   enable_turn_ = force_turn;
@@ -81,8 +99,20 @@ int IceTransmission::InitIceTransmission(
       [this](VideoFrame &video_frame) -> void {
         // LOG_ERROR("OnReceiveCompleteFrame {}", video_frame.Size());
         ice_io_statistics_->UpdateVideoInboundBytes(video_frame.Size());
-        on_receive_video_((const char *)video_frame.Buffer(),
-                          video_frame.Size(), remote_user_id_);
+
+        int num_frame_returned = video_decoder_->Decode(
+            (uint8_t *)video_frame.Buffer(), video_frame.Size(),
+            [this](VideoFrame video_frame) {
+              if (on_receive_video_) {
+                XVideoFrame x_video_frame;
+                x_video_frame.data = (const char *)video_frame.Buffer();
+                x_video_frame.width = video_frame.Width();
+                x_video_frame.height = video_frame.Height();
+                x_video_frame.size = video_frame.Size();
+                on_receive_video_(&x_video_frame, remote_user_id_.data(),
+                                  remote_user_id_.size(), user_data_);
+              }
+            });
       });
 
   rtp_video_receiver_->Start();
@@ -126,11 +156,18 @@ int IceTransmission::InitIceTransmission(
 
         return ice_agent_->Send(data, size);
       });
-  rtp_audio_receiver_->SetOnReceiveData(
-      [this](const char *data, size_t size) -> void {
-        ice_io_statistics_->UpdateAudioInboundBytes(size);
-        on_receive_audio_(data, size, remote_user_id_);
-      });
+  rtp_audio_receiver_->SetOnReceiveData([this](const char *data,
+                                               size_t size) -> void {
+    ice_io_statistics_->UpdateAudioInboundBytes(size);
+
+    int num_frame_returned = audio_decoder_->Decode(
+        (uint8_t *)data, size, [this](uint8_t *data, int size) {
+          if (on_receive_audio_) {
+            on_receive_audio_((const char *)data, size, remote_user_id_.data(),
+                              remote_user_id_.size(), user_data_);
+          }
+        });
+  });
 
   rtp_audio_sender_ = std::make_unique<RtpAudioSender>();
   rtp_audio_sender_->SetSendDataFunc(
@@ -174,7 +211,11 @@ int IceTransmission::InitIceTransmission(
   rtp_data_receiver_->SetOnReceiveData(
       [this](const char *data, size_t size) -> void {
         ice_io_statistics_->UpdateDataInboundBytes(size);
-        on_receive_data_(data, size, remote_user_id_);
+
+        if (on_receive_data_) {
+          on_receive_data_(data, size, remote_user_id_.data(),
+                           remote_user_id_.size(), user_data_);
+        }
       });
 
   rtp_data_sender_ = std::make_unique<RtpDataSender>();
@@ -369,6 +410,103 @@ int IceTransmission::CreateMediaCodec() {
   video_rtp_codec_ = std::make_unique<RtpCodec>(negotiated_video_pt_);
   audio_rtp_codec_ = std::make_unique<RtpCodec>(negotiated_audio_pt_);
   data_rtp_codec_ = std::make_unique<RtpCodec>(negotiated_data_pt_);
+  return 0;
+}
+
+int IceTransmission::CreateVideoCodec(RtpPacket::PAYLOAD_TYPE video_pt,
+                                      bool hardware_acceleration) {
+  if (video_codec_inited_) {
+    return 0;
+  }
+
+  hardware_acceleration_ = hardware_acceleration;
+
+  if (RtpPacket::PAYLOAD_TYPE::AV1 == video_pt) {
+    if (hardware_acceleration_) {
+      hardware_acceleration_ = false;
+      LOG_WARN("Only support software codec for AV1");
+    }
+    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, true);
+    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, true);
+  } else if (RtpPacket::PAYLOAD_TYPE::H264 == video_pt) {
+#ifdef __APPLE__
+    if (hardware_acceleration_) {
+      hardware_acceleration_ = false;
+      LOG_WARN(
+          "MacOS not support hardware acceleration, use default software "
+          "codec");
+      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
+    } else {
+      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
+    }
+#else
+    if (hardware_acceleration_) {
+      if (0 == LoadNvCodecDll()) {
+        load_nvcodec_dll_success_ = true;
+        video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(true, false);
+        video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(true, false);
+      } else {
+        LOG_WARN(
+            "Hardware accelerated codec not available, use default software "
+            "codec");
+        video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+        video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
+      }
+    } else {
+      video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+      video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
+    }
+#endif
+  }
+
+  if (!video_encoder_) {
+    video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(false, false);
+    LOG_ERROR("Create encoder failed, try to use software H.264 encoder");
+  }
+  if (!video_encoder_ || 0 != video_encoder_->Init()) {
+    LOG_ERROR("Encoder init failed");
+    return -1;
+  }
+
+  if (!video_decoder_) {
+    video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(false, false);
+    LOG_ERROR("Create decoder failed, try to use software H.264 decoder");
+  }
+  if (!video_decoder_ || video_decoder_->Init()) {
+    LOG_ERROR("Decoder init failed");
+    return -1;
+  }
+
+  video_codec_inited_ = true;
+  LOG_INFO("Create video codec [{}|{}] finish",
+           video_encoder_->GetEncoderName(), video_decoder_->GetDecoderName());
+
+  return 0;
+}
+
+int IceTransmission::CreateAudioCodec() {
+  if (audio_codec_inited_) {
+    return 0;
+  }
+
+  audio_encoder_ = std::make_unique<AudioEncoder>(AudioEncoder(48000, 1, 480));
+  if (!audio_encoder_ || 0 != audio_encoder_->Init()) {
+    LOG_ERROR("Audio encoder init failed");
+    return -1;
+  }
+
+  audio_decoder_ = std::make_unique<AudioDecoder>(AudioDecoder(48000, 1, 480));
+  if (!audio_decoder_ || 0 != audio_decoder_->Init()) {
+    LOG_ERROR("Audio decoder init failed");
+    return -1;
+  }
+
+  audio_codec_inited_ = true;
+  LOG_INFO("Create audio codec [{}|{}] finish",
+           audio_encoder_->GetEncoderName(), audio_decoder_->GetDecoderName());
+
   return 0;
 }
 
@@ -570,6 +708,8 @@ std::string IceTransmission::GetRemoteCapabilities(
     }
 
     CreateMediaCodec();
+    CreateVideoCodec(negotiated_video_pt_, hardware_acceleration_);
+    CreateAudioCodec();
 
     remote_capabilities_got_ = true;
   }
@@ -795,7 +935,7 @@ IceTransmission::GetNegotiatedCapabilities() {
   return {negotiated_video_pt_, negotiated_audio_pt_, negotiated_data_pt_};
 }
 
-int IceTransmission::SendData(DATA_TYPE type, const char *data, size_t size) {
+int IceTransmission::SendVideoData(const XVideoFrame *video_frame) {
   if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
       state_ != NICE_COMPONENT_STATE_READY) {
     LOG_ERROR("Ice is not connected, state = [{}]",
@@ -803,36 +943,63 @@ int IceTransmission::SendData(DATA_TYPE type, const char *data, size_t size) {
     return -2;
   }
 
-  std::vector<RtpPacket> packets;
+  if (b_force_i_frame_) {
+    video_encoder_->ForceIdr();
+    LOG_INFO("Force I frame");
+    b_force_i_frame_ = false;
+  }
 
-  if (DATA_TYPE::VIDEO == type) {
-    if (rtp_video_sender_) {
-      if (video_rtp_codec_) {
-        video_rtp_codec_->Encode((uint8_t *)data, size, packets);
-      }
-      rtp_video_sender_->Enqueue(packets);
-    }
-  } else if (DATA_TYPE::AUDIO == type) {
-    if (rtp_audio_sender_) {
-      if (audio_rtp_codec_) {
-        audio_rtp_codec_->Encode((uint8_t *)data, size, packets);
-        rtp_audio_sender_->Enqueue(packets);
-      }
-    }
-  } else if (DATA_TYPE::DATA == type) {
-    if (rtp_data_sender_) {
-      if (data_rtp_codec_) {
-        data_rtp_codec_->Encode((uint8_t *)data, size, packets);
-        rtp_data_sender_->Enqueue(packets);
-      }
-    }
+  int ret = video_encoder_->Encode(
+      video_frame,
+      [this](char *encoded_frame, size_t size,
+             VideoEncoder::VideoFrameType frame_type) -> int {
+        std::vector<RtpPacket> packets;
+        if (rtp_video_sender_) {
+          if (video_rtp_codec_) {
+            video_rtp_codec_->Encode(
+                static_cast<RtpCodec::VideoFrameType>(frame_type),
+                (uint8_t *)encoded_frame, size, packets);
+          }
+          rtp_video_sender_->Enqueue(packets);
+        }
+
+        return 0;
+      });
+
+  if (0 != ret) {
+    LOG_ERROR("Encode failed");
+    return -1;
   }
 
   return 0;
 }
 
-int IceTransmission::SendVideoData(VideoFrameType frame_type, const char *data,
-                                   size_t size) {
+int IceTransmission::SendAudioData(const char *data, size_t size) {
+  if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
+      state_ != NICE_COMPONENT_STATE_READY) {
+    LOG_ERROR("Ice is not connected, state = [{}]",
+              nice_component_state_to_string(state_));
+    return -2;
+  }
+
+  int ret = audio_encoder_->Encode(
+      (uint8_t *)data, size,
+      [this](char *encoded_audio_buffer, size_t size) -> int {
+        if (rtp_audio_sender_) {
+          if (audio_rtp_codec_) {
+            std::vector<RtpPacket> packets;
+            audio_rtp_codec_->Encode((uint8_t *)encoded_audio_buffer, size,
+                                     packets);
+            rtp_audio_sender_->Enqueue(packets);
+          }
+        }
+        return 0;
+      });
+
+  return 0;
+}
+
+int IceTransmission::SendUserData(const char *data, size_t size) {
   if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
       state_ != NICE_COMPONENT_STATE_READY) {
     LOG_ERROR("Ice is not connected, state = [{}]",
@@ -842,13 +1009,11 @@ int IceTransmission::SendVideoData(VideoFrameType frame_type, const char *data,
 
   std::vector<RtpPacket> packets;
 
-  if (rtp_video_sender_) {
-    if (video_rtp_codec_) {
-      video_rtp_codec_->Encode(
-          static_cast<RtpCodec::VideoFrameType>(frame_type), (uint8_t *)data,
-          size, packets);
+  if (rtp_data_sender_) {
+    if (data_rtp_codec_) {
+      data_rtp_codec_->Encode((uint8_t *)data, size, packets);
+      rtp_data_sender_->Enqueue(packets);
     }
-    rtp_video_sender_->Enqueue(packets);
   }
 
   return 0;

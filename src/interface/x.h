@@ -115,10 +115,11 @@ DLLAPI int JoinConnection(PeerPtr* peer_ptr, const char* transmission_id,
 
 DLLAPI int LeaveConnection(PeerPtr* peer_ptr, const char* transmission_id);
 
-DLLAPI int SendData(PeerPtr* peer_ptr, DATA_TYPE data_type, const char* data,
-                    size_t size);
-
 DLLAPI int SendVideoFrame(PeerPtr* peer_ptr, const XVideoFrame* video_frame);
+
+DLLAPI int SendAudioFrame(PeerPtr* peer_ptr, const char* data, size_t size);
+
+DLLAPI int SendData(PeerPtr* peer_ptr, const char* data, size_t size);
 
 #ifdef __cplusplus
 }
