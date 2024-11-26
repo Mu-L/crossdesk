@@ -184,7 +184,7 @@ class RtpPacket {
 
  public:
   RtpPacket();
-  RtpPacket(const uint8_t *buffer, size_t size);
+  RtpPacket(const uint8_t *buffer, uint32_t size);
   RtpPacket(const RtpPacket &rtp_packet);
   RtpPacket(RtpPacket &&rtp_packet);
   RtpPacket &operator=(const RtpPacket &rtp_packet);
@@ -194,24 +194,24 @@ class RtpPacket {
 
  public:
   // Set Header
-  void SetVerion(uint32_t version) { version_ = version; }
+  void SetVerion(uint8_t version) { version_ = version; }
   void SetHasPadding(bool has_padding) { has_padding_ = has_padding; }
   void SetHasExtension(bool has_extension) { has_extension_ = has_extension; }
   void SetMarker(bool marker) { marker_ = marker; }
   void SetPayloadType(PAYLOAD_TYPE payload_type) {
-    payload_type_ = payload_type;
+    payload_type_ = (uint8_t)payload_type;
   }
   void SetSequenceNumber(uint16_t sequence_number) {
     sequence_number_ = sequence_number;
   }
-  void SetTimestamp(uint32_t timestamp) { timestamp_ = timestamp; }
+  void SetTimestamp(uint64_t timestamp) { timestamp_ = timestamp; }
   void SetSsrc(uint32_t ssrc) { ssrc_ = ssrc; }
   void SetCsrcs(std::vector<uint32_t> &csrcs) { csrcs_ = csrcs; }
 
   void SetExtensionProfile(uint16_t extension_profile) {
     extension_profile_ = extension_profile;
   }
-  void SetExtensionData(uint8_t *extension_data, size_t extension_len) {
+  void SetExtensionData(uint8_t *extension_data, uint16_t extension_len) {
     extension_len_ = extension_len;
     extension_data_ = new uint8_t[extension_len_];
     memcpy(extension_data_, extension_data, extension_len_);
@@ -258,11 +258,11 @@ class RtpPacket {
   const uint8_t *EncodeH264Nalu(uint8_t *payload, size_t payload_size);
   const uint8_t *EncodeH264Fua(uint8_t *payload, size_t payload_size);
   const uint8_t *EncodeH264FecSource(uint8_t *payload, size_t payload_size,
-                                     unsigned int fec_symbol_id,
-                                     unsigned int fec_source_symbol_num);
+                                     uint8_t fec_symbol_id,
+                                     uint8_t fec_source_symbol_num);
   const uint8_t *EncodeH264FecRepair(uint8_t *payload, size_t payload_size,
-                                     unsigned int fec_symbol_id,
-                                     unsigned int fec_source_symbol_num);
+                                     uint8_t fec_symbol_id,
+                                     uint8_t fec_source_symbol_num);
   const uint8_t *EncodeAv1(uint8_t *payload, size_t payload_size);
 
   size_t DecodeData(uint8_t *payload = nullptr);
@@ -299,7 +299,7 @@ class RtpPacket {
     ParseRtpData();
     return sequence_number_;
   }
-  uint32_t Timestamp() {
+  uint64_t Timestamp() {
     ParseRtpData();
     return timestamp_;
   }
@@ -367,7 +367,7 @@ class RtpPacket {
 
     if (z == 0 && y == 0 && w == 1) {
       return true;
-    } else if (z == 0 && y == 1 & w == 1) {
+    } else if (z == 0 && y == 1 && w == 1) {
       return true;
     } else {
       return false;
@@ -382,7 +382,7 @@ class RtpPacket {
 
     if (z == 0 && y == 0 && w == 1) {
       return true;
-    } else if (z == 1 && y == 0 & w == 1) {
+    } else if (z == 1 && y == 0 && w == 1) {
       return true;
     } else {
       return false;
@@ -395,14 +395,14 @@ class RtpPacket {
 
  private:
   // Header
-  uint32_t version_ = 0;
+  uint8_t version_ = 0;
   bool has_padding_ = false;
   bool has_extension_ = false;
-  uint32_t total_csrc_number_ = 0;
+  uint8_t total_csrc_number_ = 0;
   bool marker_ = false;
-  uint32_t payload_type_ = 0;
+  uint8_t payload_type_ = 0;
   uint16_t sequence_number_ = 1;
-  uint32_t timestamp_ = 0;
+  uint64_t timestamp_ = 0;
   uint32_t ssrc_ = 0;
   std::vector<uint32_t> csrcs_;
   uint16_t profile_ = 0;

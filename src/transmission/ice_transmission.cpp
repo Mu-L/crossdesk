@@ -29,6 +29,7 @@ IceTransmission::IceTransmission(
       user_data_(user_data) {}
 
 IceTransmission::~IceTransmission() {
+  user_data_ = nullptr;
   video_codec_inited_ = false;
   audio_codec_inited_ = false;
   load_nvcodec_dll_success_ = false;
@@ -66,12 +67,19 @@ int IceTransmission::InitIceTransmission(
              uint32_t data_inbound_bitrate, uint32_t data_outbound_bitrate,
              uint32_t total_inbound_bitrate, uint32_t total_outbound_bitrate) {
         if (on_receive_net_status_report_) {
-          on_receive_net_status_report_(
-              user_id_, traversal_type_, video_inbound_bitrate,
-              video_outbound_bitrate, audio_inbound_bitrate,
-              audio_outbound_bitrate, data_inbound_bitrate,
-              data_outbound_bitrate, total_inbound_bitrate,
-              total_outbound_bitrate, nullptr);
+          XNetTrafficStats net_traffic_stats;
+          net_traffic_stats.video_in = video_inbound_bitrate;
+          net_traffic_stats.video_out = video_outbound_bitrate;
+          net_traffic_stats.audio_in = audio_inbound_bitrate;
+          net_traffic_stats.audio_out = audio_outbound_bitrate;
+          net_traffic_stats.data_in = data_inbound_bitrate;
+          net_traffic_stats.data_out = data_outbound_bitrate;
+          net_traffic_stats.total_in = total_inbound_bitrate;
+          net_traffic_stats.total_out = total_outbound_bitrate;
+
+          on_receive_net_status_report_(user_id_.data(), user_id_.size(),
+                                        TraversalMode(traversal_type_),
+                                        &net_traffic_stats, user_data_);
         }
       });
 
@@ -340,10 +348,21 @@ int IceTransmission::InitIceTransmission(
             LOG_INFO("Traversal using p2p");
             ice_transmission_obj->traversal_type_ = TraversalType::TP2P;
           }
+          XNetTrafficStats net_traffic_stats;
+          net_traffic_stats.video_in = 0;
+          net_traffic_stats.video_out = 0;
+          net_traffic_stats.audio_in = 0;
+          net_traffic_stats.audio_out = 0;
+          net_traffic_stats.data_in = 0;
+          net_traffic_stats.data_out = 0;
+          net_traffic_stats.total_in = 0;
+          net_traffic_stats.total_out = 0;
+
           ice_transmission_obj->on_receive_net_status_report_(
-              ice_transmission_obj->user_id_,
-              ice_transmission_obj->traversal_type_, 0, 0, 0, 0, 0, 0, 0, 0,
-              nullptr);
+              ice_transmission_obj->user_id_.data(),
+              ice_transmission_obj->user_id_.size(),
+              TraversalMode(ice_transmission_obj->traversal_type_),
+              &net_traffic_stats, ice_transmission_obj->user_data_);
         }
       },
       [](NiceAgent *agent, guint stream_id, guint component_id, guint size,
@@ -935,7 +954,7 @@ IceTransmission::GetNegotiatedCapabilities() {
   return {negotiated_video_pt_, negotiated_audio_pt_, negotiated_data_pt_};
 }
 
-int IceTransmission::SendVideoData(const XVideoFrame *video_frame) {
+int IceTransmission::SendVideoFrame(const XVideoFrame *video_frame) {
   if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
       state_ != NICE_COMPONENT_STATE_READY) {
     LOG_ERROR("Ice is not connected, state = [{}]",
@@ -974,7 +993,7 @@ int IceTransmission::SendVideoData(const XVideoFrame *video_frame) {
   return 0;
 }
 
-int IceTransmission::SendAudioData(const char *data, size_t size) {
+int IceTransmission::SendAudioFrame(const char *data, size_t size) {
   if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
       state_ != NICE_COMPONENT_STATE_READY) {
     LOG_ERROR("Ice is not connected, state = [{}]",
@@ -999,7 +1018,7 @@ int IceTransmission::SendAudioData(const char *data, size_t size) {
   return 0;
 }
 
-int IceTransmission::SendUserData(const char *data, size_t size) {
+int IceTransmission::SendDataFrame(const char *data, size_t size) {
   if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
       state_ != NICE_COMPONENT_STATE_READY) {
     LOG_ERROR("Ice is not connected, state = [{}]",

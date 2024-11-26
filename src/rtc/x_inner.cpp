@@ -112,7 +112,7 @@ DLLAPI int SendVideoFrame(PeerPtr *peer_ptr, const XVideoFrame *video_frame) {
     return -1;
   }
 
-  peer_ptr->peer_connection->SendVideoData(video_frame);
+  peer_ptr->peer_connection->SendVideoFrame(video_frame);
 
   return 0;
 }
@@ -128,12 +128,12 @@ DLLAPI int SendAudioFrame(PeerPtr *peer_ptr, const char *data, size_t size) {
     return -1;
   }
 
-  peer_ptr->peer_connection->SendAudioData(data, size);
+  peer_ptr->peer_connection->SendAudioFrame(data, size);
 
   return 0;
 }
 
-int SendData(PeerPtr *peer_ptr, const char *data, size_t size) {
+int SendDataFrame(PeerPtr *peer_ptr, const char *data, size_t size) {
   if (!peer_ptr) {
     LOG_ERROR("peer_ptr not created");
     return -1;
@@ -144,7 +144,7 @@ int SendData(PeerPtr *peer_ptr, const char *data, size_t size) {
     return -1;
   }
 
-  peer_ptr->peer_connection->SendUserData(data, size);
+  peer_ptr->peer_connection->SendDataFrame(data, size);
 
   return 0;
 }

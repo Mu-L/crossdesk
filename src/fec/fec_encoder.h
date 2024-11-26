@@ -29,8 +29,8 @@ class FecEncoder {
   uint8_t **Encode(const char *data, size_t len);
   int ReleaseFecPackets(uint8_t **fec_packets, size_t len);
   void GetFecPacketsParams(unsigned int source_length,
-                           unsigned int &num_of_total_packets,
-                           unsigned int &num_of_source_packets,
+                           uint8_t &num_of_total_packets,
+                           uint8_t &num_of_source_packets,
                            unsigned int &last_packet_size);
 
  private:

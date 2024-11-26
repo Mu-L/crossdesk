@@ -17,7 +17,7 @@ void RtpAudioReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   }
 
   if (rtp_statistics_) {
-    rtp_statistics_->UpdateReceiveBytes(rtp_packet.Size());
+    rtp_statistics_->UpdateReceiveBytes((uint32_t)rtp_packet.Size());
   }
 
   if (CheckIsTimeSendRR()) {

@@ -101,11 +101,11 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
       payload_reader.Consume(size);
     }
     obu.size += obu.payload.size();
-    // Skip obus that shouldn't be transfered over rtp.
-    int obu_type = ObuType(obu.header);
     if (has_ext_header) {
       obu.payload.insert(obu.payload.begin(), obu.extension_header);
     }
+    // Skip obus that shouldn't be transfered over rtp.
+    // int obu_type = ObuType(obu.header);
     obu.payload.insert(obu.payload.begin(), obu.header);
     // if (obu_type != kObuTypeTemporalDelimiter &&  //
     //     obu_type != kObuTypeTileList &&           //

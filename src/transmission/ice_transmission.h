@@ -85,10 +85,8 @@ class IceTransmission {
   }
 
   void SetOnReceiveNetStatusReportFunc(
-      std::function<void(const std::string &, TraversalType, const uint64_t,
-                         const uint64_t, const uint64_t, const uint64_t,
-                         const uint64_t, const uint64_t, const uint64_t,
-                         const uint64_t, void *)>
+      std::function<void(const char *, const size_t, TraversalMode,
+                         const XNetTrafficStats *, void *)>
           on_receive_net_status_report) {
     on_receive_net_status_report_ = on_receive_net_status_report;
   }
@@ -97,11 +95,11 @@ class IceTransmission {
 
   int SetTransmissionId(const std::string &transmission_id);
 
-  int SendVideoData(const XVideoFrame *video_frame);
+  int SendVideoFrame(const XVideoFrame *video_frame);
 
-  int SendAudioData(const char *data, size_t size);
+  int SendAudioFrame(const char *data, size_t size);
 
-  int SendUserData(const char *data, size_t size);
+  int SendDataFrame(const char *data, size_t size);
 
  public:
   int GatherCandidates();
@@ -176,10 +174,8 @@ class IceTransmission {
   std::function<void(std::string, const std::string &)> on_ice_status_change_ =
       nullptr;
 
-  std::function<void(const std::string &, TraversalType, const uint64_t,
-                     const uint64_t, const uint64_t, const uint64_t,
-                     const uint64_t, const uint64_t, const uint64_t,
-                     const uint64_t, void *)>
+  std::function<void(const char *, const size_t, TraversalMode,
+                     const XNetTrafficStats *, void *)>
       on_receive_net_status_report_ = nullptr;
 
  private:

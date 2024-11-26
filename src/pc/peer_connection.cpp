@@ -11,14 +11,7 @@ using nlohmann::json;
 
 PeerConnection::PeerConnection() {}
 
-PeerConnection::~PeerConnection() {
-  if (nv12_data_) {
-    delete nv12_data_;
-    nv12_data_ = nullptr;
-  }
-
-  user_data_ = nullptr;
-}
+PeerConnection::~PeerConnection() { user_data_ = nullptr; }
 
 int PeerConnection::Init(PeerConnectionParams params,
                          const std::string &user_id) {
@@ -190,30 +183,6 @@ int PeerConnection::Init(PeerConnectionParams params,
     }
   };
 
-  on_net_status_report_ = [this](
-                              const std::string &user_id,
-                              IceTransmission::TraversalType mode,
-                              const uint64_t video_in, const uint64_t video_out,
-                              const uint64_t audio_in, const uint64_t audio_out,
-                              const uint64_t data_in, const uint64_t data_out,
-                              const uint64_t total_in, const uint64_t total_out,
-                              void *user_ptr) {
-    if (net_status_report_) {
-      XNetTrafficStats net_traffic_stats;
-      net_traffic_stats.video_in = video_in;
-      net_traffic_stats.video_out = video_out;
-      net_traffic_stats.audio_in = audio_in;
-      net_traffic_stats.audio_out = audio_out;
-      net_traffic_stats.data_in = data_in;
-      net_traffic_stats.data_out = data_out;
-      net_traffic_stats.total_in = total_in;
-      net_traffic_stats.total_out = total_out;
-
-      net_status_report_(user_id.data(), user_id.size(), TraversalMode(mode),
-                         &net_traffic_stats, user_data_);
-    }
-  };
-
   ws_transport_ = std::make_shared<WsClient>(on_receive_ws_msg_, on_ws_status_);
   uri_ = "ws://" + cfg_signal_server_ip_ + ":" + cfg_signal_server_port_;
   if (ws_transport_) {
@@ -224,8 +193,6 @@ int PeerConnection::Init(PeerConnectionParams params,
 
   // do {
   // } while (SignalStatus::SignalConnected != GetSignalStatus());
-
-  nv12_data_ = new char[1280 * 720 * 3 / 2];
 
   LOG_INFO("[{}] Init finish", user_id);
 
@@ -349,11 +316,6 @@ int PeerConnection::Destroy() {
     ws_transport_->Close();
   }
 
-  if (nv12_data_) {
-    delete nv12_data_;
-    nv12_data_ = nullptr;
-  }
-
   return 0;
 }
 
@@ -381,8 +343,7 @@ SignalStatus PeerConnection::GetSignalStatus() {
   return signal_status_;
 }
 
-// media send
-int PeerConnection::SendVideoData(const XVideoFrame *video_frame) {
+int PeerConnection::SendVideoFrame(const XVideoFrame *video_frame) {
   if (ice_transmission_list_.empty()) {
     return -1;
   }
@@ -392,13 +353,13 @@ int PeerConnection::SendVideoData(const XVideoFrame *video_frame) {
       continue;
     }
 
-    ice_trans.second->SendVideoData(video_frame);
+    ice_trans.second->SendVideoFrame(video_frame);
   }
 
   return 0;
 }
 
-int PeerConnection::SendAudioData(const char *data, size_t size) {
+int PeerConnection::SendAudioFrame(const char *data, size_t size) {
   if (ice_transmission_list_.empty()) {
     return -1;
   }
@@ -407,18 +368,18 @@ int PeerConnection::SendAudioData(const char *data, size_t size) {
     if (!is_ice_transmission_ready_[ice_trans.first]) {
       continue;
     }
-    ice_trans.second->SendAudioData(data, size);
+    ice_trans.second->SendAudioFrame(data, size);
   }
 
   return 0;
 }
 
-int PeerConnection::SendUserData(const char *data, size_t size) {
+int PeerConnection::SendDataFrame(const char *data, size_t size) {
   for (auto &ice_trans : ice_transmission_list_) {
     if (!is_ice_transmission_ready_[ice_trans.first]) {
       continue;
     }
-    ice_trans.second->SendUserData(data, size);
+    ice_trans.second->SendDataFrame(data, size);
   }
   return 0;
 }
@@ -652,7 +613,7 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
             on_receive_data_buffer_);
 
         ice_transmission_list_[remote_user_id]->SetOnReceiveNetStatusReportFunc(
-            on_net_status_report_);
+            net_status_report_);
 
         ice_transmission_list_[remote_user_id]->InitIceTransmission(
             cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,
@@ -700,7 +661,7 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
             on_receive_data_buffer_);
 
         ice_transmission_list_[remote_user_id]->SetOnReceiveNetStatusReportFunc(
-            on_net_status_report_);
+            net_status_report_);
 
         ice_transmission_list_[remote_user_id]->InitIceTransmission(
             cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,

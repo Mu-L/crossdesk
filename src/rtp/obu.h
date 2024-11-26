@@ -30,7 +30,7 @@ struct Obu {
   uint8_t header;
   uint8_t extension_header;  // undefined if (header & kXbit) == 0
   std::vector<uint8_t> payload;
-  int size;  // size of the header and payload combined.
+  size_t size;  // size of the header and payload combined.
 };
 
 struct Packet {

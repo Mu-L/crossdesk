@@ -42,9 +42,9 @@ int RtpAudioSender::SendRtpPacket(RtpPacket& rtp_packet) {
     return -1;
   }
 
-  last_send_bytes_ += rtp_packet.Size();
+  last_send_bytes_ += (uint32_t)rtp_packet.Size();
   total_rtp_packets_sent_++;
-  total_rtp_payload_sent_ += rtp_packet.PayloadSize();
+  total_rtp_payload_sent_ += (uint32_t)rtp_packet.PayloadSize();
 
   if (CheckIsTimeSendSR()) {
     RtcpSenderReport rtcp_sr;

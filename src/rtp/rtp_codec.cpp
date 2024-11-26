@@ -35,7 +35,7 @@ RtpCodec ::~RtpCodec() {
   // }
 }
 
-void RtpCodec::Encode(uint8_t* buffer, size_t size,
+void RtpCodec::Encode(uint8_t* buffer, uint32_t size,
                       std::vector<RtpPacket>& packets) {
   if (RtpPacket::PAYLOAD_TYPE::H264 == payload_type_) {
     if (fec_enable_ && IsKeyFrame((const uint8_t*)buffer, size)) {
@@ -44,8 +44,8 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
         LOG_ERROR("Invalid fec_packets");
         return;
       }
-      unsigned int num_of_total_packets = 0;
-      unsigned int num_of_source_packets = 0;
+      uint8_t num_of_total_packets = 0;
+      uint8_t num_of_source_packets = 0;
       unsigned int last_packet_size = 0;
       fec_encoder_.GetFecPacketsParams(size, num_of_total_packets,
                                        num_of_source_packets, last_packet_size);
@@ -54,13 +54,13 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
                        std::chrono::system_clock::now().time_since_epoch())
                        .count();
 
-      for (unsigned int index = 0; index < num_of_total_packets; index++) {
+      for (uint8_t index = 0; index < num_of_total_packets; index++) {
         RtpPacket rtp_packet;
         if (index < num_of_source_packets) {
           rtp_packet.SetVerion(version_);
           rtp_packet.SetHasPadding(has_padding_);
           rtp_packet.SetHasExtension(has_extension_);
-          rtp_packet.SetMarker(index == num_of_source_packets - 1 ? 1 : 0);
+          rtp_packet.SetMarker((index == (num_of_source_packets - 1)) ? 1 : 0);
           rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE::H264_FEC_SOURCE);
           rtp_packet.SetSequenceNumber(sequence_number_++);
           rtp_packet.SetTimestamp(timestamp_);
@@ -170,13 +170,13 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
       packets.emplace_back(rtp_packet);
 
     } else {
-      size_t last_packet_size = size % MAX_NALU_LEN;
-      size_t packet_num = size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
+      uint32_t last_packet_size = size % MAX_NALU_LEN;
+      uint32_t packet_num = size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
       timestamp_ = std::chrono::duration_cast<std::chrono::microseconds>(
                        std::chrono::system_clock::now().time_since_epoch())
                        .count();
 
-      for (size_t index = 0; index < packet_num; index++) {
+      for (uint32_t index = 0; index < packet_num; index++) {
         RtpPacket rtp_packet;
         rtp_packet.SetVerion(version_);
         rtp_packet.SetHasPadding(has_padding_);
@@ -254,13 +254,13 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
         rtp_packet.EncodeAv1(obus[i].payload.data(), obus[i].payload.size());
         packets.emplace_back(rtp_packet);
       } else {
-        size_t last_packet_size = obus[i].payload.size() % MAX_NALU_LEN;
+        uint32_t last_packet_size = obus[i].payload.size() % MAX_NALU_LEN;
         size_t packet_num =
             obus[i].payload.size() / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
         timestamp_ = std::chrono::duration_cast<std::chrono::microseconds>(
                          std::chrono::system_clock::now().time_since_epoch())
                          .count();
-        for (size_t index = 0; index < packet_num; index++) {
+        for (uint32_t index = 0; index < packet_num; index++) {
           RtpPacket rtp_packet;
           rtp_packet.SetVerion(version_);
           rtp_packet.SetHasPadding(has_padding_);
@@ -332,7 +332,7 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
   }
 }
 
-void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
+void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, uint32_t size,
                       std::vector<RtpPacket>& packets) {
   if (RtpPacket::PAYLOAD_TYPE::H264 == payload_type_) {
     if (fec_enable_ && IsKeyFrame((const uint8_t*)buffer, size)) {
@@ -341,8 +341,8 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
         LOG_ERROR("Invalid fec_packets");
         return;
       }
-      unsigned int num_of_total_packets = 0;
-      unsigned int num_of_source_packets = 0;
+      uint8_t num_of_total_packets = 0;
+      uint8_t num_of_source_packets = 0;
       unsigned int last_packet_size = 0;
       fec_encoder_.GetFecPacketsParams(size, num_of_total_packets,
                                        num_of_source_packets, last_packet_size);
@@ -351,7 +351,7 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
                        std::chrono::system_clock::now().time_since_epoch())
                        .count();
 
-      for (unsigned int index = 0; index < num_of_total_packets; index++) {
+      for (uint8_t index = 0; index < num_of_total_packets; index++) {
         RtpPacket rtp_packet;
         if (index < num_of_source_packets) {
           rtp_packet.SetVerion(version_);
@@ -469,13 +469,13 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
       packets.emplace_back(rtp_packet);
 
     } else {
-      size_t last_packet_size = size % MAX_NALU_LEN;
-      size_t packet_num = size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
+      uint32_t last_packet_size = size % MAX_NALU_LEN;
+      uint32_t packet_num = size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
       timestamp_ = std::chrono::duration_cast<std::chrono::microseconds>(
                        std::chrono::system_clock::now().time_since_epoch())
                        .count();
 
-      for (size_t index = 0; index < packet_num; index++) {
+      for (uint32_t index = 0; index < packet_num; index++) {
         RtpPacket rtp_packet;
         rtp_packet.SetVerion(version_);
         rtp_packet.SetHasPadding(has_padding_);
@@ -520,7 +520,7 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
     }
   } else if (RtpPacket::PAYLOAD_TYPE::AV1 == payload_type_) {
     std::vector<Obu> obus = ParseObus(buffer, size);
-    uint32_t timestamp =
+    uint64_t timestamp =
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch())
             .count();
@@ -550,11 +550,11 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
         rtp_packet.EncodeAv1(obus[i].payload.data(), obus[i].size);
         packets.emplace_back(rtp_packet);
       } else {
-        size_t last_packet_size = obus[i].size % MAX_NALU_LEN;
+        uint32_t last_packet_size = obus[i].size % MAX_NALU_LEN;
         size_t packet_num =
             obus[i].size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
 
-        for (size_t index = 0; index < packet_num; index++) {
+        for (uint32_t index = 0; index < packet_num; index++) {
           RtpPacket rtp_packet;
           rtp_packet.SetVerion(version_);
           rtp_packet.SetHasPadding(has_padding_);
@@ -618,7 +618,7 @@ size_t RtpCodec::Decode(RtpPacket& packet, uint8_t* payload) {
   }
 }
 
-bool RtpCodec::IsKeyFrame(const uint8_t* buffer, size_t size) {
+bool RtpCodec::IsKeyFrame(const uint8_t* buffer, uint32_t size) {
   if (buffer != nullptr && size != 0 && (*(buffer + 4) & 0x1f) == 0x07) {
     return true;
   }

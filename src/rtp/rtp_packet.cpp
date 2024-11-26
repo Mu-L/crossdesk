@@ -37,7 +37,7 @@ RtpPacket::RtpPacket() : buffer_(new uint8_t[DEFAULT_MTU]), size_(DEFAULT_MTU) {
   memset(buffer_, 0, DEFAULT_MTU);
 }
 
-RtpPacket::RtpPacket(const uint8_t *buffer, size_t size) {
+RtpPacket::RtpPacket(const uint8_t *buffer, uint32_t size) {
   if (size > 0) {
     buffer_ = (uint8_t *)malloc(size);
     if (NULL == buffer_) {
@@ -269,9 +269,10 @@ const uint8_t *RtpPacket::EncodeH264Fua(uint8_t *payload, size_t payload_size) {
   return buffer_;
 }
 
-const uint8_t *RtpPacket::EncodeH264FecSource(
-    uint8_t *payload, size_t payload_size, unsigned int fec_symbol_id,
-    unsigned int fec_source_symbol_num) {
+const uint8_t *RtpPacket::EncodeH264FecSource(uint8_t *payload,
+                                              size_t payload_size,
+                                              uint8_t fec_symbol_id,
+                                              uint8_t fec_source_symbol_num) {
   buffer_[0] = (version_ << 6) | (has_padding_ << 5) | (has_extension_ << 4) |
                total_csrc_number_;
   buffer_[1] = (marker_ << 7) | payload_type_;
@@ -329,9 +330,10 @@ const uint8_t *RtpPacket::EncodeH264FecSource(
   return buffer_;
 }
 
-const uint8_t *RtpPacket::EncodeH264FecRepair(
-    uint8_t *payload, size_t payload_size, unsigned int fec_symbol_id,
-    unsigned int fec_source_symbol_num) {
+const uint8_t *RtpPacket::EncodeH264FecRepair(uint8_t *payload,
+                                              size_t payload_size,
+                                              uint8_t fec_symbol_id,
+                                              uint8_t fec_source_symbol_num) {
   buffer_[0] = (version_ << 6) | (has_padding_ << 5) | (has_extension_ << 4) |
                total_csrc_number_;
   buffer_[1] = (marker_ << 7) | payload_type_;

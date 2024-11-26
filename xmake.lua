@@ -22,13 +22,16 @@ includes("thirdparty")
 
 if is_os("windows") then
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
+    -- add_cxflags("/W4", "/WX")
+    add_cxflags("/W4")
 elseif is_os("linux") then
     add_requires("glib", {system = true})
     add_packages("glib")
-    add_cxflags("-fPIC") 
+    add_cxflags("-fPIC", "-Wno-unused-variable") 
     add_syslinks("pthread")
 elseif is_os("macosx") then
     add_ldflags("-Wl,-ld_classic")
+    add_cxflags("-Wno-unused-variable")
 end
 
 target("log")

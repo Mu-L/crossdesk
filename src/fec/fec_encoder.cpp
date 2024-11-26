@@ -51,10 +51,10 @@ uint8_t **FecEncoder::Encode(const char *data, size_t len) {
   uint8_t **fec_packets = nullptr;
 
   unsigned int last_packet_size = len % max_size_of_packet_;
-  unsigned int num_of_source_packets =
-      len / max_size_of_packet_ + (last_packet_size ? 1 : 0);
-  unsigned int num_of_total_packets =
-      (unsigned int)floor((double)num_of_source_packets / code_rate_);
+  uint8_t num_of_source_packets =
+      (uint8_t)(len / max_size_of_packet_) + (last_packet_size ? 1 : 0);
+  uint8_t num_of_total_packets =
+      (uint8_t)floor((double)num_of_source_packets / code_rate_);
 
   fec_params_->nb_source_symbols = num_of_source_packets;
   fec_params_->nb_repair_symbols = num_of_total_packets - num_of_source_packets;
@@ -74,8 +74,8 @@ uint8_t **FecEncoder::Encode(const char *data, size_t len) {
     return nullptr;
   }
 
-  for (unsigned int esi = 0; esi < num_of_source_packets; esi++) {
-    if (esi != num_of_source_packets - 1) {
+  for (int esi = 0; esi < num_of_source_packets; esi++) {
+    if (esi != (num_of_source_packets - 1)) {
       fec_packets[esi] =
           (uint8_t *)calloc(max_size_of_packet_, sizeof(uint8_t));
       if (nullptr == fec_packets[esi]) {
@@ -126,12 +126,12 @@ int FecEncoder::ReleaseFecPackets(uint8_t **fec_packets, size_t len) {
     return -1;
   }
   unsigned int last_packet_size = len % max_size_of_packet_;
-  unsigned int num_of_source_packets =
-      len / max_size_of_packet_ + (last_packet_size ? 1 : 0);
-  unsigned int num_of_total_packets =
-      (unsigned int)floor((double)num_of_source_packets / code_rate_);
+  uint8_t num_of_source_packets =
+      (uint8_t)(len / max_size_of_packet_) + (last_packet_size ? 1 : 0);
+  uint8_t num_of_total_packets =
+      (uint8_t)floor((double)num_of_source_packets / code_rate_);
 
-  for (unsigned int esi = 0; esi < num_of_total_packets; esi++) {
+  for (int esi = 0; esi < num_of_total_packets; esi++) {
     if (fec_packets[esi]) {
       free(fec_packets[esi]);
     }
@@ -142,12 +142,12 @@ int FecEncoder::ReleaseFecPackets(uint8_t **fec_packets, size_t len) {
 }
 
 void FecEncoder::GetFecPacketsParams(unsigned int source_length,
-                                     unsigned int &num_of_total_packets,
-                                     unsigned int &num_of_source_packets,
+                                     uint8_t &num_of_total_packets,
+                                     uint8_t &num_of_source_packets,
                                      unsigned int &last_packet_size) {
   last_packet_size = source_length % max_size_of_packet_;
-  num_of_source_packets =
-      source_length / max_size_of_packet_ + (last_packet_size ? 1 : 0);
+  num_of_source_packets = (uint8_t)(source_length / max_size_of_packet_) +
+                          (last_packet_size ? 1 : 0);
   num_of_total_packets =
-      (unsigned int)floor((double)num_of_source_packets / code_rate_);
+      (uint8_t)floor((double)num_of_source_packets / code_rate_);
 }

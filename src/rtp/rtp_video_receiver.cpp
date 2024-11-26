@@ -20,7 +20,7 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   }
 
   if (rtp_statistics_) {
-    rtp_statistics_->UpdateReceiveBytes(rtp_packet.Size());
+    rtp_statistics_->UpdateReceiveBytes((uint32_t)rtp_packet.Size());
   }
 
   if (CheckIsTimeSendRR()) {
@@ -68,6 +68,8 @@ void RtpVideoReceiver::ProcessH264RtpPacket(RtpPacket& rtp_packet) {
       } else if (RtpPacket::NAL_UNIT_TYPE::FU_A == rtp_packet.NalUnitType()) {
         incomplete_frame_list_[rtp_packet.SequenceNumber()] = rtp_packet;
         bool complete = CheckIsH264FrameCompleted(rtp_packet);
+        if (!complete) {
+        }
       }
     }
   } else {
@@ -78,6 +80,8 @@ void RtpVideoReceiver::ProcessH264RtpPacket(RtpPacket& rtp_packet) {
       } else if (RtpPacket::NAL_UNIT_TYPE::FU_A == rtp_packet.NalUnitType()) {
         incomplete_frame_list_[rtp_packet.SequenceNumber()] = rtp_packet;
         bool complete = CheckIsH264FrameCompleted(rtp_packet);
+        if (!complete) {
+        }
       }
     } else if (RtpPacket::PAYLOAD_TYPE::H264_FEC_SOURCE ==
                rtp_packet.PayloadType()) {
@@ -179,6 +183,8 @@ void RtpVideoReceiver::ProcessAv1RtpPacket(RtpPacket& rtp_packet) {
   if (RtpPacket::PAYLOAD_TYPE::AV1 == rtp_packet.PayloadType()) {
     incomplete_frame_list_[rtp_packet.SequenceNumber()] = rtp_packet;
     bool complete = CheckIsAv1FrameCompleted(rtp_packet);
+    if (!complete) {
+    }
   }
 
   // std::vector<Obu> obus =
@@ -209,7 +215,7 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(RtpPacket& rtp_packet) {
         }
 
         size_t complete_frame_size = 0;
-        for (size_t start = it->first; start <= rtp_packet.SequenceNumber();
+        for (uint16_t start = it->first; start <= rtp_packet.SequenceNumber();
              start++) {
           memcpy(nv12_data_ + complete_frame_size,
                  incomplete_frame_list_[start].Payload(),
@@ -237,8 +243,7 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(RtpPacket& rtp_packet) {
 bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacket& rtp_packet) {
   if (rtp_packet.Av1FrameEnd()) {
     uint16_t end_seq = rtp_packet.SequenceNumber();
-    size_t start = end_seq;
-    bool start_count = 0;
+    uint16_t start = end_seq;
     while (end_seq--) {
       auto it = incomplete_frame_list_.find(end_seq);
       if (it == incomplete_frame_list_.end()) {

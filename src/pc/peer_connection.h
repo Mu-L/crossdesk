@@ -1,3 +1,9 @@
+/*
+ * @Author: DI JUNKUN
+ * @Date: 2024-11-26
+ * Copyright (c) 2024 by DI JUNKUN, All Rights Reserved.
+ */
+
 #ifndef _PEER_CONNECTION_H_
 #define _PEER_CONNECTION_H_
 
@@ -95,11 +101,9 @@ class PeerConnection {
 
   SignalStatus GetSignalStatus();
 
-  int SendVideoData(const char *data, size_t size);
-  int SendAudioData(const char *data, size_t size);
-  int SendUserData(const char *data, size_t size);
-
-  int SendVideoData(const XVideoFrame *video_frame);
+  int SendVideoFrame(const XVideoFrame *video_frame);
+  int SendAudioFrame(const char *data, size_t size);
+  int SendDataFrame(const char *data, size_t size);
 
  private:
   int Login();
@@ -186,7 +190,6 @@ class PeerConnection {
   NetStatusReport net_status_report_;
   void *user_data_;
 
-  char *nv12_data_ = nullptr;
   bool inited_ = false;
   std::string password_;
 

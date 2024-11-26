@@ -59,12 +59,12 @@ class RtpVideoReceiver : public ThreadBase {
  private:
   bool fec_enable_ = false;
   FecDecoder fec_decoder_;
-  uint32_t last_packet_ts_ = 0;
+  uint64_t last_packet_ts_ = 0;
   // std::map<uint16_t, RtpPacket> incomplete_fec_frame_list_;
   // std::map<uint32_t, std::map<uint16_t, RtpPacket>> fec_source_symbol_list_;
   // std::map<uint32_t, std::map<uint16_t, RtpPacket>> fec_repair_symbol_list_;
-  std::set<uint32_t> incomplete_fec_frame_list_;
-  std::map<uint32_t, std::map<uint16_t, RtpPacket>> incomplete_fec_packet_list_;
+  std::set<uint64_t> incomplete_fec_frame_list_;
+  std::map<uint64_t, std::map<uint16_t, RtpPacket>> incomplete_fec_packet_list_;
 };
 
 #endif
