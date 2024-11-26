@@ -33,7 +33,7 @@ end
 
 target("log")
     set_kind("object")
-    add_headerfiles("src/log/log.h")
+    add_files("src/log/log.cpp")
     add_includedirs("src/log", {public = true})
 
 target("common")
