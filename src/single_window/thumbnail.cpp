@@ -274,7 +274,7 @@ std::string Thumbnail::AES_encrypt(const std::string& plaintext,
   ret = EVP_EncryptUpdate(
       ctx, ciphertext.data(), &len,
       reinterpret_cast<const unsigned char*>(plaintext.data()),
-      plaintext.size());
+      (int)plaintext.size());
   if (1 != ret) {
     LOG_ERROR("Error in EVP_EncryptUpdate");
     EVP_CIPHER_CTX_free(ctx);
@@ -339,7 +339,7 @@ std::string Thumbnail::AES_decrypt(const std::string& ciphertext,
   }
 
   ret = EVP_DecryptUpdate(ctx, plaintext, &plaintext_len, ciphertext_buf,
-                          ciphertext_buf_len);
+                          (int)ciphertext_buf_len);
   if (1 != ret) {
     LOG_ERROR("Error in EVP_DecryptUpdate");
 

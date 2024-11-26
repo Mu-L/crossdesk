@@ -32,8 +32,8 @@ int Render::RemoteWindow() {
         ImVec2(local_window_width_ + main_child_window_x_padding_ - 1.0f,
                title_bar_height_ + main_child_window_y_padding_),
         ImGuiCond_Always);
-    ImGui::PushStyleColor(ImGuiCol_ChildBg,
-                          ImVec4(239.0 / 255, 240.0 / 255, 242.0 / 255, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(239.0f / 255, 240.0f / 255,
+                                                   242.0f / 255, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
 
     ImGui::BeginChild(

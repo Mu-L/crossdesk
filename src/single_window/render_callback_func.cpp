@@ -124,7 +124,9 @@ void Render::SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
   }
 }
 
-void Render::SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len) {
+void Render::SdlCaptureAudioOut([[maybe_unused]] void *userdata,
+                                [[maybe_unused]] Uint8 *stream,
+                                [[maybe_unused]] int len) {
   // Render *render = (Render *)userdata;
   // if ("Connected" == render->connection_status_str_) {
   //   SendAudioFrame(render->peer_,  (const char *)stream, len);
@@ -148,7 +150,8 @@ void Render::SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len) {
 }
 
 void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
-                                    const char *user_id, size_t user_id_size,
+                                    [[maybe_unused]] const char *user_id,
+                                    [[maybe_unused]] size_t user_id_size,
                                     void *user_data) {
   Render *render = (Render *)user_data;
   if (!render) {
@@ -186,7 +189,8 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
 }
 
 void Render::OnReceiveAudioBufferCb(const char *data, size_t size,
-                                    const char *user_id, size_t user_id_size,
+                                    [[maybe_unused]] const char *user_id,
+                                    [[maybe_unused]] size_t user_id_size,
                                     void *user_data) {
   Render *render = (Render *)user_data;
   if (!render) {
@@ -207,7 +211,7 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
 
   std::string user(user_id, user_id_size);
   RemoteAction remote_action;
-  memcpy(&remote_action, data, sizeof(remote_action));
+  memcpy(&remote_action, data, size);
 
   if (ControlType::mouse == remote_action.type && render->mouse_controller_) {
     render->mouse_controller_->SendCommand(remote_action);
@@ -218,7 +222,8 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
       render->StopSpeakerCapturer();
     }
   } else if (ControlType::keyboard == remote_action.type) {
-    render->ProcessKeyEvent(remote_action.k.key_value, remote_action.k.flag);
+    render->ProcessKeyEvent((int)remote_action.k.key_value,
+                            remote_action.k.flag);
   } else if (ControlType::host_infomation == remote_action.type) {
     render->host_name_ =
         std::string(remote_action.i.host_name, remote_action.i.host_name_size);
@@ -255,8 +260,10 @@ void Render::OnSignalStatusCb(SignalStatus status, void *user_data) {
   }
 }
 
-void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
-                                  const size_t user_id_size, void *user_data) {
+void Render::OnConnectionStatusCb(ConnectionStatus status,
+                                  [[maybe_unused]] const char *user_id,
+                                  [[maybe_unused]] const size_t user_id_size,
+                                  void *user_data) {
   Render *render = (Render *)user_data;
   if (!render) {
     return;
@@ -352,7 +359,7 @@ void Render::NetStatusReport(const char *client_id, size_t client_id_size,
 
   if (0 == strcmp(render->client_id_, "")) {
     memset(&render->client_id_, 0, sizeof(render->client_id_));
-    strncpy(render->client_id_, client_id, client_id_size);
+    memcpy(render->client_id_, client_id, client_id_size);
     LOG_INFO("Use client id [{}] and save id into cache file", client_id);
     render->SaveSettingsIntoCacheFile();
   }

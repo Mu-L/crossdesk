@@ -57,7 +57,7 @@ class Render {
   int DestroyMainWindow();
   int CreateStreamWindow();
   int DestroyStreamWindow();
-  int SetupFontAndStyle(bool is_main_window);
+  int SetupFontAndStyle();
   int SetupMainWindow();
   int DestroyMainWindowContext();
   int SetupStreamWindow();
@@ -65,7 +65,7 @@ class Render {
   int DrawMainWindow();
   int DrawStreamWindow();
   int ConfirmDeleteConnection();
-  int NetTrafficStats(ImVec2 mouse_button_pos);
+  int NetTrafficStats();
 
  public:
   static void OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
@@ -139,7 +139,6 @@ class Render {
   } CDCache;
 
  private:
-  std::ifstream cd_cache_file_;
   CDCache cd_cache_;
   std::mutex cd_cache_mutex_;
 
@@ -171,57 +170,57 @@ class Render {
   char client_password_[20] = "";
 
  private:
-  int title_bar_width_ = 640;
-  int title_bar_height_ = 30;
+  float title_bar_width_ = 640;
+  float title_bar_height_ = 30;
   int screen_width_ = 1280;
   int screen_height_ = 720;
-  int main_window_width_default_ = 640;
-  int main_window_height_default_ = 480;
-  int main_window_width_ = 640;
-  int main_window_height_ = 480;
-  int main_window_width_last_ = 640;
-  int main_window_height_last_ = 480;
-  int stream_window_width_default_ = 1280;
-  int stream_window_height_default_ = 720;
-  int stream_window_width_ = 1280;
-  int stream_window_height_ = 720;
+  float main_window_width_default_ = 640;
+  float main_window_height_default_ = 480;
+  float main_window_width_ = 640;
+  float main_window_height_ = 480;
+  float main_window_width_last_ = 640;
+  float main_window_height_last_ = 480;
+  float stream_window_width_default_ = 1280;
+  float stream_window_height_default_ = 720;
+  float stream_window_width_ = 1280;
+  float stream_window_height_ = 720;
   int stream_window_width_last_ = 1280;
   int stream_window_height_last_ = 720;
-  int stream_window_width_before_maximized_ = 1280;
-  int stream_window_height_before_maximized_ = 720;
-  int control_window_min_width_ = 20;
-  int control_window_max_width_ = 200;
-  int control_window_min_height_ = 40;
-  int control_window_max_height_ = 150;
-  int control_window_width_ = 200;
-  int control_window_height_ = 40;
-  int local_window_width_ = 320;
-  int local_window_height_ = 235;
-  int remote_window_width_ = 320;
-  int remote_window_height_ = 235;
-  int local_child_window_width_ = 266;
-  int local_child_window_height_ = 180;
-  int remote_child_window_width_ = 266;
-  int remote_child_window_height_ = 180;
-  int main_window_text_y_padding_ = 10;
-  int main_child_window_x_padding_ = 27;
-  int main_child_window_y_padding_ = 45;
-  int status_bar_height_ = 22;
-  int connection_status_window_width_ = 200;
-  int connection_status_window_height_ = 150;
-  int notification_window_width_ = 200;
-  int notification_window_height_ = 80;
-  int about_window_width_ = 200;
-  int about_window_height_ = 150;
+  float stream_window_width_before_maximized_ = 1280;
+  float stream_window_height_before_maximized_ = 720;
+  float control_window_min_width_ = 20;
+  float control_window_max_width_ = 200;
+  float control_window_min_height_ = 40;
+  float control_window_max_height_ = 150;
+  float control_window_width_ = 200;
+  float control_window_height_ = 40;
+  float local_window_width_ = 320;
+  float local_window_height_ = 235;
+  float remote_window_width_ = 320;
+  float remote_window_height_ = 235;
+  float local_child_window_width_ = 266;
+  float local_child_window_height_ = 180;
+  float remote_child_window_width_ = 266;
+  float remote_child_window_height_ = 180;
+  float main_window_text_y_padding_ = 10;
+  float main_child_window_x_padding_ = 27;
+  float main_child_window_y_padding_ = 45;
+  float status_bar_height_ = 22;
+  float connection_status_window_width_ = 200;
+  float connection_status_window_height_ = 150;
+  float notification_window_width_ = 200;
+  float notification_window_height_ = 80;
+  float about_window_width_ = 200;
+  float about_window_height_ = 150;
 
-  int control_bar_pos_x_ = 0;
-  int control_bar_pos_y_ = 30;
-  int mouse_diff_control_bar_pos_x_ = 0;
-  int mouse_diff_control_bar_pos_y_ = 0;
-  int mouse_pos_x_ = 0;
-  int mouse_pos_y_ = 0;
-  int mouse_pos_x_last_ = 0;
-  int mouse_pos_y_last_ = 0;
+  float control_bar_pos_x_ = 0;
+  float control_bar_pos_y_ = 30;
+  float mouse_diff_control_bar_pos_x_ = 0;
+  float mouse_diff_control_bar_pos_y_ = 0;
+  float mouse_pos_x_ = 0;
+  float mouse_pos_y_ = 0;
+  float mouse_pos_x_last_ = 0;
+  float mouse_pos_y_last_ = 0;
 
   int main_window_width_real_ = 720;
   int main_window_height_real_ = 540;
@@ -238,7 +237,7 @@ class Render {
 
   int video_width_ = 1280;
   int video_height_ = 720;
-  int video_size_ = 1280 * 720 * 3;
+  size_t video_size_ = 1280 * 720 * 3;
 
   SDL_Window *main_window_ = nullptr;
   SDL_Renderer *main_renderer_ = nullptr;
@@ -346,7 +345,7 @@ class Render {
   unsigned char audio_buffer_[720];
   int audio_len_ = 0;
   unsigned char *dst_buffer_ = nullptr;
-  int dst_buffer_capacity_ = 0;
+  size_t dst_buffer_capacity_ = 0;
 
  private:
   ScreenCapturerFactory *screen_capturer_factory_ = nullptr;
@@ -356,7 +355,7 @@ class Render {
   DeviceControllerFactory *device_controller_factory_ = nullptr;
   MouseController *mouse_controller_ = nullptr;
   KeyboardCapturer *keyboard_capturer_ = nullptr;
-  uint32_t last_frame_time_;
+  uint64_t last_frame_time_;
 
  private:
   char client_id_[10] = "";

@@ -25,13 +25,13 @@ std::string GetMac() {
 #ifdef _WIN32
   IP_ADAPTER_INFO adapterInfo[16];
   DWORD bufferSize = sizeof(adapterInfo);
-
   DWORD result = GetAdaptersInfo(adapterInfo, &bufferSize);
   if (result == ERROR_SUCCESS) {
     PIP_ADAPTER_INFO adapter = adapterInfo;
     while (adapter) {
       for (UINT i = 0; i < adapter->AddressLength; i++) {
-        len += sprintf(mac_addr + len, "%.2X", adapter->Address[i]);
+        len += sprintf_s(mac_addr + len, sizeof(mac_addr) - len, "%.2X",
+                         adapter->Address[i]);
       }
       break;
     }

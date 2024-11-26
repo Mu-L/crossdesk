@@ -31,8 +31,8 @@ int Render::LocalWindow() {
         ImVec2(main_child_window_x_padding_,
                title_bar_height_ + main_child_window_y_padding_),
         ImGuiCond_Always);
-    ImGui::PushStyleColor(ImGuiCol_ChildBg,
-                          ImVec4(239.0 / 255, 240.0 / 255, 242.0 / 255, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(239.0f / 255, 240.0f / 255,
+                                                   242.0f / 255, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
     ImGui::BeginChild(
         "LocalDesktopWindow_1",
@@ -82,7 +82,7 @@ int Render::LocalWindow() {
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PopStyleColor(3);
 
-      auto time_duration = ImGui::GetTime() - copy_start_time_;
+      double time_duration = ImGui::GetTime() - copy_start_time_;
       if (local_id_copied_ && time_duration < 1.0f) {
         const ImGuiViewport *viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(
@@ -95,8 +95,9 @@ int Render::LocalWindow() {
 
         ImGui::SetNextWindowSize(
             ImVec2(notification_window_width_, notification_window_height_));
-        ImGui::PushStyleColor(ImGuiCol_WindowBg,
-                              ImVec4(1.0, 1.0, 1.0, 1.0 - time_duration));
+        ImGui::PushStyleColor(
+            ImGuiCol_WindowBg,
+            ImVec4(1.0f, 1.0f, 1.0f, 1.0f - (float)time_duration));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
         ImGui::Begin("ConnectionStatusWindow", nullptr,
@@ -114,7 +115,7 @@ int Render::LocalWindow() {
         ImGui::SetCursorPosX((window_width - text_width) * 0.5f);
         ImGui::SetCursorPosY(window_height * 0.5f);
         ImGui::PushStyleColor(ImGuiCol_Text,
-                              ImVec4(0, 0, 0, 1.0 - time_duration));
+                              ImVec4(0, 0, 0, 1.0f - (float)time_duration));
         ImGui::Text("%s", text.c_str());
         ImGui::PopStyleColor();
         ImGui::SetWindowFontScale(1.0f);
@@ -137,18 +138,20 @@ int Render::LocalWindow() {
       if (!password_inited_) {
         char a[] = {
             "123456789QWERTYUPASDFGHJKLZXCVBNMqwertyupasdfghijkzxcvbnm"};
-        std::mt19937 generator(
-            std::chrono::system_clock::now().time_since_epoch().count());
-        std::uniform_int_distribution<int> distribution(0, strlen(a) - 1);
+        std::mt19937 generator((unsigned int)std::chrono::system_clock::now()
+                                   .time_since_epoch()
+                                   .count());
+        std::uniform_int_distribution<int> distribution(0,
+                                                        (int)(strlen(a) - 1));
 
         random_password_.clear();
-        for (int i = 0, len = strlen(a); i < 6; i++) {
+        for (int i = 0; i < 6; i++) {
           random_password_ += a[distribution(generator)];
         }
         password_inited_ = true;
         if (0 != strcmp(random_password_.c_str(), password_saved_)) {
-          strncpy(password_saved_, random_password_.c_str(),
-                  sizeof(password_saved_));
+          memcpy(password_saved_, random_password_.c_str(),
+                 sizeof(password_saved_));
           LOG_INFO("Generate new password and save into cache file");
           SaveSettingsIntoCacheFile();
         }
@@ -279,7 +282,7 @@ int Render::LocalWindow() {
           } else {
             show_reset_password_window_ = false;
             LOG_INFO("Generate new password and save into cache file");
-            strncpy(password_saved_, new_password_, sizeof(password_saved_));
+            memcpy(password_saved_, new_password_, sizeof(password_saved_));
             memset(new_password_, 0, sizeof(new_password_));
             SaveSettingsIntoCacheFile();
             LeaveConnection(peer_, client_id_);

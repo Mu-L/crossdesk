@@ -2,18 +2,18 @@
 #include "render.h"
 
 int Render::ControlWindow() {
-  auto time_duration = ImGui::GetTime() - control_bar_button_pressed_time_;
+  double time_duration = ImGui::GetTime() - control_bar_button_pressed_time_;
   if (control_window_width_is_changing_) {
     if (control_bar_expand_) {
       control_window_width_ =
-          control_window_min_width_ +
-          (control_window_max_width_ - control_window_min_width_) * 4 *
-              time_duration;
+          (float)(control_window_min_width_ +
+                  (control_window_max_width_ - control_window_min_width_) * 4 *
+                      time_duration);
     } else {
       control_window_width_ =
-          control_window_max_width_ -
-          (control_window_max_width_ - control_window_min_width_) * 4 *
-              time_duration;
+          (float)(control_window_max_width_ -
+                  (control_window_max_width_ - control_window_min_width_) * 4 *
+                      time_duration);
     }
   }
 
@@ -21,14 +21,14 @@ int Render::ControlWindow() {
   if (control_window_height_is_changing_) {
     if (control_bar_expand_ && net_traffic_stats_button_pressed_) {
       control_window_height_ =
-          control_window_min_height_ +
-          (control_window_max_height_ - control_window_min_height_) * 4 *
-              time_duration;
+          (float)(control_window_min_height_ +
+                  (control_window_max_height_ - control_window_min_height_) *
+                      4 * time_duration);
     } else if (control_bar_expand_ && !net_traffic_stats_button_pressed_) {
       control_window_height_ =
-          control_window_max_height_ -
-          (control_window_max_height_ - control_window_min_height_) * 4 *
-              time_duration;
+          (float)(control_window_max_height_ -
+                  (control_window_max_height_ - control_window_min_height_) *
+                      4 * time_duration);
     }
   }
 
@@ -47,7 +47,7 @@ int Render::ControlWindow() {
   }
 
   if (reset_control_bar_pos_) {
-    int new_control_window_pos_x, new_control_window_pos_y, new_cursor_pos_x,
+    float new_control_window_pos_x, new_control_window_pos_y, new_cursor_pos_x,
         new_cursor_pos_y;
 
     // set control window pos
@@ -94,15 +94,16 @@ int Render::ControlWindow() {
 
     if (0 != mouse_diff_control_bar_pos_x_ &&
         0 != mouse_diff_control_bar_pos_y_) {
-      SDL_WarpMouseInWindow(stream_window_, new_cursor_pos_x, new_cursor_pos_y);
+      SDL_WarpMouseInWindow(stream_window_, (int)new_cursor_pos_x,
+                            (int)new_cursor_pos_y);
     }
     reset_control_bar_pos_ = false;
   } else if (!reset_control_bar_pos_ &&
                  ImGui::IsMouseReleased(ImGuiPopupFlags_MouseButtonLeft) ||
              control_window_width_is_changing_) {
     if (control_winodw_pos_.x <= stream_window_width_ / 2) {
-      int pos_x = 0;
-      int pos_y =
+      float pos_x = 0;
+      float pos_y =
           (control_winodw_pos_.y >=
                (fullscreen_button_pressed_ ? 0 : (title_bar_height_ + 1)) &&
            control_winodw_pos_.y <=
@@ -133,8 +134,8 @@ int Render::ControlWindow() {
       ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiCond_Always);
       is_control_bar_in_left_ = true;
     } else if (control_winodw_pos_.x > stream_window_width_ / 2) {
-      int pos_x = 0;
-      int pos_y =
+      float pos_x = 0;
+      float pos_y =
           (control_winodw_pos_.y >=
                (fullscreen_button_pressed_ ? 0 : (title_bar_height_ + 1)) &&
            control_winodw_pos_.y <=
@@ -195,7 +196,7 @@ int Render::ControlWindow() {
   ImGui::PopStyleVar();
 
   control_winodw_pos_ = ImGui::GetWindowPos();
-  SDL_GetMouseState(&mouse_pos_x_, &mouse_pos_y_);
+  SDL_GetMouseState(&(int)mouse_pos_x_, &(int)mouse_pos_y_);
   mouse_diff_control_bar_pos_x_ = mouse_pos_x_ - control_winodw_pos_.x;
   mouse_diff_control_bar_pos_y_ = mouse_pos_y_ - control_winodw_pos_.y;
 

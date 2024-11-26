@@ -38,12 +38,12 @@ int Render::ShowRecentConnections() {
   ImGui::SetCursorPosX(25.0f);
   ImVec2 sub_window_pos = ImGui::GetCursorPos();
   std::map<std::string, ImVec2> sub_containers_pos;
-  int recent_connection_sub_container_width =
+  float recent_connection_sub_container_width =
       recent_connection_image_width_ + 16.0f;
-  int recent_connection_sub_container_height =
+  float recent_connection_sub_container_height =
       recent_connection_image_height_ + 36.0f;
   ImGui::PushStyleColor(ImGuiCol_ChildBg,
-                        ImVec4(239.0 / 255, 240.0 / 255, 242.0 / 255, 1.0f));
+                        ImVec4(239.0f / 255, 240.0f / 255, 242.0f / 255, 1.0f));
   ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
   ImGui::BeginChild("RecentConnectionsContainer",
                     ImVec2(main_window_width_default_ - 50.0f, 145.0f),
@@ -56,10 +56,10 @@ int Render::ShowRecentConnections() {
                         ImGuiWindowFlags_NoScrollWithMouse);
   ImGui::PopStyleVar();
   ImGui::PopStyleColor();
-  int recent_connections_count = recent_connection_textures_.size();
+  size_t recent_connections_count = recent_connection_textures_.size();
   int count = 0;
-  int button_width = 22;
-  int button_height = 22;
+  float button_width = 22;
+  float button_height = 22;
   for (auto it = recent_connection_textures_.begin();
        it != recent_connection_textures_.end(); ++it) {
     sub_containers_pos[it->first] = ImGui::GetCursorPos();
@@ -180,7 +180,7 @@ int Render::ShowRecentConnections() {
         if (!password.empty() && password.size() == 6) {
           remember_password_ = true;
         }
-        strncpy(remote_password_, password.c_str(), 6);
+        memcpy(remote_password_, password.c_str(), 6);
         ConnectTo();
       }
     }

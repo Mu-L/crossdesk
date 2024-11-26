@@ -148,7 +148,7 @@ auto WgcSessionImpl::CreateD3D11Device() {
 
   if (DXGI_ERROR_UNSUPPORTED == hr) {
     // change D3D_DRIVER_TYPE
-    D3D_DRIVER_TYPE type = D3D_DRIVER_TYPE_WARP;
+    type = D3D_DRIVER_TYPE_WARP;
     hr = D3D11CreateDevice(nullptr, type, nullptr, flags, nullptr, 0,
                            D3D11_SDK_VERSION, d3d_device.put(), nullptr,
                            nullptr);
@@ -213,7 +213,7 @@ HRESULT WgcSessionImpl::CreateMappedTexture(
 
 void WgcSessionImpl::OnFrame(
     winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool const &sender,
-    winrt::Windows::Foundation::IInspectable const &args) {
+    [[maybe_unused]] winrt::Windows::Foundation::IInspectable const &args) {
   std::lock_guard locker(lock_);
 
   auto is_new_size = false;

@@ -155,6 +155,8 @@ LICENSE
   See end of file for license information.
 
 */
+#pragma warning(push)
+#pragma warning(disable : 4996)
 
 #ifndef INCLUDE_STB_IMAGE_WRITE_H
 #define INCLUDE_STB_IMAGE_WRITE_H
@@ -1933,6 +1935,7 @@ STBIWDEF int stbi_write_jpg(char const *filename, int x, int y, int comp,
 #endif
 
 #endif  // STB_IMAGE_WRITE_IMPLEMENTATION
+#pragma warning(pop)
 
 /* Revision history
       1.16  (2021-07-11)

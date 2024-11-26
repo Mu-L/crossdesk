@@ -9,8 +9,8 @@
 
 #include "libyuv.h"
 
-BOOL WINAPI EnumMonitorProc(HMONITOR hmonitor, HDC hdc, LPRECT lprc,
-                            LPARAM data) {
+BOOL WINAPI EnumMonitorProc(HMONITOR hmonitor, [[maybe_unused]] HDC hdc,
+                            [[maybe_unused]] LPRECT lprc, LPARAM data) {
   MONITORINFOEX info_ex;
   info_ex.cbSize = sizeof(MONITORINFOEX);
 

@@ -3,9 +3,9 @@
 #include "rd_log.h"
 #include "render.h"
 
-int CountDigits(int number) {
+int CountDigits(uint64_t number) {
   if (number == 0) return 1;
-  return std::floor(std::log10(std::abs(number))) + 1;
+  return (int)std::floor(std::log10(std::abs((int)number))) + 1;
 }
 
 int BitrateDisplay(uint64_t bitrate) {
@@ -192,7 +192,7 @@ int Render::ControlBar() {
   }
 
   if (net_traffic_stats_button_pressed_ && control_bar_expand_) {
-    NetTrafficStats(mouse_button_pos);
+    NetTrafficStats();
   }
 
   ImGui::PopStyleVar();
@@ -200,7 +200,7 @@ int Render::ControlBar() {
   return 0;
 }
 
-int Render::NetTrafficStats(ImVec2 mouse_button_pos) {
+int Render::NetTrafficStats() {
   ImGui::SetCursorPos(ImVec2(
       is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 5.0f, 40.0f));
 

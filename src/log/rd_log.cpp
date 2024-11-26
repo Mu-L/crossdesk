@@ -6,12 +6,20 @@ std::shared_ptr<spdlog::logger> get_logger() {
   }
 
   auto now = std::chrono::system_clock::now() + std::chrono::hours(8);
-  auto timet = std::chrono::system_clock::to_time_t(now);
-  auto localTime = *std::gmtime(&timet);
+  auto now_time = std::chrono::system_clock::to_time_t(now);
+
+  std::tm tm_info;
+
+#ifdef _WIN32
+  gmtime_s(&tm_info, &now_time);
+#else
+  gmtime_r(&now_time, &tm_info);
+#endif
+
   std::stringstream ss;
   std::string filename;
   ss << LOGGER_NAME;
-  ss << std::put_time(&localTime, "-%Y%m%d-%H%M%S.log");
+  ss << std::put_time(&tm_info, "-%Y%m%d-%H%M%S.log");
   ss >> filename;
 
   std::string path = "logs/" + filename;

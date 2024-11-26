@@ -45,7 +45,7 @@ int KeyboardCapturer::Unhook() {
 int KeyboardCapturer::SendKeyboardCommand(int key_code, bool is_down) {
   INPUT input = {0};
   input.type = INPUT_KEYBOARD;
-  input.ki.wVk = key_code;
+  input.ki.wVk = (WORD)key_code;
 
   if (!is_down) {
     input.ki.dwFlags = KEYEVENTF_KEYUP;

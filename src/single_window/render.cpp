@@ -75,16 +75,16 @@ Render::~Render() {}
 
 int Render::SaveSettingsIntoCacheFile() {
   cd_cache_mutex_.lock();
-  std::ofstream cd_cache_file_("cache.cd", std::ios::binary);
-  if (!cd_cache_file_) {
+  std::ofstream cd_cache_file("cache.cd", std::ios::binary);
+  if (!cd_cache_file) {
     cd_cache_mutex_.unlock();
     return -1;
   }
 
   memset(&cd_cache_.client_id, 0, sizeof(cd_cache_.client_id));
-  strncpy(cd_cache_.client_id, client_id_, sizeof(client_id_));
+  memcpy(cd_cache_.client_id, client_id_, sizeof(client_id_));
   memset(&cd_cache_.password, 0, sizeof(cd_cache_.password));
-  strncpy(cd_cache_.password, password_saved_, sizeof(password_saved_));
+  memcpy(cd_cache_.password, password_saved_, sizeof(password_saved_));
   memcpy(&cd_cache_.language, &language_button_value_,
          sizeof(language_button_value_));
   memcpy(&cd_cache_.video_quality, &video_quality_button_value_,
@@ -95,8 +95,8 @@ int Render::SaveSettingsIntoCacheFile() {
          sizeof(enable_hardware_video_codec_));
   memcpy(&cd_cache_.enable_turn, &enable_turn_, sizeof(enable_turn_));
 
-  cd_cache_file_.write(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
-  cd_cache_file_.close();
+  cd_cache_file.write(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
+  cd_cache_file.close();
   cd_cache_mutex_.unlock();
 
   config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
@@ -114,8 +114,8 @@ int Render::SaveSettingsIntoCacheFile() {
 
 int Render::LoadSettingsFromCacheFile() {
   cd_cache_mutex_.lock();
-  std::ifstream cd_cache_file_("cache.cd", std::ios::binary);
-  if (!cd_cache_file_) {
+  std::ifstream cd_cache_file("cache.cd", std::ios::binary);
+  if (!cd_cache_file) {
     cd_cache_mutex_.unlock();
 
     LOG_INFO("Init cache file by using default settings");
@@ -145,13 +145,13 @@ int Render::LoadSettingsFromCacheFile() {
     return -1;
   }
 
-  cd_cache_file_.read(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
-  cd_cache_file_.close();
+  cd_cache_file.read(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
+  cd_cache_file.close();
   cd_cache_mutex_.unlock();
 
   memset(&client_id_, 0, sizeof(client_id_));
-  strncpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
-  strncpy(password_saved_, cd_cache_.password, sizeof(password_saved_));
+  memcpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
+  memcpy(password_saved_, cd_cache_.password, sizeof(password_saved_));
   if (0 != strcmp(password_saved_, "") && 7 == sizeof(password_saved_)) {
     password_inited_ = true;
   }
@@ -365,7 +365,7 @@ int Render::CreateConnectionPeer() {
 
 int Render::AudioDeviceInit() {
   // Audio
-  SDL_AudioSpec want_in, have_in, want_out, have_out;
+  SDL_AudioSpec want_in, want_out;
   SDL_zero(want_in);
   want_in.freq = 48000;
   want_in.format = AUDIO_S16LSB;
@@ -453,12 +453,12 @@ int Render::CreateMainWindow() {
 
   ImGui::SetCurrentContext(main_ctx_);
 
-  SDL_WindowFlags window_flags =
-      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS |
-                        SDL_WINDOW_HIDDEN);
-  main_window_ = SDL_CreateWindow(
-      "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      main_window_width_default_, main_window_height_default_, window_flags);
+  SDL_WindowFlags window_flags = (SDL_WindowFlags)(
+      SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIDDEN);
+  main_window_ =
+      SDL_CreateWindow("Remote Desk", SDL_WINDOWPOS_UNDEFINED,
+                       SDL_WINDOWPOS_UNDEFINED, (int)main_window_width_default_,
+                       (int)main_window_height_default_, window_flags);
 
   main_renderer_ = SDL_CreateRenderer(
       main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
@@ -506,10 +506,10 @@ int Render::CreateStreamWindow() {
 
   SDL_WindowFlags window_flags =
       (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
-  stream_window_ =
-      SDL_CreateWindow("Stream window", SDL_WINDOWPOS_UNDEFINED,
-                       SDL_WINDOWPOS_UNDEFINED, stream_window_width_default_,
-                       stream_window_height_default_, window_flags);
+  stream_window_ = SDL_CreateWindow(
+      "Stream window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      (int)stream_window_width_default_, (int)stream_window_height_default_,
+      window_flags);
 
   stream_renderer_ = SDL_CreateRenderer(
       stream_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
@@ -551,7 +551,7 @@ int Render::DestroyStreamWindow() {
   return 0;
 }
 
-int Render::SetupFontAndStyle(bool is_main_window) {
+int Render::SetupFontAndStyle() {
   // Setup Dear ImGui style
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |=
@@ -583,14 +583,12 @@ int Render::SetupMainWindow() {
 
   ImGui::SetCurrentContext(main_ctx_);
 
-  SetupFontAndStyle(true);
+  SetupFontAndStyle();
 
   SDL_GL_GetDrawableSize(main_window_, &main_window_width_real_,
                          &main_window_height_real_);
-  main_window_dpi_scaling_w_ =
-      (float)main_window_width_real_ / (float)main_window_width_;
-  main_window_dpi_scaling_h_ =
-      (float)main_window_width_real_ / (float)main_window_width_;
+  main_window_dpi_scaling_w_ = main_window_width_real_ / main_window_width_;
+  main_window_dpi_scaling_h_ = main_window_width_real_ / main_window_width_;
   SDL_RenderSetScale(main_renderer_, main_window_dpi_scaling_w_,
                      main_window_dpi_scaling_h_);
   LOG_INFO("Use dpi scaling [{}x{}] for main window",
@@ -623,14 +621,14 @@ int Render::SetupStreamWindow() {
 
   ImGui::SetCurrentContext(stream_ctx_);
 
-  SetupFontAndStyle(false);
+  SetupFontAndStyle();
 
-  SDL_GL_GetDrawableSize(stream_window_, &stream_window_width_real_,
-                         &stream_window_height_real_);
+  SDL_GL_GetDrawableSize(stream_window_, &main_window_width_real_,
+                         &main_window_height_real_);
   stream_window_dpi_scaling_w_ =
-      (float)stream_window_width_real_ / (float)stream_window_width_;
+      stream_window_width_real_ / stream_window_width_;
   stream_window_dpi_scaling_h_ =
-      (float)stream_window_width_real_ / (float)stream_window_width_;
+      stream_window_width_real_ / stream_window_width_;
   SDL_RenderSetScale(stream_renderer_, stream_window_dpi_scaling_w_,
                      stream_window_dpi_scaling_h_);
   LOG_INFO("Use dpi scaling [{}x{}] for stream window",
@@ -758,9 +756,9 @@ int Render::Run() {
   screen_height_ = DM.h;
 
   stream_render_rect_.x = 0;
-  stream_render_rect_.y = title_bar_height_;
-  stream_render_rect_.w = stream_window_width_;
-  stream_render_rect_.h = stream_window_height_ - title_bar_height_;
+  stream_render_rect_.y = (int)title_bar_height_;
+  stream_render_rect_.w = (int)stream_window_width_;
+  stream_render_rect_.h = (int)(stream_window_height_ - title_bar_height_);
 
   // use linear filtering to render textures otherwise the graphics will be
   // blurry
@@ -885,8 +883,8 @@ int Render::Run() {
           memset(&net_traffic_stats_, 0, sizeof(net_traffic_stats_));
           SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
           memset(audio_buffer_, 0, 720);
-          SDL_SetWindowSize(main_window_, main_window_width_default_,
-                            main_window_height_default_);
+          SDL_SetWindowSize(main_window_, (int)main_window_width_default_,
+                            (int)main_window_height_default_);
 
           // SDL_Rect display_bounds;
           // SDL_GetDisplayBounds(0, &display_bounds);
@@ -905,14 +903,14 @@ int Render::Run() {
         window_maximized_ = false;
       } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         reset_control_bar_pos_ = true;
-        SDL_GetWindowSize(stream_window_, &stream_window_width_,
-                          &stream_window_height_);
+        SDL_GetWindowSize(stream_window_, &((int)stream_window_width_),
+                          &((int)stream_window_height_));
 
         float video_ratio = (float)video_width_ / (float)video_height_;
         float video_ratio_reverse = (float)video_height_ / (float)video_width_;
 
-        int render_area_width = stream_window_width_;
-        int render_area_height =
+        float render_area_width = stream_window_width_;
+        float render_area_height =
             stream_window_height_ -
             (fullscreen_button_pressed_ ? 0 : title_bar_height_);
 
@@ -920,25 +918,27 @@ int Render::Run() {
         if (render_area_width < render_area_height * video_ratio) {
           stream_render_rect_.x = 0;
           stream_render_rect_.y =
-              abs(render_area_height -
-                  render_area_width * video_ratio_reverse) /
-                  2 +
-              (fullscreen_button_pressed_ ? 0 : title_bar_height_);
-          stream_render_rect_.w = render_area_width;
-          stream_render_rect_.h = render_area_width * video_ratio_reverse;
+              (int)(abs(render_area_height -
+                        render_area_width * video_ratio_reverse) /
+                        2 +
+                    (fullscreen_button_pressed_ ? 0 : title_bar_height_));
+          stream_render_rect_.w = (int)render_area_width;
+          stream_render_rect_.h =
+              (int)(render_area_width * video_ratio_reverse);
         } else if (render_area_width > render_area_height * video_ratio) {
           stream_render_rect_.x =
-              abs(render_area_width - render_area_height * video_ratio) / 2;
+              (int)abs(render_area_width - render_area_height * video_ratio) /
+              2;
           stream_render_rect_.y =
-              fullscreen_button_pressed_ ? 0 : title_bar_height_;
-          stream_render_rect_.w = render_area_height * video_ratio;
-          stream_render_rect_.h = render_area_height;
+              fullscreen_button_pressed_ ? 0 : (int)title_bar_height_;
+          stream_render_rect_.w = (int)(render_area_height * video_ratio);
+          stream_render_rect_.h = (int)render_area_height;
         } else {
           stream_render_rect_.x = 0;
           stream_render_rect_.y =
-              fullscreen_button_pressed_ ? 0 : title_bar_height_;
-          stream_render_rect_.w = render_area_width;
-          stream_render_rect_.h = render_area_height;
+              fullscreen_button_pressed_ ? 0 : (int)title_bar_height_;
+          stream_render_rect_.w = (int)render_area_width;
+          stream_render_rect_.h = (int)render_area_height;
         }
       } else if (event.type == SDL_WINDOWEVENT &&
                  event.window.event == SDL_WINDOWEVENT_CLOSE) {
