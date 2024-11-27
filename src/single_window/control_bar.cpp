@@ -3,12 +3,12 @@
 #include "rd_log.h"
 #include "render.h"
 
-int CountDigits(uint64_t number) {
+int CountDigits(int number) {
   if (number == 0) return 1;
-  return (int)std::floor(std::log10(std::abs((int)number))) + 1;
+  return (int)std::floor(std::log10(std::abs(number))) + 1;
 }
 
-int BitrateDisplay(uint64_t bitrate) {
+int BitrateDisplay(int bitrate) {
   int num_of_digits = CountDigits(bitrate);
   if (num_of_digits <= 3) {
     ImGui::Text("%d bps", bitrate);
@@ -219,35 +219,35 @@ int Render::NetTrafficStats() {
     ImGui::Text("%s",
                 localization::video[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    BitrateDisplay(net_traffic_stats_.video_in);
+    BitrateDisplay((int)net_traffic_stats_.video_in);
     ImGui::TableNextColumn();
-    BitrateDisplay(net_traffic_stats_.video_out);
+    BitrateDisplay((int)net_traffic_stats_.video_out);
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
     ImGui::Text("%s",
                 localization::audio[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    BitrateDisplay(net_traffic_stats_.audio_in);
+    BitrateDisplay((int)net_traffic_stats_.audio_in);
     ImGui::TableNextColumn();
-    BitrateDisplay(net_traffic_stats_.audio_out);
+    BitrateDisplay((int)net_traffic_stats_.audio_out);
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
     ImGui::Text("%s", localization::data[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    BitrateDisplay(net_traffic_stats_.data_in);
+    BitrateDisplay((int)net_traffic_stats_.data_in);
     ImGui::TableNextColumn();
-    BitrateDisplay(net_traffic_stats_.data_out);
+    BitrateDisplay((int)net_traffic_stats_.data_out);
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
     ImGui::Text("%s",
                 localization::total[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    BitrateDisplay(net_traffic_stats_.total_in);
+    BitrateDisplay((int)net_traffic_stats_.total_in);
     ImGui::TableNextColumn();
-    BitrateDisplay(net_traffic_stats_.total_out);
+    BitrateDisplay((int)net_traffic_stats_.total_out);
 
     ImGui::EndTable();
   }

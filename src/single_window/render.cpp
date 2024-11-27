@@ -453,8 +453,9 @@ int Render::CreateMainWindow() {
 
   ImGui::SetCurrentContext(main_ctx_);
 
-  SDL_WindowFlags window_flags = (SDL_WindowFlags)(
-      SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIDDEN);
+  SDL_WindowFlags window_flags =
+      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS |
+                        SDL_WINDOW_HIDDEN);
   main_window_ =
       SDL_CreateWindow("Remote Desk", SDL_WINDOWPOS_UNDEFINED,
                        SDL_WINDOWPOS_UNDEFINED, (int)main_window_width_default_,
@@ -903,8 +904,8 @@ int Render::Run() {
         window_maximized_ = false;
       } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         reset_control_bar_pos_ = true;
-        SDL_GetWindowSize(stream_window_, &((int)stream_window_width_),
-                          &((int)stream_window_height_));
+        SDL_GetWindowSize(stream_window_, (int*)&stream_window_width_,
+                          (int*)&stream_window_height_);
 
         float video_ratio = (float)video_width_ / (float)video_height_;
         float video_ratio_reverse = (float)video_height_ / (float)video_width_;

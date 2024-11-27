@@ -47,7 +47,7 @@ int Render::ControlWindow() {
   }
 
   if (reset_control_bar_pos_) {
-    float new_control_window_pos_x, new_control_window_pos_y, new_cursor_pos_x,
+    int new_control_window_pos_x, new_control_window_pos_y, new_cursor_pos_x,
         new_cursor_pos_y;
 
     // set control window pos
@@ -94,8 +94,7 @@ int Render::ControlWindow() {
 
     if (0 != mouse_diff_control_bar_pos_x_ &&
         0 != mouse_diff_control_bar_pos_y_) {
-      SDL_WarpMouseInWindow(stream_window_, (int)new_cursor_pos_x,
-                            (int)new_cursor_pos_y);
+      SDL_WarpMouseInWindow(stream_window_, new_cursor_pos_x, new_cursor_pos_y);
     }
     reset_control_bar_pos_ = false;
   } else if (!reset_control_bar_pos_ &&
@@ -196,7 +195,7 @@ int Render::ControlWindow() {
   ImGui::PopStyleVar();
 
   control_winodw_pos_ = ImGui::GetWindowPos();
-  SDL_GetMouseState(&(int)mouse_pos_x_, &(int)mouse_pos_y_);
+  SDL_GetMouseState(&mouse_pos_x_, &mouse_pos_y_);
   mouse_diff_control_bar_pos_x_ = mouse_pos_x_ - control_winodw_pos_.x;
   mouse_diff_control_bar_pos_y_ = mouse_pos_y_ - control_winodw_pos_.y;
 
