@@ -7,7 +7,7 @@
 
 #include "log.h"
 
-#define SAVE_IO_STREAM
+// #define SAVE_IO_STREAM
 
 IceAgent::IceAgent(bool offer_peer, bool use_trickle_ice, bool use_reliable_ice,
                    bool enable_turn, bool force_turn, std::string &stun_ip,

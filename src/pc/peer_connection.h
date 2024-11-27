@@ -68,8 +68,7 @@ struct IceWorkMsg {
     UserLeaveTransmission,
     Offer,
     Answer,
-    NewCandidate,
-    Destroy
+    NewCandidate
   };
 
   Type type;
@@ -96,6 +95,8 @@ class PeerConnection {
            const std::string &password = "");
 
   int Leave(const std::string &transmission_id);
+
+  int ReleaseAllIceTransmission();
 
   int Destroy();
 
@@ -201,7 +202,9 @@ class PeerConnection {
   std::atomic<bool> ice_worker_running_{true};
   std::queue<IceWorkMsg> ice_work_msg_queue_;
   std::condition_variable ice_work_cv_;
+  std::condition_variable empty_notify_cv_;
   std::mutex ice_work_mutex_;
+  std::mutex empty_notify_mutex_;
 };
 
 #endif

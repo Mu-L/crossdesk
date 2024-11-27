@@ -162,11 +162,10 @@ int PeerConnection::Init(PeerConnectionParams params,
         LOG_INFO(
             "Ice failed, destroy ice agent and rereate it with TURN enabled");
 
-        IceWorkMsg msg;
-        msg.type = IceWorkMsg::Type::Destroy;
-        PushIceWorkMsg(msg);
+        ReleaseAllIceTransmission();
 
         if (offer_peer_) {
+          IceWorkMsg msg;
           msg.type = IceWorkMsg::Type::UserIdList;
           msg.transmission_id = remote_transmission_id_;
           msg.user_id_list = user_id_list_;
@@ -277,9 +276,7 @@ int PeerConnection::NegotiationFailed() {
         user_id_, remote_user_id_, local_transmission_id_);
   }
 
-  IceWorkMsg msg;
-  msg.type = IceWorkMsg::Type::Destroy;
-  PushIceWorkMsg(msg);
+  ReleaseAllIceTransmission();
 
   return 0;
 }
@@ -302,10 +299,16 @@ int PeerConnection::Leave(const std::string &transmission_id) {
   is_ice_transmission_ready_[user_id_] = false;
   leave_ = true;
 
-  IceWorkMsg msg;
-  msg.type = IceWorkMsg::Type::Destroy;
-  PushIceWorkMsg(msg);
+  ReleaseAllIceTransmission();
+  return 0;
+}
 
+int PeerConnection::ReleaseAllIceTransmission() {
+  for (auto &user_id_it : ice_transmission_list_) {
+    user_id_it.second->DestroyIceTransmission();
+  }
+  ice_transmission_list_.clear();
+  is_ice_transmission_ready_.clear();
   return 0;
 }
 
@@ -721,14 +724,6 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
         ice_transmission_list_[remote_user_id]->SetRemoteSdp(
             sdp_without_cands_ + new_candidate);
       }
-      break;
-    }
-    case IceWorkMsg::Type::Destroy: {
-      for (auto &user_id_it : ice_transmission_list_) {
-        user_id_it.second->DestroyIceTransmission();
-      }
-      ice_transmission_list_.clear();
-      is_ice_transmission_ready_.clear();
       break;
     }
     default: {
