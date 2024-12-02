@@ -24,7 +24,7 @@ int LossRateDisplay(float loss_rate) {
   if (loss_rate < 0.01f) {
     ImGui::Text("0%%");
   } else {
-    ImGui::Text("%.2f%", loss_rate);
+    ImGui::Text("%.0f%%", loss_rate * 100);
   }
   return 0;
 }
@@ -213,9 +213,14 @@ int Render::NetTrafficStats() {
   ImGui::SetCursorPos(ImVec2(
       is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 5.0f, 40.0f));
 
-  if (ImGui::BeginTable("split", 4, ImGuiTableFlags_BordersH,
+  if (ImGui::BeginTable("NetTrafficStats", 4, ImGuiTableFlags_BordersH,
                         ImVec2(control_window_max_width_ - 10.0f,
                                control_window_max_height_ - 40.0f))) {
+    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+
     ImGui::TableNextColumn();
     ImGui::Text(" ");
     ImGui::TableNextColumn();
