@@ -1,11 +1,18 @@
 #include "video_channel_send.h"
 
+#include "log.h"
+
 VideoChannelSend::VideoChannelSend() {}
 
 VideoChannelSend::~VideoChannelSend() {}
 
-void VideoChannelSend::Initialize(RtpPacket::PAYLOAD_TYPE negotiated_video_pt) {
-  video_rtp_codec_ = std::make_unique<RtpCodec>(negotiated_video_pt);
+VideoChannelSend::VideoChannelSend(
+    std::shared_ptr<IceAgent> ice_agent,
+    std::shared_ptr<IOStatistics> ice_io_statistics)
+    : ice_agent_(ice_agent), ice_io_statistics_(ice_io_statistics){};
+
+void VideoChannelSend::Initialize(RtpPacket::PAYLOAD_TYPE payload_type) {
+  video_rtp_codec_ = std::make_unique<RtpCodec>(payload_type);
 
   rtp_video_sender_ = std::make_unique<RtpVideoSender>(ice_io_statistics_);
   rtp_video_sender_->SetSendDataFunc(
@@ -15,10 +22,12 @@ void VideoChannelSend::Initialize(RtpPacket::PAYLOAD_TYPE negotiated_video_pt) {
           return -1;
         }
 
-        if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
-            state_ != NICE_COMPONENT_STATE_READY) {
+        auto ice_state = ice_agent_->GetIceState();
+
+        if (ice_state != NICE_COMPONENT_STATE_CONNECTED &&
+            ice_state != NICE_COMPONENT_STATE_READY) {
           LOG_ERROR("Ice is not connected, state = [{}]",
-                    nice_component_state_to_string(state_));
+                    nice_component_state_to_string(ice_state));
           return -2;
         }
 
@@ -35,13 +44,11 @@ void VideoChannelSend::Destroy() {
   }
 }
 
-int VideoChannelSend::SendVideo(char *encoded_frame, size_t size) {
+int VideoChannelSend::SendVideo(char *data, size_t size) {
   std::vector<RtpPacket> packets;
   if (rtp_video_sender_) {
     if (video_rtp_codec_) {
-      video_rtp_codec_->Encode(
-          static_cast<RtpCodec::VideoFrameType>(frame_type),
-          (uint8_t *)encoded_frame, (uint32_t)size, packets);
+      video_rtp_codec_->Encode((uint8_t *)data, (uint32_t)size, packets);
     }
     rtp_video_sender_->Enqueue(packets);
   }

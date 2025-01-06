@@ -7,12 +7,30 @@
 #ifndef _AUDIO_CHANNEL_RECEIVE_H_
 #define _AUDIO_CHANNEL_RECEIVE_H_
 
+#include "ice_agent.h"
+#include "rtp_audio_receiver.h"
+#include "rtp_codec.h"
+
 class AudioChannelReceive {
  public:
   AudioChannelReceive();
+  AudioChannelReceive(
+      std::shared_ptr<IceAgent> ice_agent,
+      std::shared_ptr<IOStatistics> ice_io_statistics,
+      std::function<void(const char *, size_t)> on_receive_audio);
   ~AudioChannelReceive();
 
  public:
+  void Initialize(RtpPacket::PAYLOAD_TYPE payload_type);
+  void Destroy();
+  int OnReceiveRtpPacket(const char *data, size_t size);
+
+ private:
+  std::shared_ptr<IceAgent> ice_agent_ = nullptr;
+  std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
+  std::unique_ptr<RtpCodec> audio_rtp_codec_ = nullptr;
+  std::unique_ptr<RtpAudioReceiver> rtp_audio_receiver_ = nullptr;
+  std::function<void(const char *, size_t)> on_receive_audio_ = nullptr;
 };
 
 #endif

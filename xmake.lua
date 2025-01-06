@@ -206,7 +206,7 @@ target("transport")
 
 target("channel")
     set_kind("object")
-    add_deps("log", "rtp", "rtcp")
+    add_deps("log", "rtp", "rtcp", "ice")
     add_files("src/channel/*.cpp")
     add_includedirs("src/rtp", "src/rtcp", {public = true})
 

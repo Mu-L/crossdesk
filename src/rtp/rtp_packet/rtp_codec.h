@@ -23,8 +23,6 @@ class RtpCodec {
 
  public:
   void Encode(uint8_t* buffer, uint32_t size, std::vector<RtpPacket>& packets);
-  void Encode(VideoFrameType frame_type, uint8_t* buffer, uint32_t size,
-              std::vector<RtpPacket>& packets);
   size_t Decode(RtpPacket& packet, uint8_t* payload);
 
   //  protected:

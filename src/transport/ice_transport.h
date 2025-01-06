@@ -144,6 +144,33 @@ class IceTransport {
   uint8_t CheckIsDataPacket(const char *buffer, size_t size);
 
  private:
+  void InitializeIOStatistics();
+
+  void InitializeChannels(RtpPacket::PAYLOAD_TYPE video_codec_payload_type);
+
+  void OnIceStateChange(NiceAgent *agent, guint stream_id, guint component_id,
+                        NiceComponentState state, gpointer user_ptr);
+
+  void OnNewLocalCandidate(NiceAgent *agent, guint stream_id,
+                           guint component_id, gchar *foundation,
+                           gpointer user_ptr);
+
+  void OnGatheringDone(NiceAgent *agent, guint stream_id, gpointer user_ptr);
+
+  void OnNewSelectedPair(NiceAgent *agent, guint stream_id, guint component_id,
+                         const char *lfoundation, const char *rfoundation,
+                         gpointer user_ptr);
+
+  void OnReceiveBuffer(NiceAgent *agent, guint stream_id, guint component_id,
+                       guint size, gchar *buffer, gpointer user_ptr);
+
+  void OnReceiveCompleteFrame(VideoFrame &video_frame);
+
+  void OnReceiveCompleteAudio(const char *data, size_t size);
+
+  void OnReceiveCompleteData(const char *data, size_t size);
+
+ private:
   bool use_trickle_ice_ = true;
   bool enable_turn_ = false;
   bool use_reliable_ice_ = false;
@@ -168,7 +195,7 @@ class IceTransport {
   void *user_data_ = nullptr;
 
  private:
-  std::unique_ptr<IceAgent> ice_agent_ = nullptr;
+  std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   bool is_closed_ = false;
   std::shared_ptr<WsClient> ice_ws_transport_ = nullptr;
   //   CongestionControl *congestion_control_ = nullptr;

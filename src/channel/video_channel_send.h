@@ -7,21 +7,26 @@
 #ifndef _VIDEO_CHANNEL_SEND_H_
 #define _VIDEO_CHANNEL_SEND_H_
 
+#include "ice_agent.h"
 #include "rtp_codec.h"
 #include "rtp_video_sender.h"
 
 class VideoChannelSend {
  public:
   VideoChannelSend();
+  VideoChannelSend(std::shared_ptr<IceAgent> ice_agent,
+                   std::shared_ptr<IOStatistics> ice_io_statistics);
   ~VideoChannelSend();
 
  public:
-  void Initialize(RtpPacket::PAYLOAD_TYPE negotiated_video_pt);
+  void Initialize(RtpPacket::PAYLOAD_TYPE payload_type);
   void Destroy();
 
-  int SendVideo(char *encoded_frame, size_t size);
+  int SendVideo(char *data, size_t size);
 
  private:
+  std::shared_ptr<IceAgent> ice_agent_ = nullptr;
+  std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpCodec> video_rtp_codec_ = nullptr;
   std::unique_ptr<RtpVideoSender> rtp_video_sender_ = nullptr;
 };
