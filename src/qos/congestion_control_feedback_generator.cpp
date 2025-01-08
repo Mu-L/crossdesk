@@ -21,7 +21,7 @@ CongestionControlFeedbackGenerator::CongestionControlFeedbackGenerator(
     : rtcp_sender_(std::move(rtcp_sender)) {}
 
 void CongestionControlFeedbackGenerator::OnReceivedPacket(
-    const RtpPacketReceived& packet) {
+    RtpPacketReceived& packet) {
   marker_bit_seen_ |= packet.Marker();
   if (!first_arrival_time_since_feedback_) {
     first_arrival_time_since_feedback_ = packet.arrival_time();
@@ -63,19 +63,19 @@ int64_t CongestionControlFeedbackGenerator::Process(int64_t now_ms) {
 }
 
 void CongestionControlFeedbackGenerator::OnSendBandwidthEstimateChanged(
-    DataRate estimate) {
+    int64_t estimate) {
   // Feedback reports should max occupy 5% of total bandwidth.
   max_feedback_rate_ = estimate * 0.05;
 }
 
 void CongestionControlFeedbackGenerator::SetTransportOverhead(
-    DataSize overhead_per_packet) {
+    int64_t overhead_per_packet) {
   packet_overhead_ = overhead_per_packet;
 }
 
 void CongestionControlFeedbackGenerator::SendFeedback(int64_t now_ms) {
   uint32_t compact_ntp = ConvertToCompactNtp(now_ms);
-  std::vector<rtcp::CongestionControlFeedback::PacketInfo> rtcp_packet_info;
+  std::vector<CongestionControlFeedback::PacketInfo> rtcp_packet_info;
   for (auto& [unused, tracker] : feedback_trackers_) {
     tracker.AddPacketsToFeedback(now_ms, rtcp_packet_info);
   }
@@ -83,18 +83,18 @@ void CongestionControlFeedbackGenerator::SendFeedback(int64_t now_ms) {
   marker_bit_seen_ = false;
   first_arrival_time_since_feedback_ = std::nullopt;
 
-  auto feedback = std::make_unique<rtcp::CongestionControlFeedback>(
+  auto feedback = std::make_unique<CongestionControlFeedback>(
       std::move(rtcp_packet_info), compact_ntp);
   CalculateNextPossibleSendTime(feedback->BlockLength(), now_ms);
 
-  std::vector<std::unique_ptr<rtcp::RtcpPacket>> rtcp_packets;
+  std::vector<std::unique_ptr<RtcpPacket>> rtcp_packets;
   rtcp_packets.push_back(std::move(feedback));
   rtcp_sender_(std::move(rtcp_packets));
 }
 
 void CongestionControlFeedbackGenerator::CalculateNextPossibleSendTime(
     int64_t feedback_size, int64_t now_ms) {
-  int64_t time_since_last_sent = now - last_feedback_sent_time_;
+  int64_t time_since_last_sent = now_ms - last_feedback_sent_time_;
   size_t debt_payed = time_since_last_sent * max_feedback_rate_;
   send_rate_debt_ =
       debt_payed > send_rate_debt_ ? 0 : send_rate_debt_ - debt_payed;

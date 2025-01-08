@@ -1,5 +1,6 @@
 #include "congestion_control_feedback_tracker.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <tuple>
 #include <vector>
@@ -7,7 +8,7 @@
 #include "log.h"
 
 void CongestionControlFeedbackTracker::ReceivedPacket(
-    const RtpPacketReceived& packet) {
+    RtpPacketReceived& packet) {
   int64_t unwrapped_sequence_number =
       unwrapper_.Unwrap(packet.SequenceNumber());
   if (last_sequence_number_in_feedback_ &&
@@ -25,10 +26,8 @@ void CongestionControlFeedbackTracker::ReceivedPacket(
     // received.
     last_sequence_number_in_feedback_ = unwrapped_sequence_number - 1;
   }
-  packets_.push_back({.ssrc = packet.Ssrc(),
-                      .unwrapped_sequence_number = unwrapped_sequence_number,
-                      .arrival_time = packet.arrival_time(),
-                      .ecn = packet.ecn()});
+  packets_.push_back({packet.Ssrc(), unwrapped_sequence_number,
+                      packet.arrival_time(), packet.ecn()});
 }
 
 void CongestionControlFeedbackTracker::AddPacketsToFeedback(
@@ -37,10 +36,11 @@ void CongestionControlFeedbackTracker::AddPacketsToFeedback(
   if (packets_.empty()) {
     return;
   }
-  absl::c_sort(packets_, [](const PacketInfo& a, const PacketInfo& b) {
-    return std::tie(a.unwrapped_sequence_number, a.arrival_time) <
-           std::tie(b.unwrapped_sequence_number, b.arrival_time);
-  });
+  std::sort(packets_.begin(), packets_.end(),
+            [](const PacketInfo& a, const PacketInfo& b) {
+              return std::tie(a.unwrapped_sequence_number, a.arrival_time) <
+                     std::tie(b.unwrapped_sequence_number, b.arrival_time);
+            });
   if (!last_sequence_number_in_feedback_) {
     last_sequence_number_in_feedback_ =
         packets_.front().unwrapped_sequence_number - 1;
@@ -61,7 +61,7 @@ void CongestionControlFeedbackTracker::AddPacketsToFeedback(
     }
 
     EcnMarking ecn = EcnMarking::kNotEct;
-    TimeDelta arrival_time_offset = TimeDelta::MinusInfinity();
+    int64_t arrival_time_offset = std::numeric_limits<int64_t>::min();
 
     if (sequence_number == packet_it->unwrapped_sequence_number) {
       arrival_time_offset = feedback_time - packet_it->arrival_time;
@@ -83,11 +83,8 @@ void CongestionControlFeedbackTracker::AddPacketsToFeedback(
         ++packet_it;
       }
     }  // else - the packet has not been received yet.
-    packet_feedback.push_back(
-        {.ssrc = ssrc,
-         .sequence_number = static_cast<uint16_t>(sequence_number),
-         .arrival_time_offset = arrival_time_offset,
-         .ecn = ecn});
+    packet_feedback.push_back({ssrc, static_cast<uint16_t>(sequence_number),
+                               arrival_time_offset, ecn});
   }
   last_sequence_number_in_feedback_ = packets_.back().unwrapped_sequence_number;
   packets_.clear();

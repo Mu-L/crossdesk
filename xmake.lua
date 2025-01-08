@@ -10,7 +10,8 @@ set_installdir("$(projectdir)/out")
 
 add_defines("ASIO_STANDALONE", "ASIO_HAS_STD_TYPE_TRAITS", "ASIO_HAS_STD_SHARED_PTR", 
     "ASIO_HAS_STD_ADDRESSOF", "ASIO_HAS_STD_ATOMIC", "ASIO_HAS_STD_CHRONO", 
-    "ASIO_HAS_CSTDINT", "ASIO_HAS_STD_ARRAY",  "ASIO_HAS_STD_SYSTEM_ERROR")
+    "ASIO_HAS_CSTDINT", "ASIO_HAS_STD_ARRAY",  "ASIO_HAS_STD_SYSTEM_ERROR",
+    "NOMINMAX")
 
 add_requires("asio 1.24.0", "nlohmann_json 3.11.3", "spdlog 1.14.1", "openfec 1.4.2", "libopus 1.5.1", "openh264 2.4.1", "dav1d 1.4.3", "libyuv 2024.5.21", "aom 3.9.0", {system = false}, {configs = {shared = false}})
 add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus", "openh264", "dav1d", "libyuv", "aom")
@@ -76,27 +77,6 @@ target("statistics")
     add_files("src/statistics/*.cpp")
     add_includedirs("src/statistics", {public = true})
 
-target("rtcp")
-    set_kind("object")
-    add_deps("log", "common")
-    add_files("src/rtcp/*.cpp",
-    "src/rtcp/rtcp_packet/*.cpp",
-    "src/rtcp/rtp_feedback/*.cpp")
-    add_includedirs("src/rtcp",
-    "src/rtcp/rtcp_packet",
-    "src/rtcp/rtp_feedback", {public = true})
-
-target("rtp", "qos")
-    set_kind("object")
-    add_deps("log", "frame", "ringbuffer", "thread", "rtcp", "fec", "statistics")
-    add_files("src/rtp/*.cpp", 
-    "src/rtp/rtp_endpoint/*.cpp", 
-    "src/rtp/rtp_packet/*.cpp")
-    add_includedirs("src/rtp", 
-    "src/rtp/rtp_endpoint", 
-    "src/rtp/rtp_packet",
-    "src/qos", {public = true})
-
 target("ice")
     set_kind("object")
     add_deps("log", "common", "ws")
@@ -115,7 +95,44 @@ target("ws")
     set_kind("object")
     add_deps("log")
     add_files("src/ws/*.cpp")
-    add_includedirs("thirdparty/websocketpp/include", {public = true})
+    add_includedirs("src/ws", 
+    "thirdparty/websocketpp/include", {public = true})
+
+target("rtp")
+    set_kind("object")
+    add_deps("log", "frame", "ringbuffer", "thread", "rtcp", "fec", "statistics")
+    add_files("src/rtp/*.cpp", 
+    "src/rtp/rtp_packet/*.cpp")
+    add_includedirs("src/rtp", 
+    "src/rtp/rtp_packet", {public = true})
+
+target("rtcp")
+    set_kind("object")
+    add_deps("log", "common")
+    add_files("src/rtcp/*.cpp",
+    "src/rtcp/rtcp_packet/*.cpp",
+    "src/rtcp/rtp_feedback/*.cpp")
+    add_includedirs("src/rtcp",
+    "src/rtcp/rtcp_packet",
+    "src/rtcp/rtp_feedback", {public = true})
+
+target("qos")
+    set_kind("object")
+    add_deps("log", "rtp")
+    add_files("src/qos/*.cpp")
+    add_includedirs("src/qos", {public = true})
+
+target("channel")
+    set_kind("object")
+    add_deps("log", "rtp", "rtcp", "ice", "qos")
+    add_files("src/channel/*.cpp", "src/channel/rtp_channel/*.cpp")
+    add_includedirs("src/channel", "src/channel/rtp_channel", {public = true})
+
+target("transport")
+    set_kind("object")
+    add_deps("log", "ws", "ice", "channel", "rtp", "rtcp", "statistics", "media")
+    add_files("src/transport/*.cpp")
+    add_includedirs("src/transport", {public = true})
 
 target("media")
     set_kind("object")
@@ -187,41 +204,17 @@ target("media")
     add_includedirs("src/media/audio/encode",
         "src/media/audio/decode", "src/interface", {public = true})
 
-target("qos")
-    set_kind("object")
-    add_deps("log", "rtp")
-    add_files("src/qos/*.cpp")
-    add_includedirs("src/qos", {public = true})
-
--- target("transport")
---     set_kind("object")
---     add_deps("log", "ws", "ice", "qos", "rtp", "rtcp", "statistics", "media")
---     add_files("src/transport/*.cpp")
---     add_includedirs("src/ws", "src/ice", "src/qos", {public = true})
-
-target("transport")
-    set_kind("object")
-    add_deps("log", "ws", "ice", "channel", "rtp", "rtcp", "statistics", "media")
-    add_files("src/transport/*.cpp")
-    add_includedirs("src/ws", "src/ice", "src/channel", {public = true})
-
-target("channel")
-    set_kind("object")
-    add_deps("log", "rtp", "rtcp", "ice")
-    add_files("src/channel/*.cpp")
-    add_includedirs("src/rtp", "src/rtcp", {public = true})
-
 target("pc")
     set_kind("object")
     add_deps("log", "ws", "ice", "transport", "inih", "common")
     add_files("src/pc/*.cpp")
-    add_includedirs("src/transport", "src/interface", {public = true})
+    add_includedirs("src/pc", "src/interface", {public = true})
 
 target("projectx")
     set_kind("static")
     add_deps("log", "pc")
     add_files("src/rtc/*.cpp")
-    add_includedirs("src/rtc", "src/pc", "src/interface")
+    add_includedirs("src/rtc", "src/interface")
 
     if is_os("windows") then
         add_linkdirs("thirdparty/nvcodec/lib/x64")

@@ -11,13 +11,15 @@
 #include <vector>
 
 #include "congestion_control_feedback.h"
+#include "enc_mark.h"
 #include "rtp_packet_received.h"
+#include "sequence_number_unwrapper.h"
 
 class CongestionControlFeedbackTracker {
  public:
   CongestionControlFeedbackTracker() = default;
 
-  void ReceivedPacket(const RtpPacketReceived& packet);
+  void ReceivedPacket(RtpPacketReceived& packet);
 
   // Adds received packets to `packet_feedback`
   // RTP sequence numbers are continous from the last created feedback unless

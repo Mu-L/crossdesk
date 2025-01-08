@@ -24,7 +24,7 @@
 //   --------------------------------+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //
 // Common header for all RTCP packets, 4 octets.
-bool CommonHeader::Parse(const uint8_t* buffer, size_t size_bytes) {
+bool RtcpCommonHeader::Parse(const uint8_t* buffer, size_t size_bytes) {
   const uint8_t kVersion = 2;
 
   if (size_bytes < kHeaderSizeBytes) {

@@ -5,10 +5,18 @@
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
 
-RtpVideoReceiver::RtpVideoReceiver() {}
+RtpVideoReceiver::RtpVideoReceiver()
+    : receive_side_congestion_controller_(
+          [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
+            SendCombinedRtcpPacket(std::move(packets));
+          }) {}
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
-    : io_statistics_(io_statistics) {
+    : io_statistics_(io_statistics),
+      receive_side_congestion_controller_(
+          [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
+            SendCombinedRtcpPacket(std::move(packets));
+          }) {
   rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 }
 
@@ -30,6 +38,16 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
   }
+
+  RtpPacketReceived* rtp_packet_received;
+  rtp_packet_received = dynamic_cast<RtpPacketReceived*>(&rtp_packet);
+  rtp_packet_received->set_arrival_time(
+      std::chrono::system_clock::now().time_since_epoch().count());
+  rtp_packet_received->set_ecn(EcnMarking::kEct0);
+  rtp_packet_received->set_recovered(false);
+  rtp_packet_received->set_payload_type_frequency(0);
+  receive_side_congestion_controller_.OnReceivedPacket(
+      *rtp_packet_received, ReceiveSideCongestionController::MediaType::VIDEO);
 
   last_recv_bytes_ = (uint32_t)rtp_packet.PayloadSize();
   total_rtp_payload_recv_ += (uint32_t)rtp_packet.PayloadSize();
@@ -326,6 +344,9 @@ int RtpVideoReceiver::SendRtcpRR(RtcpReceiverReport& rtcp_rr) {
 
   return 0;
 }
+
+void RtpVideoReceiver::SendCombinedRtcpPacket(
+    std::vector<std::unique_ptr<RtcpPacket>> packets) {}
 
 bool RtpVideoReceiver::CheckIsTimeSendRR() {
   uint32_t now_ts = static_cast<uint32_t>(

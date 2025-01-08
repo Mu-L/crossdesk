@@ -13,28 +13,8 @@
 #include <vector>
 
 #include "array_view.h"
+#include "enc_mark.h"
 #include "rtp_feedback.h"
-
-// L4S Explicit Congestion Notification (ECN) .
-// https://www.rfc-editor.org/rfc/rfc9331.html ECT stands for ECN-Capable
-// Transport and CE stands for Congestion Experienced.
-
-// RFC-3168, Section 5
-// +-----+-----+
-// | ECN FIELD |
-// +-----+-----+
-//   ECT   CE         [Obsolete] RFC 2481 names for the ECN bits.
-//    0     0         Not-ECT
-//    0     1         ECT(1)
-//    1     0         ECT(0)
-//    1     1         CE
-
-enum class EcnMarking {
-  kNotEct = 0,  // Not ECN-Capable Transport
-  kEct1 = 1,    // ECN-Capable Transport
-  kEct0 = 2,    // Not used by L4s (or webrtc.)
-  kCe = 3,      // Congestion experienced
-};
 
 // Congestion control feedback message as specified in
 // https://www.rfc-editor.org/rfc/rfc8888.html
@@ -58,7 +38,7 @@ class CongestionControlFeedback : public RtpFeedback {
                             uint32_t report_timestamp_compact_ntp);
   CongestionControlFeedback() = default;
 
-  bool Parse(const CommonHeader& packet);
+  bool Parse(const RtcpCommonHeader& packet);
 
   ArrayView<const PacketInfo> packets() const { return packets_; }
 

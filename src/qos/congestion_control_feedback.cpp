@@ -96,6 +96,10 @@ uint16_t To2BitEcn(EcnMarking ecn_marking) {
       return kEcnEct0 << 13;
     case EcnMarking::kCe:
       return kEcnCe << 13;
+    default: {
+      LOG_FATAL("Unexpected ecn marking: {}", static_cast<int>(ecn_marking));
+      return 0;
+    }
   }
 }
 
@@ -193,6 +197,8 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
       ByteWriter<uint16_t>::WriteBigEndian(&buffer[*position], 0);
       *position += 2;
     }
+
+    return true;
   };
 
   ArrayView<const PacketInfo> remaining(packets_);
@@ -255,7 +261,7 @@ size_t CongestionControlFeedback::BlockLength() const {
   return total_size;
 }
 
-bool CongestionControlFeedback::Parse(const rtcp::CommonHeader& packet) {
+bool CongestionControlFeedback::Parse(const RtcpCommonHeader& packet) {
   const uint8_t* payload = packet.payload();
   const uint8_t* payload_end = packet.payload() + packet.payload_size_bytes();
 
@@ -291,12 +297,11 @@ bool CongestionControlFeedback::Parse(const rtcp::CommonHeader& packet) {
 
       uint16_t seq_no = base_seqno + i;
       bool received = (packet_info & 0x8000);
-      packets_.push_back(
-          {.ssrc = ssrc,
-           .sequence_number = seq_no,
-           .arrival_time_offset = received ? AtoToTimeDelta(packet_info)
-                                           : TimeDelta::MinusInfinity(),
-           .ecn = ToEcnMarking(packet_info)});
+      packets_.push_back(PacketInfo{ssrc, seq_no,
+                                    received
+                                        ? AtoToTimeDelta(packet_info)
+                                        : std::numeric_limits<int64_t>::min(),
+                                    ToEcnMarking(packet_info)});
     }
     if (num_reports % 2) {
       // 2 bytes padding

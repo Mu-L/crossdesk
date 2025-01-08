@@ -13,13 +13,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-class CommonHeader {
+class RtcpCommonHeader {
  public:
   static constexpr size_t kHeaderSizeBytes = 4;
 
-  CommonHeader() {}
-  CommonHeader(const CommonHeader&) = default;
-  CommonHeader& operator=(const CommonHeader&) = default;
+  RtcpCommonHeader() {}
+  RtcpCommonHeader(const RtcpCommonHeader&) = default;
+  RtcpCommonHeader& operator=(const RtcpCommonHeader&) = default;
 
   bool Parse(const uint8_t* buffer, size_t size_bytes);
 

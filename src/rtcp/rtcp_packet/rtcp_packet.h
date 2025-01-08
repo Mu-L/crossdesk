@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include <functional>
+#include <memory>
 #include <vector>
 
 class RtcpPacket {
@@ -58,5 +59,8 @@ class RtcpPacket {
  private:
   uint32_t sender_ssrc_ = 0;
 };
+
+using RtcpSender =
+    std::function<void(std::vector<std::unique_ptr<RtcpPacket>> packets)>;
 
 #endif

@@ -190,7 +190,7 @@ class RtpPacket {
   RtpPacket &operator=(const RtpPacket &rtp_packet);
   RtpPacket &operator=(RtpPacket &&rtp_packet);
 
-  ~RtpPacket();
+  virtual ~RtpPacket();
 
  public:
   // Set Header

@@ -17,14 +17,11 @@ class ReceiveSideCongestionController {
   enum MediaType { VIDEO, AUDIO, DATA };
 
  public:
-  ReceiveSideCongestionController();
-  ~ReceiveSideCongestionController() override = default;
+  ReceiveSideCongestionController(RtcpSender feedback_sender);
+  ~ReceiveSideCongestionController() = default;
 
  public:
-  void OnReceivedPacket(const RtpPacketReceived& packet, MediaType media_type);
-
-  // Implements CallStatsObserver.
-  void OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms) override;
+  void OnReceivedPacket(RtpPacketReceived& packet, MediaType media_type);
 
   // This is send bitrate, used to control the rate of feedback messages.
   void OnBitrateChanged(int bitrate_bps);
@@ -35,21 +32,11 @@ class ReceiveSideCongestionController {
 
   void SetTransportOverhead(int64_t overhead_per_packet);
 
-  // Returns latest receive side bandwidth estimation.
-  // Returns zero if receive side bandwidth estimation is unavailable.
-  int64_t LatestReceiveSideEstimate() const;
-
-  // Removes stream from receive side bandwidth estimation.
-  // Noop if receive side bwe is not used or stream doesn't participate in it.
-  void RemoveStream(uint32_t ssrc);
-
   // Runs periodic tasks if it is time to run them, returns time until next
   // call to `MaybeProcess` should be non idle.
   int64_t MaybeProcess();
 
  private:
-  void PickEstimator(bool has_absolute_send_time);
-
   //   RembThrottler remb_throttler_;
 
   // TODO: bugs.webrtc.org/42224904 - Use sequence checker for all usage of
@@ -58,13 +45,11 @@ class ReceiveSideCongestionController {
   // arbitrary thread by external projects.
   //   SequenceChecker sequence_checker_;
 
-  bool send_rfc8888_congestion_feedback_ = false;
   CongestionControlFeedbackGenerator congestion_control_feedback_generator_;
 
   std::mutex mutex_;
-  std::unique_ptr<RemoteBitrateEstimator> rbe_;
   bool using_absolute_send_time_;
-  uint32_t packets_since_absolute_send_time_ RTC_GUARDED_BY(mutex_);
+  uint32_t packets_since_absolute_send_time_;
 };
 
 #endif
