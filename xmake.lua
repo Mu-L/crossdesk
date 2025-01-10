@@ -114,6 +114,7 @@ target("rtcp")
     "src/rtcp/rtp_feedback/*.cpp")
     add_includedirs("src/rtcp",
     "src/rtcp/rtcp_packet",
+    "src/rtcp/rtcp_sender",
     "src/rtcp/rtp_feedback", {public = true})
 
 target("qos")

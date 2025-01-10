@@ -12,7 +12,6 @@
 #include <limits>
 #include <vector>
 
-#include "array_view.h"
 #include "enc_mark.h"
 #include "rtp_feedback.h"
 
@@ -40,7 +39,7 @@ class CongestionControlFeedback : public RtpFeedback {
 
   bool Parse(const RtcpCommonHeader& packet);
 
-  ArrayView<const PacketInfo> packets() const { return packets_; }
+  std::vector<PacketInfo> packets() const { return packets_; }
 
   uint32_t report_timestamp_compact_ntp() const {
     return report_timestamp_compact_ntp_;

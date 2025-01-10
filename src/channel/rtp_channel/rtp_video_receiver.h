@@ -44,7 +44,8 @@ class RtpVideoReceiver : public ThreadBase {
   bool CheckIsTimeSendRR();
   int SendRtcpRR(RtcpReceiverReport& rtcp_rr);
 
-  void SendCombinedRtcpPacket(std::vector<std::unique_ptr<RtcpPacket>> packets);
+  void SendCombinedRtcpPacket(
+      std::vector<std::unique_ptr<RtcpPacket>> rtcp_packets);
 
  private:
   bool Process() override;
@@ -89,6 +90,7 @@ class RtpVideoReceiver : public ThreadBase {
 
  private:
   ReceiveSideCongestionController receive_side_congestion_controller_;
+  uint32_t feedback_ssrc_ = 0;
 };
 
 #endif

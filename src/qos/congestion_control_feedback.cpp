@@ -6,10 +6,10 @@
 #include <utility>
 #include <vector>
 
-#include "array_view.h"
 #include "byte_io.h"
 #include "log.h"
 
+// rfc8888 - RTP Congestion Control Feedback
 /*
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      |V=2|P| FMT=11  |   PT = 205    |          length               |
@@ -33,6 +33,23 @@
      |R|ECN|  Arrival time offset    | ...                           |
      .                                                               .
      .                                                               .
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                 Report Timestamp (32 bits)                    |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
+
+// for this implementation, only one stream is supported.
+/*
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |V=2|P| FMT=11  |   PT = 205    |          length               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                 SSRC of RTCP packet sender                    |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                   SSRC of 1st RTP Stream                      |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |          begin_seq            |          num_reports          |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |R|ECN|  Arrival time offset    | ...                           .
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      |                 Report Timestamp (32 bits)                    |
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -128,9 +145,9 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
                                        size_t max_length,
                                        PacketReadyCallback callback) const {
   // Ensure there is enough room for this packet.
-  while (*position + BlockLength() > max_length) {
-    if (!OnBufferFull(buffer, position, callback)) return false;
-  }
+  // while (*position + BlockLength() > max_length) {
+  //   if (!OnBufferFull(buffer, position, callback)) return false;
+  // }
   const size_t position_end = *position + BlockLength();
 
   //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -144,14 +161,14 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
   *position += 4;
 
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  //   |                   SSRC of nth RTP Stream                      |
+  //   |                   SSRC of 1st RTP Stream                      |
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   //   |          begin_seq            |          num_reports          |
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   //   |R|ECN|  Arrival time offset    | ...                           .
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  //   .                                                               .
-  auto write_report_for_ssrc = [&](ArrayView<const PacketInfo> packets) {
+
+  auto write_report_for_ssrc = [&](std::vector<PacketInfo> packets) {
     // SSRC of nth RTP stream.
     ByteWriter<uint32_t>::WriteBigEndian(&buffer[*position], packets[0].ssrc);
     *position += 4;
@@ -201,18 +218,13 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
     return true;
   };
 
-  ArrayView<const PacketInfo> remaining(packets_);
-  while (!remaining.empty()) {
+  if (!packets_.empty()) {
     int number_of_packets_for_ssrc = 0;
-    uint32_t ssrc = remaining[0].ssrc;
-    for (const PacketInfo& packet_info : remaining) {
-      if (packet_info.ssrc != ssrc) {
-        break;
-      }
+    uint32_t ssrc = packets_[0].ssrc;
+    for (const PacketInfo& packet_info : packets_) {
       ++number_of_packets_for_ssrc;
     }
-    write_report_for_ssrc(remaining.subview(0, number_of_packets_for_ssrc));
-    remaining = remaining.subview(number_of_packets_for_ssrc);
+    write_report_for_ssrc(packets_);
   }
 
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -245,15 +257,6 @@ size_t CongestionControlFeedback::BlockLength() const {
 
   uint32_t ssrc = packets_.front().ssrc;
   uint16_t first_sequence_number = packets_.front().sequence_number;
-  for (size_t i = 0; i < packets_.size(); ++i) {
-    if (packets_[i].ssrc != ssrc) {
-      uint16_t number_of_packets =
-          packets_[i - 1].sequence_number - first_sequence_number + 1;
-      total_size += increase_size_per_ssrc(number_of_packets);
-      ssrc = packets_[i].ssrc;
-      first_sequence_number = packets_[i].sequence_number;
-    }
-  }
   uint16_t number_of_packets =
       packets_.back().sequence_number - first_sequence_number + 1;
   total_size += increase_size_per_ssrc(number_of_packets);

@@ -1,18 +1,22 @@
 #include "rtp_video_receiver.h"
 
+#include "common.h"
 #include "log.h"
+#include "rtcp_sender.h"
 
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
 
 RtpVideoReceiver::RtpVideoReceiver()
-    : receive_side_congestion_controller_(
+    : feedback_ssrc_(GenerateUniqueSsrc()),
+      receive_side_congestion_controller_(
           [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
             SendCombinedRtcpPacket(std::move(packets));
           }) {}
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
     : io_statistics_(io_statistics),
+      feedback_ssrc_(GenerateUniqueSsrc()),
       receive_side_congestion_controller_(
           [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
             SendCombinedRtcpPacket(std::move(packets));
@@ -31,6 +35,8 @@ RtpVideoReceiver::~RtpVideoReceiver() {
   if (rtcp_thread_.joinable()) {
     rtcp_thread_.join();
   }
+
+  SSRCManager::Instance().DeleteSsrc(feedback_ssrc_);
 }
 
 void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
@@ -347,17 +353,23 @@ int RtpVideoReceiver::SendRtcpRR(RtcpReceiverReport& rtcp_rr) {
 }
 
 void RtpVideoReceiver::SendCombinedRtcpPacket(
-    std::vector<std::unique_ptr<RtcpPacket>> packets) {
+    std::vector<std::unique_ptr<RtcpPacket>> rtcp_packets) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
   }
 
-  LOG_ERROR("Send combined rtcp packet");
+  // LOG_ERROR("Send combined rtcp packet");
 
-  for (auto& packet : packets) {
-    if (data_send_func_((const char*)packet->Buffer(), packet->Size())) {
-      LOG_ERROR("Send CCB failed");
-    }
+  RTCPSender rtcp_sender(
+      [this](const uint8_t* buffer, size_t size) -> int {
+        return data_send_func_((const char*)buffer, size);
+      },
+      IP_PACKET_SIZE);
+
+  for (auto& rtcp_packet : rtcp_packets) {
+    rtcp_packet->SetSenderSsrc(feedback_ssrc_);
+    rtcp_sender.AppendPacket(*rtcp_packet);
+    rtcp_sender.Send();
   }
 }
 
