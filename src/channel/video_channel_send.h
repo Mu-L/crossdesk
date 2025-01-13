@@ -10,6 +10,7 @@
 #include "ice_agent.h"
 #include "rtp_codec.h"
 #include "rtp_video_sender.h"
+#include "transport_feedback_adapter.h"
 
 class VideoChannelSend {
  public:
@@ -22,13 +23,26 @@ class VideoChannelSend {
   void Initialize(RtpPacket::PAYLOAD_TYPE payload_type);
   void Destroy();
 
-  int SendVideo(char *data, size_t size);
+  int SendVideo(char* data, size_t size);
+
+  void OnCongestionControlFeedback(int64_t recv_ts,
+                                   const CongestionControlFeedback& feedback);
+
+  void HandleTransportPacketsFeedback(const TransportPacketsFeedback& feedback);
 
  private:
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpCodec> video_rtp_codec_ = nullptr;
   std::unique_ptr<RtpVideoSender> rtp_video_sender_ = nullptr;
+
+ private:
+  int64_t current_offset_ = std::numeric_limits<int64_t>::min();
+  // Used by RFC 8888 congestion control feedback to track base time.
+  std::optional<uint32_t> last_feedback_compact_ntp_time_;
+  int feedback_count_ = 0;
+
+  TransportFeedbackAdapter transport_feedback_adapter_;
 };
 
 #endif

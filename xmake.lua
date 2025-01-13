@@ -119,7 +119,7 @@ target("rtcp")
 
 target("qos")
     set_kind("object")
-    add_deps("log", "rtp")
+    add_deps("log", "rtp", "rtcp")
     add_files("src/qos/*.cpp")
     add_includedirs("src/qos", {public = true})
 

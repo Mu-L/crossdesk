@@ -249,11 +249,118 @@ void IceTransport::OnReceiveBuffer(NiceAgent *agent, guint stream_id,
         data_channel_receive_->OnReceiveRtpPacket(buffer, size);
       }
     } else if (CheckIsRtcpPacket(buffer, size)) {
-      LOG_ERROR("Rtcp packet [{}]", (uint8_t)(buffer[1]));
+      // LOG_ERROR("Rtcp packet [{}]", (uint8_t)(buffer[1]));
+      RtcpPacketInfo rtcp_packet_info;
+      ParseRtcpPacket((const uint8_t *)buffer, size, &rtcp_packet_info);
     } else {
       LOG_ERROR("Unknown packet");
     }
   }
+}
+
+bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
+                                   RtcpPacketInfo *rtcp_packet_info) {
+  RtcpCommonHeader rtcp_block;
+  // If a sender report is received but no DLRR, we need to reset the
+  // roundTripTime stat according to the standard, see
+  // https://www.w3.org/TR/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-roundtriptime
+  struct RtcpReceivedBlock {
+    bool sender_report = false;
+    bool dlrr = false;
+  };
+  // For each remote SSRC we store if we've received a sender report or a DLRR
+  // block.
+  bool valid = true;
+  if (!rtcp_block.Parse(buffer, size)) {
+    valid = false;
+  }
+
+  switch (rtcp_block.type()) {
+    case RtcpPacket::PAYLOAD_TYPE::SR:
+      LOG_INFO("Sender report");
+      // valid = HandleSenderReport(rtcp_block, rtcp_packet_info);
+      // received_blocks[rtcp_packet_info->remote_ssrc].sender_report = true;
+      break;
+    case RtcpPacket::PAYLOAD_TYPE::RR:
+      LOG_INFO("Receiver report");
+      // valid = HandleReceiverReport(rtcp_block, rtcp_packet_info);
+      break;
+    case RtcpPacket::PAYLOAD_TYPE::TCC:
+      switch (rtcp_block.fmt()) {
+        case CongestionControlFeedback::kFeedbackMessageType:
+          LOG_INFO("Congestion Control Feedback");
+          valid = HandleCongestionControlFeedback(rtcp_block, rtcp_packet_info);
+          break;
+        default:
+          break;
+      }
+      break;
+    // case rtcp::Psfb::kPacketType:
+    //   switch (rtcp_block.fmt()) {
+    //     case rtcp::Pli::kFeedbackMessageType:
+    //       valid = HandlePli(rtcp_block, rtcp_packet_info);
+    //       break;
+    //     case rtcp::Fir::kFeedbackMessageType:
+    //       valid = HandleFir(rtcp_block, rtcp_packet_info);
+    //       break;
+    //     case rtcp::Psfb::kAfbMessageType:
+    //       HandlePsfbApp(rtcp_block, rtcp_packet_info);
+    //       break;
+    //     default:
+    //       ++num_skipped_packets_;
+    //       break;
+    //   }
+    //   break;
+    default:
+      break;
+  }
+
+  // if (num_skipped_packets_ > 0) {
+  //   const Timestamp now = env_.clock().CurrentTime();
+  //   if (now - last_skipped_packets_warning_ >= kMaxWarningLogInterval) {
+  //     last_skipped_packets_warning_ = now;
+  //     RTC_LOG(LS_WARNING)
+  //         << num_skipped_packets_
+  //         << " RTCP blocks were skipped due to being malformed or of "
+  //            "unrecognized/unsupported type, during the past "
+  //         << kMaxWarningLogInterval << " period.";
+  //   }
+  // }
+
+  // if (!valid) {
+  //   ++num_skipped_packets_;
+  //   return false;
+  // }
+
+  // for (const auto &rb : received_blocks) {
+  //   if (rb.second.sender_report && !rb.second.dlrr) {
+  //     auto rtt_stats = non_sender_rtts_.find(rb.first);
+  //     if (rtt_stats != non_sender_rtts_.end()) {
+  //       rtt_stats->second.Invalidate();
+  //     }
+  //   }
+  // }
+
+  // if (packet_type_counter_observer_) {
+  //   packet_type_counter_observer_->RtcpPacketTypesCounterUpdated(
+  //       local_media_ssrc(), packet_type_counter_);
+  // }
+
+  return true;
+}
+
+bool IceTransport::HandleCongestionControlFeedback(
+    const RtcpCommonHeader &rtcp_block, RtcpPacketInfo *rtcp_packet_info) {
+  CongestionControlFeedback feedback;
+  if (!feedback.Parse(rtcp_block) || feedback.packets().empty()) {
+    return false;
+  }
+  // uint32_t first_media_source_ssrc = feedback.packets()[0].ssrc;
+  // if (first_media_source_ssrc == local_media_ssrc() ||
+  //     registered_ssrcs_.contains(first_media_source_ssrc)) {
+  //   rtcp_packet_info->congestion_control_feedback.emplace(std::move(feedback));
+  // }
+  return true;
 }
 
 void IceTransport::OnReceiveCompleteFrame(VideoFrame &video_frame) {

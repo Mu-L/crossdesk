@@ -16,7 +16,7 @@ void VideoChannelSend::Initialize(RtpPacket::PAYLOAD_TYPE payload_type) {
 
   rtp_video_sender_ = std::make_unique<RtpVideoSender>(ice_io_statistics_);
   rtp_video_sender_->SetSendDataFunc(
-      [this](const char *data, size_t size) -> int {
+      [this](const char* data, size_t size) -> int {
         if (!ice_agent_) {
           LOG_ERROR("ice_agent_ is nullptr");
           return -1;
@@ -44,14 +44,43 @@ void VideoChannelSend::Destroy() {
   }
 }
 
-int VideoChannelSend::SendVideo(char *data, size_t size) {
+int VideoChannelSend::SendVideo(char* data, size_t size) {
   std::vector<RtpPacket> packets;
   if (rtp_video_sender_) {
     if (video_rtp_codec_) {
-      video_rtp_codec_->Encode((uint8_t *)data, (uint32_t)size, packets);
+      video_rtp_codec_->Encode((uint8_t*)data, (uint32_t)size, packets);
     }
     rtp_video_sender_->Enqueue(packets);
   }
 
   return 0;
+}
+
+void VideoChannelSend::OnCongestionControlFeedback(
+    int64_t recv_ts, const CongestionControlFeedback& feedback) {
+  ++feedback_count_;
+  std::optional<TransportPacketsFeedback> feedback_msg =
+      transport_feedback_adapter_.ProcessCongestionControlFeedback(feedback,
+                                                                   recv_ts);
+  if (feedback_msg) {
+    HandleTransportPacketsFeedback(*feedback_msg);
+  }
+}
+
+void VideoChannelSend::HandleTransportPacketsFeedback(
+    const TransportPacketsFeedback& feedback) {
+  // if (transport_is_ecn_capable_) {
+  //   // If transport does not support ECN, packets should not be sent as
+  //   ECT(1).
+  //   // TODO: bugs.webrtc.org/42225697 - adapt to ECN feedback and continue to
+  //   // send packets as ECT(1) if transport is ECN capable.
+  //   transport_is_ecn_capable_ = false;
+  //   LOG_INFO("Transport is {} ECN capable. Stop sending ECT(1)",
+  //            (feedback.transport_supports_ecn ? "" : " not "));
+  // }
+  // if (controller_)
+  //   PostUpdates(controller_->OnTransportPacketsFeedback(feedback));
+
+  // // Only update outstanding data if any packet is first time acked.
+  // UpdateCongestedState();
 }

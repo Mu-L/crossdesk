@@ -19,6 +19,7 @@
 #include "ice_agent.h"
 #include "io_statistics.h"
 #include "ringbuffer.h"
+#include "rtcp_packet_info.h"
 #include "rtp_audio_receiver.h"
 #include "rtp_audio_sender.h"
 #include "rtp_codec.h"
@@ -169,6 +170,12 @@ class IceTransport {
   void OnReceiveCompleteAudio(const char *data, size_t size);
 
   void OnReceiveCompleteData(const char *data, size_t size);
+
+  bool ParseRtcpPacket(const uint8_t *buffer, size_t size,
+                       RtcpPacketInfo *rtcp_packet_info);
+
+  bool HandleCongestionControlFeedback(const RtcpCommonHeader &rtcp_block,
+                                       RtcpPacketInfo *rtcp_packet_info);
 
  private:
   bool use_trickle_ice_ = true;
