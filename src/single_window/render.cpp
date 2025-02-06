@@ -998,7 +998,6 @@ int Render::Run() {
         int ret = thumbnail_->LoadThumbnail(
             main_renderer_, recent_connection_textures_,
             &recent_connection_image_width_, &recent_connection_image_height_);
-        LOG_INFO("1 Load recent connection thumbnails");
         if (!ret) {
           LOG_INFO("Load recent connection thumbnails");
         }
