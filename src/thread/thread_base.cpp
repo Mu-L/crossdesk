@@ -2,23 +2,34 @@
 
 #include "log.h"
 
-ThreadBase::ThreadBase() {}
+ThreadBase::ThreadBase()
+    : running_(false), pause_(false), period_(std::chrono::milliseconds(100)) {}
 
-ThreadBase::~ThreadBase() {
-  if (!stop_) {
-    Stop();
-  }
-}
+ThreadBase::~ThreadBase() { Stop(); }
 
 void ThreadBase::Start() {
+  {
+    std::lock_guard<std::mutex> lock(cv_mtx_);
+    if (running_) {
+      return;  // Already running
+    }
+    running_ = true;
+  }
+
   std::thread t(&ThreadBase::Run, this);
   thread_ = std::move(t);
-  stop_ = false;
 }
 
 void ThreadBase::Stop() {
+  {
+    std::lock_guard<std::mutex> lock(cv_mtx_);
+    if (!running_) {
+      return;  // Already stopped
+    }
+    running_ = false;
+  }
+  cv_.notify_all();
   if (thread_.joinable()) {
-    stop_ = true;
     thread_.join();
   }
 }
@@ -27,7 +38,17 @@ void ThreadBase::Pause() { pause_ = true; }
 
 void ThreadBase::Resume() { pause_ = false; }
 
+void ThreadBase::SetPeriod(std::chrono::milliseconds period) {
+  std::lock_guard<std::mutex> lock(cv_mtx_);
+  period_ = period;
+}
+
 void ThreadBase::Run() {
-  while (!stop_ && Process()) {
+  while (running_) {
+    std::unique_lock<std::mutex> lock(cv_mtx_);
+    cv_.wait_for(lock, period_, [this] { return !running_; });
+    if (running_) {
+      Process();
+    }
   }
 }

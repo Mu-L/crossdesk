@@ -44,7 +44,11 @@ void VideoChannelReceive::Initialize(rtp::PAYLOAD_TYPE payload_type) {
   rtp_video_receiver_->Start();
 }
 
-void VideoChannelReceive::Destroy() {}
+void VideoChannelReceive::Destroy() {
+  if (rtp_video_receiver_) {
+    rtp_video_receiver_->Stop();
+  }
+}
 
 int VideoChannelReceive::OnReceiveRtpPacket(const char *data, size_t size) {
   if (ice_io_statistics_) {

@@ -20,7 +20,10 @@ RtpVideoReceiver::RtpVideoReceiver()
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(Clock::GetRealTimeClockShared()) {}
+      clock_(Clock::GetRealTimeClockShared()) {
+  SetPeriod(std::chrono::milliseconds(5));
+  // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
+}
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
     : io_statistics_(io_statistics),
@@ -34,7 +37,8 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
             SendRemb(bitrate_bps, ssrcs);
           }),
       clock_(Clock::GetRealTimeClockShared()) {
-  rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
+  SetPeriod(std::chrono::milliseconds(5));
+  // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 
 #ifdef SAVE_RTP_RECV_STREAM
   file_rtp_recv_ = fopen("rtp_recv_stream.h264", "w+b");
@@ -45,18 +49,17 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
 }
 
 RtpVideoReceiver::~RtpVideoReceiver() {
-  if (rtp_statistics_) {
-    rtp_statistics_->Stop();
-  }
-
   rtcp_stop_.store(true);
-  rtcp_cv_.notify_one();
-
+  rtcp_cv_.notify_all();
   if (rtcp_thread_.joinable()) {
     rtcp_thread_.join();
   }
 
   SSRCManager::Instance().DeleteSsrc(feedback_ssrc_);
+
+  if (rtp_statistics_) {
+    rtp_statistics_->Stop();
+  }
 
 #ifdef SAVE_RTP_RECV_STREAM
   if (file_rtp_recv_) {
@@ -469,12 +472,11 @@ bool RtpVideoReceiver::Process() {
     }
   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   return true;
 }
 
 void RtpVideoReceiver::RtcpThread() {
-  while (!rtcp_stop_) {
+  while (!rtcp_stop_.load()) {
     std::unique_lock<std::mutex> lock(rtcp_mtx_);
     if (rtcp_cv_.wait_for(
             lock, std::chrono::milliseconds(rtcp_tcc_interval_ms_),

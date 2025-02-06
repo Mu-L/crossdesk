@@ -2,6 +2,9 @@
 #define _THREAD_BASE_H_
 
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
 #include <thread>
 
 class ThreadBase {
@@ -16,6 +19,8 @@ class ThreadBase {
   void Pause();
   void Resume();
 
+  void SetPeriod(std::chrono::milliseconds period);
+
   virtual bool Process() = 0;
 
  private:
@@ -23,9 +28,13 @@ class ThreadBase {
 
  private:
   std::thread thread_;
+  std::chrono::milliseconds period_;
 
-  std::atomic<bool> stop_{false};
-  std::atomic<bool> pause_{false};
+  std::condition_variable cv_;
+  std::mutex cv_mtx_;
+
+  std::atomic<bool> running_;
+  std::atomic<bool> pause_;
 };
 
 #endif

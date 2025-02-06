@@ -12,6 +12,7 @@ RtpVideoSender::RtpVideoSender() {}
 
 RtpVideoSender::RtpVideoSender(std::shared_ptr<IOStatistics> io_statistics)
     : io_statistics_(io_statistics) {
+  SetPeriod(std::chrono::milliseconds(5));
 #ifdef SAVE_RTP_SENT_STREAM
   file_rtp_sent_ = fopen("rtp_sent_stream.h264", "w+b");
   if (!file_rtp_sent_) {
@@ -162,6 +163,5 @@ bool RtpVideoSender::Process() {
     rtp_statistics_->UpdateSentBytes(last_send_bytes_);
   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   return true;
 }

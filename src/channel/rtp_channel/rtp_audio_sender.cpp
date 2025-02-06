@@ -6,10 +6,12 @@
 
 #define RTCP_SR_INTERVAL 1000
 
-RtpAudioSender::RtpAudioSender() {}
+RtpAudioSender::RtpAudioSender() { SetPeriod(std::chrono::milliseconds(5)); }
 
 RtpAudioSender::RtpAudioSender(std::shared_ptr<IOStatistics> io_statistics)
-    : io_statistics_(io_statistics) {}
+    : io_statistics_(io_statistics) {
+  SetPeriod(std::chrono::milliseconds(5));
+}
 
 RtpAudioSender::~RtpAudioSender() {
   if (rtp_statistics_) {
@@ -140,6 +142,5 @@ bool RtpAudioSender::Process() {
     rtp_statistics_->UpdateSentBytes(last_send_bytes_);
   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   return true;
 }

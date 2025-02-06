@@ -423,20 +423,28 @@ int IceTransport::DestroyIceTransmission() {
     ice_io_statistics_->Stop();
   }
 
-  if (rtp_video_receiver_) {
-    rtp_video_receiver_->Stop();
+  if (video_channel_send_) {
+    video_channel_send_->Destroy();
   }
 
-  if (rtp_video_sender_) {
-    rtp_video_sender_->Stop();
+  if (audio_channel_send_) {
+    audio_channel_send_->Destroy();
   }
 
-  if (rtp_audio_sender_) {
-    rtp_audio_sender_->Stop();
+  if (data_channel_send_) {
+    data_channel_send_->Destroy();
   }
 
-  if (rtp_data_sender_) {
-    rtp_data_sender_->Stop();
+  if (video_channel_receive_) {
+    video_channel_receive_->Destroy();
+  }
+
+  if (audio_channel_receive_) {
+    audio_channel_receive_->Destroy();
+  }
+
+  if (data_channel_receive_) {
+    data_channel_receive_->Destroy();
   }
 
   return ice_agent_->DestroyIceAgent();
