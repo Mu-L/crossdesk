@@ -66,6 +66,7 @@ class Clock {
 
   // Returns an instance of the real-time system clock implementation.
   static Clock* GetRealTimeClock();
+  static std::shared_ptr<Clock> GetRealTimeClockShared();
 };
 
 }  // namespace webrtc

@@ -60,4 +60,8 @@ Clock* Clock::GetRealTimeClock() {
   static Clock* const clock = new RealTimeClock();
   return clock;
 }
+
+std::shared_ptr<Clock> Clock::GetRealTimeClockShared() {
+  return std::make_shared<RealTimeClock>();
+}
 }  // namespace webrtc

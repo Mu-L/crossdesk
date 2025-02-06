@@ -20,7 +20,7 @@ RtpVideoReceiver::RtpVideoReceiver()
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(Clock::GetRealTimeClock()) {}
+      clock_(Clock::GetRealTimeClockShared()) {}
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
     : io_statistics_(io_statistics),
@@ -33,7 +33,7 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(Clock::GetRealTimeClock()) {
+      clock_(Clock::GetRealTimeClockShared()) {
   rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 
 #ifdef SAVE_RTP_RECV_STREAM
