@@ -12,6 +12,8 @@ VideoChannelSend::VideoChannelSend(
     : ice_agent_(ice_agent), ice_io_statistics_(ice_io_statistics){};
 
 void VideoChannelSend::Initialize(rtp::PAYLOAD_TYPE payload_type) {
+  controller_ = std::make_unique<CongestionControl>();
+
   rtp_packetizer_ = RtpPacketizer::Create(payload_type);
   rtp_video_sender_ = std::make_unique<RtpVideoSender>(ice_io_statistics_);
   rtp_video_sender_->SetSendDataFunc(
@@ -25,8 +27,8 @@ void VideoChannelSend::Initialize(rtp::PAYLOAD_TYPE payload_type) {
 
         if (ice_state != NICE_COMPONENT_STATE_CONNECTED &&
             ice_state != NICE_COMPONENT_STATE_READY) {
-          LOG_ERROR("Ice is not connected, state = [{}]",
-                    nice_component_state_to_string(ice_state));
+          // LOG_ERROR("Ice is not connected, state = [{}]",
+          //           nice_component_state_to_string(ice_state));
           return -2;
         }
 
@@ -75,9 +77,41 @@ void VideoChannelSend::HandleTransportPacketsFeedback(
   //   LOG_INFO("Transport is {} ECN capable. Stop sending ECT(1)",
   //            (feedback.transport_supports_ecn ? "" : " not "));
   // }
-  // if (controller_)
-  //   PostUpdates(controller_->OnTransportPacketsFeedback(feedback));
+  if (controller_)
+    PostUpdates(controller_->OnTransportPacketsFeedback(feedback));
 
-  // // Only update outstanding data if any packet is first time acked.
-  // UpdateCongestedState();
+  // Only update outstanding data if any packet is first time acked.
+  UpdateCongestedState();
+}
+
+void VideoChannelSend::PostUpdates(webrtc::NetworkControlUpdate update) {
+  // if (update.congestion_window) {
+  //   congestion_window_size_ = *update.congestion_window;
+  //   UpdateCongestedState();
+  // }
+  // if (update.pacer_config) {
+  //   pacer_.SetPacingRates(update.pacer_config->data_rate(),
+  //                         update.pacer_config->pad_rate());
+  // }
+  // if (!update.probe_cluster_configs.empty()) {
+  //   pacer_.CreateProbeClusters(std::move(update.probe_cluster_configs));
+  // }
+  // if (update.target_rate) {
+  //   control_handler_->SetTargetRate(*update.target_rate);
+  //   UpdateControlState();
+  // }
+}
+
+void VideoChannelSend::UpdateControlState() {
+  // std::optional<TargetTransferRate> update = control_handler_->GetUpdate();
+  // if (!update) return;
+  // retransmission_rate_limiter_.SetMaxRate(update->target_rate.bps());
+  // observer_->OnTargetTransferRate(*update);
+}
+
+void VideoChannelSend::UpdateCongestedState() {
+  // if (auto update = GetCongestedStateUpdate()) {
+  //   is_congested_ = update.value();
+  //   pacer_.SetCongested(update.value());
+  // }
 }

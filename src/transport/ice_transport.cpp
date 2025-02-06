@@ -299,7 +299,7 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
     case RtcpPacket::PAYLOAD_TYPE::TCC:
       switch (rtcp_block.fmt()) {
         case webrtc::rtcp::CongestionControlFeedback::kFeedbackMessageType:
-          LOG_INFO("Congestion Control Feedback");
+          LOG_INFO("Receive congestion control feedback");
           valid = HandleCongestionControlFeedback(rtcp_block, rtcp_packet_info);
           break;
         default:
