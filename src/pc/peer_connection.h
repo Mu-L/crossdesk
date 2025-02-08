@@ -143,7 +143,7 @@ class PeerConnection {
   bool av1_encoding_ = false;
   bool enable_turn_ = false;
   bool trickle_ice_ = true;
-  bool reliable_ice_ = true;
+  bool reliable_ice_ = false;
   bool try_rejoin_with_turn_ = false;
   TraversalMode mode_ = TraversalMode::P2P;
 

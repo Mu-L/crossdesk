@@ -45,20 +45,13 @@ void CongestionControlFeedbackGenerator::OnReceivedPacket(
   }
   feedback_trackers_[packet.Ssrc()].ReceivedPacket(packet);
   if (NextFeedbackTime() < packet.arrival_time()) {
-    SendFeedback(Timestamp::Micros(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count()));
+    SendFeedback(clock_->CurrentTime());
   }
 }
 
 Timestamp CongestionControlFeedbackGenerator::NextFeedbackTime() const {
   if (!first_arrival_time_since_feedback_) {
-    return std::max(Timestamp::Micros(
-                        std::chrono::duration_cast<std::chrono::microseconds>(
-                            std::chrono::system_clock::now().time_since_epoch())
-                            .count()) +
-                        min_time_between_feedback_,
+    return std::max(clock_->CurrentTime() + min_time_between_feedback_,
                     next_possible_feedback_send_time_);
   }
 
@@ -94,7 +87,6 @@ void CongestionControlFeedbackGenerator::SendFeedback(Timestamp now) {
   for (auto& [unused, tracker] : feedback_trackers_) {
     tracker.AddPacketsToFeedback(now, rtcp_packet_info);
   }
-
   marker_bit_seen_ = false;
   first_arrival_time_since_feedback_ = std::nullopt;
 

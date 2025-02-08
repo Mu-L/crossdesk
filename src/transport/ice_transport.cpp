@@ -300,7 +300,6 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
     case RtcpPacket::PAYLOAD_TYPE::TCC:
       switch (rtcp_block.fmt()) {
         case webrtc::rtcp::CongestionControlFeedback::kFeedbackMessageType:
-          LOG_INFO("Receive congestion control feedback");
           valid = HandleCongestionControlFeedback(rtcp_block, rtcp_packet_info);
           break;
         default:
@@ -374,8 +373,8 @@ bool IceTransport::HandleCongestionControlFeedback(
   //   rtcp_packet_info->congestion_control_feedback.emplace(std::move(feedback));
   // }
 
-  video_channel_send_->OnCongestionControlFeedback(
-      std::chrono::system_clock::now().time_since_epoch().count(), feedback);
+  video_channel_send_->OnCongestionControlFeedback(clock_->CurrentTime(),
+                                                   feedback);
   return true;
 }
 

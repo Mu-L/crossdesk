@@ -430,15 +430,6 @@ void RtpVideoReceiver::SendCombinedRtcpPacket(
 
   RTCPSender rtcp_sender(
       [this](const uint8_t* buffer, size_t size) -> int {
-        webrtc::rtcp::CommonHeader rtcp_block;
-        // bool valid = true;
-        // if (!rtcp_block.Parse(buffer, size)) {
-        //   valid = false;
-        // }
-
-        webrtc::rtcp::CongestionControlFeedback feedback;
-        feedback.Parse(rtcp_block);
-
         return data_send_func_((const char*)buffer, size);
       },
       1200);

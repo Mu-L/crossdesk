@@ -8,6 +8,7 @@
 #define _VIDEO_CHANNEL_SEND_H_
 
 #include "api/transport/network_types.h"
+#include "api/units/timestamp.h"
 #include "clock.h"
 #include "congestion_control.h"
 #include "congestion_control_feedback.h"
@@ -32,7 +33,8 @@ class VideoChannelSend {
   int SendVideo(char* data, size_t size);
 
   void OnCongestionControlFeedback(
-      int64_t recv_ts, const webrtc::rtcp::CongestionControlFeedback& feedback);
+      Timestamp recv_ts,
+      const webrtc::rtcp::CongestionControlFeedback& feedback);
 
   void HandleTransportPacketsFeedback(
       const webrtc::TransportPacketsFeedback& feedback);

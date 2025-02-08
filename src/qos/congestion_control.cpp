@@ -30,7 +30,8 @@ CongestionControl::CongestionControl()
       limit_pacingfactor_by_upper_link_capacity_estimate_(false),
       probe_controller_(new ProbeController()),
       congestion_window_pushback_controller_(
-          std::make_unique<CongestionWindowPushbackController>()),
+          // std::make_unique<CongestionWindowPushbackController>()
+          nullptr),
       bandwidth_estimation_(new SendSideBandwidthEstimation()),
       alr_detector_(new AlrDetector()),
       probe_bitrate_estimator_(new ProbeBitrateEstimator()),
@@ -53,10 +54,10 @@ NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
     return NetworkControlUpdate();
   }
 
-  if (congestion_window_pushback_controller_) {
-    congestion_window_pushback_controller_->UpdateOutstandingData(
-        report.data_in_flight.bytes());
-  }
+  // if (congestion_window_pushback_controller_) {
+  //   congestion_window_pushback_controller_->UpdateOutstandingData(
+  //       report.data_in_flight.bytes());
+  // }
   TimeDelta max_feedback_rtt = TimeDelta::MinusInfinity();
   TimeDelta min_propagation_rtt = TimeDelta::PlusInfinity();
   Timestamp max_recv_time = Timestamp::MinusInfinity();
@@ -89,8 +90,9 @@ NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
           std::accumulate(feedback_max_rtts_.begin(), feedback_max_rtts_.end(),
                           static_cast<int64_t>(0));
       int64_t mean_rtt_ms = sum_rtt_ms / feedback_max_rtts_.size();
-      if (delay_based_bwe_)
+      if (delay_based_bwe_) {
         delay_based_bwe_->OnRttUpdate(TimeDelta::Millis(mean_rtt_ms));
+      }
     }
 
     TimeDelta feedback_min_rtt = TimeDelta::PlusInfinity();
@@ -114,8 +116,6 @@ NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
     if (report.feedback_time > next_loss_update_) {
       next_loss_update_ =
           report.feedback_time + TimeDelta::Millis(kLossUpdateInterval);
-      LOG_WARN("lost_packets_since_last_loss_update_ = [{}]",
-               lost_packets_since_last_loss_update_);
       bandwidth_estimation_->UpdatePacketsLost(
           lost_packets_since_last_loss_update_,
           expected_packets_since_last_loss_update_, report.feedback_time);
@@ -132,9 +132,12 @@ NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
     probe_controller_->SetAlrEndedTimeMs(now_ms);
   }
   previously_in_alr_ = alr_start_time.has_value();
+
   acknowledged_bitrate_estimator_->IncomingPacketFeedbackVector(
       report.SortedByReceiveTime());
   auto acknowledged_bitrate = acknowledged_bitrate_estimator_->bitrate();
+  // TODO: fix acknowledged_bitrate
+  // acknowledged_bitrate = DataRate::KilobitsPerSec(1000);
   bandwidth_estimation_->SetAcknowledgedRate(acknowledged_bitrate,
                                              report.feedback_time);
   for (const auto& feedback : report.SortedByReceiveTime()) {
@@ -186,17 +189,17 @@ NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
   //   MaybeTriggerOnNetworkChanged(&update, report.feedback_time);
   // }
 
-  // recovered_from_overuse = result.recovered_from_overuse;
+  recovered_from_overuse = result.recovered_from_overuse;
 
-  // if (recovered_from_overuse) {
-  //   probe_controller_->SetAlrStartTimeMs(alr_start_time);
-  //   auto probes = probe_controller_->RequestProbe(report.feedback_time);
-  //   update.probe_cluster_configs.insert(update.probe_cluster_configs.end(),
-  //                                       probes.begin(), probes.end());
-  // }
+  if (recovered_from_overuse) {
+    probe_controller_->SetAlrStartTimeMs(alr_start_time);
+    auto probes = probe_controller_->RequestProbe(report.feedback_time);
+    update.probe_cluster_configs.insert(update.probe_cluster_configs.end(),
+                                        probes.begin(), probes.end());
+  }
 
-  // // No valid RTT could be because send-side BWE isn't used, in which case
-  // // we don't try to limit the outstanding packets.
+  // No valid RTT could be because send-side BWE isn't used, in which case
+  // we don't try to limit the outstanding packets.
   // if (rate_control_settings_.UseCongestionWindow() &&
   //     max_feedback_rtt.IsFinite()) {
   //   UpdateCongestionWindowSize();

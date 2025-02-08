@@ -82,11 +82,12 @@ int VideoChannelSend::SendVideo(char* data, size_t size) {
 }
 
 void VideoChannelSend::OnCongestionControlFeedback(
-    int64_t recv_ts, const webrtc::rtcp::CongestionControlFeedback& feedback) {
+    Timestamp recv_ts,
+    const webrtc::rtcp::CongestionControlFeedback& feedback) {
   ++feedback_count_;
   std::optional<webrtc::TransportPacketsFeedback> feedback_msg =
-      transport_feedback_adapter_.ProcessCongestionControlFeedback(
-          feedback, webrtc::Timestamp::Micros(recv_ts));
+      transport_feedback_adapter_.ProcessCongestionControlFeedback(feedback,
+                                                                   recv_ts);
   if (feedback_msg) {
     HandleTransportPacketsFeedback(*feedback_msg);
   }
