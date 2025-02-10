@@ -18,8 +18,6 @@
 #include "rtc_base/system_time.h"
 #include "rtc_base/time_utils.h"
 #if defined(_WIN32)
-#include <minwinbase.h>
-
 #include "rtc_base/win32.h"
 #endif
 
