@@ -22,7 +22,8 @@ RtpAudioSender::~RtpAudioSender() {
   SSRCManager::Instance().DeleteSsrc(ssrc_);
 }
 
-void RtpAudioSender::Enqueue(std::vector<RtpPacket>& rtp_packets) {
+void RtpAudioSender::Enqueue(
+    std::vector<std::shared_ptr<RtpPacket>> rtp_packets) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
@@ -38,20 +39,20 @@ void RtpAudioSender::SetSendDataFunc(
   data_send_func_ = data_send_func;
 }
 
-int RtpAudioSender::SendRtpPacket(RtpPacket& rtp_packet) {
+int RtpAudioSender::SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;
   }
 
-  if (0 != data_send_func_((const char*)rtp_packet.Buffer().data(),
-                           rtp_packet.Size())) {
+  if (0 != data_send_func_((const char*)rtp_packet->Buffer().data(),
+                           rtp_packet->Size())) {
     LOG_ERROR("Send rtp packet failed");
     return -1;
   }
 
-  last_send_bytes_ += (uint32_t)rtp_packet.Size();
-  total_rtp_payload_sent_ += (uint32_t)rtp_packet.PayloadSize();
+  last_send_bytes_ += (uint32_t)rtp_packet->Size();
+  total_rtp_payload_sent_ += (uint32_t)rtp_packet->PayloadSize();
   total_rtp_packets_sent_++;
 
   if (io_statistics_) {
@@ -136,7 +137,7 @@ bool RtpAudioSender::Process() {
 
   for (size_t i = 0; i < 10; i++)
     if (!rtp_packe_queue_.isEmpty()) {
-      RtpPacket rtp_packet;
+      std::shared_ptr<RtpPacket> rtp_packet;
       rtp_packe_queue_.pop(rtp_packet);
       SendRtpPacket(rtp_packet);
     }

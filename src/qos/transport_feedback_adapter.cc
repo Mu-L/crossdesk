@@ -24,7 +24,6 @@
 #include "log.h"
 #include "ntp_time_util.h"
 #include "rtp_packet_to_send.h"
-#include "transport_feedback.h"
 
 namespace webrtc {
 
@@ -161,77 +160,6 @@ std::optional<SentPacket> TransportFeedbackAdapter::ProcessSentPacket(
     last_untracked_send_time_ = std::max(last_untracked_send_time_, send_time);
   }
   return std::nullopt;
-}
-
-std::optional<TransportPacketsFeedback>
-TransportFeedbackAdapter::ProcessTransportFeedback(
-    const rtcp::TransportFeedback& feedback, Timestamp feedback_receive_time) {
-  if (feedback.GetPacketStatusCount() == 0) {
-    LOG_INFO("Empty transport feedback packet received.");
-    return std::nullopt;
-  }
-
-  // Add timestamp deltas to a local time base selected on first packet arrival.
-  // This won't be the true time base, but makes it easier to manually inspect
-  // time stamps.
-  if (last_transport_feedback_base_time_.IsInfinite()) {
-    current_offset_ = feedback_receive_time;
-  } else {
-    // TODO(srte): We shouldn't need to do rounding here.
-    const TimeDelta delta =
-        feedback.GetBaseDelta(last_transport_feedback_base_time_)
-            .RoundDownTo(TimeDelta::Millis(1));
-    // Protect against assigning current_offset_ negative value.
-    if (delta < Timestamp::Zero() - current_offset_) {
-      LOG_WARN("Unexpected feedback timestamp received.");
-      current_offset_ = feedback_receive_time;
-    } else {
-      current_offset_ += delta;
-    }
-  }
-  last_transport_feedback_base_time_ = feedback.BaseTime();
-
-  std::vector<PacketResult> packet_result_vector;
-  packet_result_vector.reserve(feedback.GetPacketStatusCount());
-
-  size_t failed_lookups = 0;
-  size_t ignored = 0;
-
-  feedback.ForAllPackets([&](uint16_t sequence_number,
-                             TimeDelta delta_since_base) {
-    int64_t seq_num = seq_num_unwrapper_.Unwrap(sequence_number);
-    std::optional<PacketFeedback> packet_feedback = RetrievePacketFeedback(
-        seq_num, /*received=*/delta_since_base.IsFinite());
-    if (!packet_feedback) {
-      ++failed_lookups;
-      return;
-    }
-    if (delta_since_base.IsFinite()) {
-      packet_feedback->receive_time =
-          current_offset_ + delta_since_base.RoundDownTo(TimeDelta::Millis(1));
-    }
-    if (packet_feedback->network_route == network_route_) {
-      PacketResult result;
-      result.sent_packet = packet_feedback->sent;
-      result.receive_time = packet_feedback->receive_time;
-      packet_result_vector.push_back(result);
-    } else {
-      ++ignored;
-    }
-  });
-
-  if (failed_lookups > 0) {
-    LOG_WARN(
-        "Failed to lookup send time for {} packet {}. Packets reordered or "
-        "send time history too small?",
-        failed_lookups, (failed_lookups > 1 ? "s" : ""));
-  }
-  if (ignored > 0) {
-    LOG_INFO("Ignoring packets because they were sent on a different route.",
-             ignored);
-  }
-  return ToTransportFeedback(std::move(packet_result_vector),
-                             feedback_receive_time, /*suports_ecn=*/false);
 }
 
 std::optional<TransportPacketsFeedback>

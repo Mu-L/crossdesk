@@ -15,8 +15,9 @@ class RtpPacketizerGeneric : public RtpPacketizer {
 
   virtual ~RtpPacketizerGeneric();
 
-  std::vector<RtpPacket> Build(uint8_t* payload,
-                               uint32_t payload_size) override;
+  std::vector<std::shared_ptr<RtpPacket>> Build(
+      uint8_t* payload, uint32_t payload_size,
+      bool use_rtp_packet_to_send) override;
 
  private:
   void AddAbsSendTimeExtension(std::vector<uint8_t>& rtp_packet_frame);

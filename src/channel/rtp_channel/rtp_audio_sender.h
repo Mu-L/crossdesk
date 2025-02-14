@@ -23,12 +23,12 @@ class RtpAudioSender : public ThreadBase {
   virtual ~RtpAudioSender();
 
  public:
-  void Enqueue(std::vector<RtpPacket> &rtp_packets);
+  void Enqueue(std::vector<std::shared_ptr<RtpPacket>> rtp_packets);
   void SetSendDataFunc(std::function<int(const char *, size_t)> data_send_func);
   uint32_t GetSsrc() { return ssrc_; }
 
  private:
-  int SendRtpPacket(RtpPacket &rtp_packet);
+  int SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet);
   int SendRtcpSR(RtcpSenderReport &rtcp_sr);
 
   bool CheckIsTimeSendSR();
@@ -38,7 +38,7 @@ class RtpAudioSender : public ThreadBase {
 
  private:
   std::function<int(const char *, size_t)> data_send_func_ = nullptr;
-  RingBuffer<RtpPacket> rtp_packe_queue_;
+  RingBuffer<std::shared_ptr<RtpPacket>> rtp_packe_queue_;
 
  private:
   uint32_t ssrc_ = 0;

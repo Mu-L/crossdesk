@@ -15,7 +15,6 @@
 #include "ice_agent.h"
 #include "rtp_packetizer.h"
 #include "rtp_video_sender.h"
-#include "transport_feedback.h"
 #include "transport_feedback_adapter.h"
 
 class VideoChannelSend {
@@ -37,9 +36,6 @@ class VideoChannelSend {
   void OnCongestionControlFeedback(
       Timestamp recv_ts,
       const webrtc::rtcp::CongestionControlFeedback& feedback);
-
-  void HandleTransportPacketsFeedback(
-      const webrtc::TransportPacketsFeedback& feedback);
 
  private:
   void PostUpdates(webrtc::NetworkControlUpdate update);

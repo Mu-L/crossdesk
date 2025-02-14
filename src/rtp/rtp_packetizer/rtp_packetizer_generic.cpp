@@ -17,8 +17,37 @@ RtpPacketizerGeneric::RtpPacketizerGeneric(uint32_t ssrc)
 
 RtpPacketizerGeneric::~RtpPacketizerGeneric() {}
 
-std::vector<RtpPacket> RtpPacketizerGeneric::Build(uint8_t* payload,
-                                                   uint32_t payload_size) {
+void RtpPacketizerGeneric::AddAbsSendTimeExtension(
+    std::vector<uint8_t>& rtp_packet_frame) {
+  uint16_t extension_profile = 0xBEDE;  // One-byte header extension
+  uint8_t sub_extension_id = 3;         // ID for Absolute Send Time
+  uint8_t sub_extension_length =
+      2;  // Length of the extension data in bytes minus 1
+
+  uint32_t abs_send_time =
+      std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::system_clock::now().time_since_epoch())
+          .count();
+  abs_send_time &= 0x00FFFFFF;  // Absolute Send Time is 24 bits
+
+  // Add extension profile
+  rtp_packet_frame.push_back((extension_profile >> 8) & 0xFF);
+  rtp_packet_frame.push_back(extension_profile & 0xFF);
+
+  // Add extension length (in 32-bit words, minus one)
+  rtp_packet_frame.push_back(
+      0x00);  // Placeholder for length, will be updated later
+  rtp_packet_frame.push_back(0x01);  // One 32-bit word
+
+  // Add Absolute Send Time extension
+  rtp_packet_frame.push_back((sub_extension_id << 4) | sub_extension_length);
+  rtp_packet_frame.push_back((abs_send_time >> 16) & 0xFF);
+  rtp_packet_frame.push_back((abs_send_time >> 8) & 0xFF);
+  rtp_packet_frame.push_back(abs_send_time & 0xFF);
+}
+
+std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerGeneric::Build(
+    uint8_t* payload, uint32_t payload_size, bool use_rtp_packet_to_send) {
   uint32_t last_packet_size = payload_size % MAX_NALU_LEN;
   uint32_t packet_num =
       payload_size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
@@ -28,7 +57,8 @@ std::vector<RtpPacket> RtpPacketizerGeneric::Build(uint8_t* payload,
                            std::chrono::system_clock::now().time_since_epoch())
                            .count();
 
-  std::vector<RtpPacket> rtp_packets;
+  std::vector<std::shared_ptr<RtpPacket>> rtp_packets;
+
   for (uint32_t index = 0; index < packet_num; index++) {
     version_ = kRtpVersion;
     has_padding_ = false;
@@ -77,40 +107,17 @@ std::vector<RtpPacket> RtpPacketizerGeneric::Build(uint8_t* payload,
                                payload + MAX_NALU_LEN);
     }
 
-    RtpPacket rtp_packet;
-    rtp_packet.Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
-
-    rtp_packets.emplace_back(rtp_packet);
+    if (use_rtp_packet_to_send) {
+      std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet =
+          std::make_unique<webrtc::RtpPacketToSend>();
+      rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
+      rtp_packets.emplace_back(std::move(rtp_packet));
+    } else {
+      std::shared_ptr<RtpPacket> rtp_packet = std::make_unique<RtpPacket>();
+      rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
+      rtp_packets.emplace_back(std::move(rtp_packet));
+    }
   }
 
   return rtp_packets;
-}
-
-void RtpPacketizerGeneric::AddAbsSendTimeExtension(
-    std::vector<uint8_t>& rtp_packet_frame) {
-  uint16_t extension_profile = 0xBEDE;  // One-byte header extension
-  uint8_t sub_extension_id = 3;         // ID for Absolute Send Time
-  uint8_t sub_extension_length =
-      2;  // Length of the extension data in bytes minus 1
-
-  uint32_t abs_send_time =
-      std::chrono::duration_cast<std::chrono::microseconds>(
-          std::chrono::system_clock::now().time_since_epoch())
-          .count();
-  abs_send_time &= 0x00FFFFFF;  // Absolute Send Time is 24 bits
-
-  // Add extension profile
-  rtp_packet_frame.push_back((extension_profile >> 8) & 0xFF);
-  rtp_packet_frame.push_back(extension_profile & 0xFF);
-
-  // Add extension length (in 32-bit words, minus one)
-  rtp_packet_frame.push_back(
-      0x00);  // Placeholder for length, will be updated later
-  rtp_packet_frame.push_back(0x01);  // One 32-bit word
-
-  // Add Absolute Send Time extension
-  rtp_packet_frame.push_back((sub_extension_id << 4) | sub_extension_length);
-  rtp_packet_frame.push_back((abs_send_time >> 16) & 0xFF);
-  rtp_packet_frame.push_back((abs_send_time >> 8) & 0xFF);
-  rtp_packet_frame.push_back(abs_send_time & 0xFF);
 }

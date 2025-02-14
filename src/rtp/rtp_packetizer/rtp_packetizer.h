@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "rtp_packet.h"
+#include "rtp_packet_to_send.h"
 
 class RtpPacketizer {
  public:
@@ -20,8 +21,8 @@ class RtpPacketizer {
 
   virtual ~RtpPacketizer() = default;
 
-  virtual std::vector<RtpPacket> Build(uint8_t* payload,
-                                       uint32_t payload_size) = 0;
+  virtual std::vector<std::shared_ptr<RtpPacket>> Build(
+      uint8_t* payload, uint32_t payload_size, bool use_rtp_packet_to_send) = 0;
 };
 
 #endif

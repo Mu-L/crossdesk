@@ -18,12 +18,12 @@
 
 #include "api/array_view.h"
 #include "api/ref_counted_base.h"
+#include "api/rtp_rtcp/rtp_rtcp_typedef.h"
 #include "api/scoped_refptr.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
 #include "api/video/video_timing.h"
 #include "rtp_packet.h"
-#include "rtp_rtcp_defines.h"
 
 // Forward declare the RtpPacket class since it is not in the webrtc namespace.
 class RtpPacket;
@@ -34,9 +34,6 @@ namespace webrtc {
 // create rtp header extensions or other data that is sent over the wire.
 class RtpPacketToSend : public ::RtpPacket {
  public:
-  // RtpPacketToSend::Type is deprecated. Use RtpPacketMediaType directly.
-  using Type = RtpPacketMediaType;
-
   explicit RtpPacketToSend();
   RtpPacketToSend(size_t capacity);
   RtpPacketToSend(const RtpPacketToSend& packet);
@@ -51,9 +48,11 @@ class RtpPacketToSend : public ::RtpPacket {
   webrtc::Timestamp capture_time() const { return capture_time_; }
   void set_capture_time(webrtc::Timestamp time) { capture_time_ = time; }
 
-  void set_packet_type(RtpPacketMediaType type);
+  void set_packet_type(webrtc::RtpPacketMediaType type);
 
-  std::optional<RtpPacketMediaType> packet_type() const { return packet_type_; }
+  std::optional<webrtc::RtpPacketMediaType> packet_type() const {
+    return packet_type_;
+  }
 
   enum class OriginalType { kAudio, kVideo };
   // Original type does not change if packet type is changed to kRetransmission.
@@ -157,7 +156,7 @@ class RtpPacketToSend : public ::RtpPacket {
 
  private:
   webrtc::Timestamp capture_time_ = webrtc::Timestamp::Zero();
-  std::optional<RtpPacketMediaType> packet_type_;
+  std::optional<webrtc::RtpPacketMediaType> packet_type_;
   std::optional<OriginalType> original_packet_type_;
   std::optional<uint32_t> original_ssrc_;
   std::optional<int64_t> transport_sequence_number_;

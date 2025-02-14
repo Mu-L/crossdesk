@@ -47,8 +47,8 @@ void AudioChannelSend::Destroy() {
 
 int AudioChannelSend::SendAudio(char *data, size_t size) {
   if (rtp_audio_sender_ && rtp_packetizer_) {
-    std::vector<RtpPacket> rtp_packets =
-        rtp_packetizer_->Build((uint8_t *)data, (uint32_t)size);
+    std::vector<std::shared_ptr<RtpPacket>> rtp_packets =
+        rtp_packetizer_->Build((uint8_t *)data, (uint32_t)size, true);
     rtp_audio_sender_->Enqueue(rtp_packets);
   }
 

@@ -38,14 +38,15 @@ RtpVideoSender::~RtpVideoSender() {
 #endif
 }
 
-void RtpVideoSender::Enqueue(std::vector<RtpPacket>& rtp_packets) {
+void RtpVideoSender::Enqueue(
+    std::vector<std::shared_ptr<RtpPacket>>& rtp_packets) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
   }
 
   for (auto& rtp_packet : rtp_packets) {
-    rtp_packe_queue_.push(rtp_packet);
+    rtp_packe_queue_.push(std::move(rtp_packet));
   }
 }
 
@@ -59,35 +60,33 @@ void RtpVideoSender::SetOnSentPacketFunc(
   on_sent_packet_func_ = on_sent_packet_func;
 }
 
-int RtpVideoSender::SendRtpPacket(RtpPacket& rtp_packet) {
+int RtpVideoSender::SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;
   }
 
   if (on_sent_packet_func_) {
-    webrtc::RtpPacketToSend rtp_packet_to_send;
-    rtp_packet_to_send.SetSequenceNumber(rtp_packet.SequenceNumber());
-    rtp_packet_to_send.SetSsrc(rtp_packet.Ssrc());
-    rtp_packet_to_send.SetSize(rtp_packet.Size());
-    rtp_packet_to_send.set_transport_sequence_number(transport_seq_++);
-    rtp_packet_to_send.set_packet_type(webrtc::RtpPacketMediaType::kVideo);
-    on_sent_packet_func_(rtp_packet_to_send);
+    webrtc::RtpPacketToSend* rtp_packet_to_send =
+        dynamic_cast<webrtc::RtpPacketToSend*>(rtp_packet.get());
+    rtp_packet_to_send->set_transport_sequence_number(transport_seq_++);
+    rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
+    on_sent_packet_func_(*rtp_packet_to_send);
   }
 
-  if (0 != data_send_func_((const char*)rtp_packet.Buffer().data(),
-                           rtp_packet.Size())) {
+  if (0 != data_send_func_((const char*)rtp_packet->Buffer().data(),
+                           rtp_packet->Size())) {
     // LOG_ERROR("Send rtp packet failed");
     return -1;
   }
 
 #ifdef SAVE_RTP_SENT_STREAM
-  fwrite((unsigned char*)rtp_packet.Payload(), 1, rtp_packet.PayloadSize(),
+  fwrite((unsigned char*)rtp_packet->Payload(), 1, rtp_packet->PayloadSize(),
          file_rtp_sent_);
 #endif
 
-  last_send_bytes_ += (uint32_t)rtp_packet.Size();
-  total_rtp_payload_sent_ += (uint32_t)rtp_packet.PayloadSize();
+  last_send_bytes_ += (uint32_t)rtp_packet->Size();
+  total_rtp_payload_sent_ += (uint32_t)rtp_packet->PayloadSize();
   total_rtp_packets_sent_++;
 
   if (io_statistics_) {
@@ -131,7 +130,7 @@ int RtpVideoSender::SendRtpPacket(RtpPacket& rtp_packet) {
 
     rtcp_sr.Encode();
 
-    // SendRtcpSR(rtcp_sr);
+    SendRtcpSR(rtcp_sr);
   }
 
   return 0;
@@ -168,13 +167,16 @@ bool RtpVideoSender::CheckIsTimeSendSR() {
 }
 
 bool RtpVideoSender::Process() {
+  bool pop_success = false;
   last_send_bytes_ = 0;
 
   for (size_t i = 0; i < 10; i++)
     if (!rtp_packe_queue_.isEmpty()) {
-      RtpPacket rtp_packet;
-      rtp_packe_queue_.pop(rtp_packet);
-      SendRtpPacket(rtp_packet);
+      std::shared_ptr<RtpPacket> rtp_packet;
+      pop_success = rtp_packe_queue_.pop(rtp_packet);
+      if (pop_success) {
+        SendRtpPacket(rtp_packet);
+      }
     }
 
   if (rtp_statistics_) {
