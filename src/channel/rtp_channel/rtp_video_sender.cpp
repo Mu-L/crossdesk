@@ -100,40 +100,25 @@ int RtpVideoSender::SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet) {
   }
 
   if (CheckIsTimeSendSR()) {
-    RtcpSenderReport rtcp_sr;
-    SenderInfo sender_info;
+    SenderReport rtcp_sr;
+    rtcp_sr.SetSenderSsrc(ssrc_);
+    rtcp_sr.SetTimestamp(0);
+    rtcp_sr.SetNtpTimestamp(0);
+    rtcp_sr.SetSenderPacketCount(total_rtp_packets_sent_);
+    rtcp_sr.SetSenderOctetCount(total_rtp_payload_sent_);
+
     RtcpReportBlock report;
 
-    auto duration = std::chrono::system_clock::now().time_since_epoch();
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
-    uint32_t seconds_u32 = static_cast<uint32_t>(
-        std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+    report.SetMediaSsrc(ssrc_);
+    report.SetFractionLost(0);
+    report.SetCumulativeLost(0);
+    report.SetJitter(0);
+    report.SetLastSr(0);
+    report.SetExtHighestSeqNum(0);
+    report.SetDelayLastSr(0);
 
-    uint32_t fraction_u32 = static_cast<uint32_t>(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(duration - seconds)
-            .count());
-
-    sender_info.sender_ssrc = 0x00;
-    sender_info.ntp_ts_msw = (uint32_t)seconds_u32;
-    sender_info.ntp_ts_lsw = (uint32_t)fraction_u32;
-    sender_info.rtp_ts =
-        std::chrono::system_clock::now().time_since_epoch().count() * 1000000;
-    sender_info.sender_packet_count = total_rtp_packets_sent_;
-    sender_info.sender_octet_count = total_rtp_payload_sent_;
-
-    rtcp_sr.SetSenderInfo(sender_info);
-
-    report.source_ssrc = 0x00;
-    report.fraction_lost = 0;
-    report.cumulative_lost = 0;
-    report.extended_high_seq_num = 0;
-    report.jitter = 0;
-    report.lsr = 0;
-    report.dlsr = 0;
-
-    // rtcp_sr.SetReportBlock(report);
-
-    rtcp_sr.Encode();
+    rtcp_sr.SetReportBlock(report);
+    rtcp_sr.Create();
 
     SendRtcpSR(rtcp_sr);
   }
@@ -141,7 +126,7 @@ int RtpVideoSender::SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet) {
   return 0;
 }
 
-int RtpVideoSender::SendRtcpSR(RtcpSenderReport& rtcp_sr) {
+int RtpVideoSender::SendRtcpSR(SenderReport& rtcp_sr) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;

@@ -16,7 +16,7 @@
 
 class RtcpPacket {
  public:
-  typedef enum { SR = 200, RR = 201, TCC = 11, NACK = 1 } PAYLOAD_TYPE;
+  typedef enum { SR = 200, RR = 201, TCC = 11, NACK = 1 } RtcpPayloadType;
   // Callback used to signal that an RTCP packet is ready. Note that this may
   // not contain all data in this RtcpPacket; if a packet cannot fit in
   // max_length bytes, it will be fragmented and multiple calls to this

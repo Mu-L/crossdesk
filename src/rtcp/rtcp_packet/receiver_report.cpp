@@ -1,96 +1,55 @@
-/*
- *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree. An additional intellectual property rights grant can be found
- *  in the file PATENTS.  All contributing project authors may
- *  be found in the AUTHORS file in the root of the source tree.
- */
-
 #include "receiver_report.h"
 
-#include <utility>
+ReceiverReport::ReceiverReport() : buffer_(nullptr), size_(0) {}
 
-#include "byte_io.h"
-#include "common_header.h"
-#include "log.h"
-
-// RTCP receiver report (RFC 3550).
-//
-//   0                   1                   2                   3
-//   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-//  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//  |V=2|P|    RC   |   PT=RR=201   |             length            |
-//  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//  |                     SSRC of packet sender                     |
-//  +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//  |                         report block(s)                       |
-//  |                            ....                               |
-
-ReceiverReport::ReceiverReport() = default;
-
-ReceiverReport::ReceiverReport(const ReceiverReport& rhs) = default;
-
-ReceiverReport::~ReceiverReport() = default;
-
-bool ReceiverReport::Parse(const CommonHeader& packet) {
-  const uint8_t report_blocks_count = packet.count();
-
-  if (packet.payload_size_bytes() <
-      kRrBaseLength + report_blocks_count * ReportBlock::kLength) {
-    LOG_WARN("Packet is too small to contain all the data.");
-    return false;
+ReceiverReport::~ReceiverReport() {
+  if (buffer_) {
+    delete[] buffer_;
+    buffer_ = nullptr;
   }
-
-  SetSenderSsrc(ByteReader<uint32_t>::ReadBigEndian(packet.payload()));
-
-  const uint8_t* next_report_block = packet.payload() + kRrBaseLength;
-
-  report_blocks_.resize(report_blocks_count);
-  for (ReportBlock& block : report_blocks_) {
-    block.Parse(next_report_block, ReportBlock::kLength);
-    next_report_block += ReportBlock::kLength;
-  }
-
-  return true;
+  size_ = 0;
 }
 
-size_t ReceiverReport::BlockLength() const {
-  return kHeaderLength + kRrBaseLength +
-         report_blocks_.size() * ReportBlock::kLength;
+void ReceiverReport::SetReportBlock(RtcpReportBlock &rtcp_report_block) {
+  reports_.push_back(std::move(rtcp_report_block));
 }
 
-bool ReceiverReport::Create(uint8_t* packet, size_t* index, size_t max_length,
-                            PacketReadyCallback callback) const {
-  while (*index + BlockLength() > max_length) {
-    if (!OnBufferFull(packet, index, callback)) return false;
-  }
-  CreateHeader(report_blocks_.size(), kPacketType, HeaderLength(), packet,
-               index);
-  ByteWriter<uint32_t>::WriteBigEndian(packet + *index, sender_ssrc());
-  *index += kRrBaseLength;
-  for (const ReportBlock& block : report_blocks_) {
-    block.Create(packet + *index);
-    *index += ReportBlock::kLength;
-  }
-  return true;
+void ReceiverReport::SetReportBlocks(
+    std::vector<RtcpReportBlock> &rtcp_report_blocks) {
+  reports_ = std::move(rtcp_report_blocks);
 }
 
-bool ReceiverReport::AddReportBlock(const ReportBlock& block) {
-  if (report_blocks_.size() >= kMaxNumberOfReportBlocks) {
-    LOG_WARN("Max report blocks reached.");
-    return false;
+const uint8_t *ReceiverReport::Create() {
+  size_t buffer_size =
+      DEFAULT_SR_SIZE + reports_.size() * RtcpReportBlock::kLength;
+  if (!buffer_ || buffer_size != size_) {
+    delete[] buffer_;
+    buffer_ = nullptr;
   }
-  report_blocks_.push_back(block);
-  return true;
+
+  buffer_ = new uint8_t[buffer_size];
+  size_ = buffer_size;
+
+  int pos =
+      rtcp_common_header_.Create(DEFAULT_RTCP_VERSION, 0, DEFAULT_RR_BLOCK_NUM,
+                                 RTCP_TYPE::RR, DEFAULT_RR_SIZE, buffer_);
+
+  for (const auto &report : reports_) {
+    pos += report.Create(buffer_ + pos);
+  }
+
+  return buffer_;
 }
 
-bool ReceiverReport::SetReportBlocks(std::vector<ReportBlock> blocks) {
-  if (blocks.size() > kMaxNumberOfReportBlocks) {
-    LOG_WARN("Too many report blocks ({}) for receiver report.", blocks.size());
-    return false;
+size_t ReceiverReport::Parse(const uint8_t *buffer) {
+  reports_.clear();
+  size_t pos = rtcp_common_header_.Parse(buffer);
+
+  for (int i = 0; i < rtcp_common_header_.CountOrFormat(); i++) {
+    RtcpReportBlock report;
+    pos += report.Parse(buffer + pos);
+    reports_.emplace_back(std::move(report));
   }
-  report_blocks_ = std::move(blocks);
-  return true;
+
+  return pos;
 }

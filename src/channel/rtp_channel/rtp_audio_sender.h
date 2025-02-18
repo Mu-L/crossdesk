@@ -11,9 +11,9 @@
 
 #include "io_statistics.h"
 #include "ringbuffer.h"
-#include "rtcp_sender_report.h"
 #include "rtp_packet.h"
 #include "rtp_statistics.h"
+#include "sender_report.h"
 #include "thread_base.h"
 
 class RtpAudioSender : public ThreadBase {
@@ -29,7 +29,7 @@ class RtpAudioSender : public ThreadBase {
 
  private:
   int SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet);
-  int SendRtcpSR(RtcpSenderReport &rtcp_sr);
+  int SendRtcpSR(SenderReport &rtcp_sr);
 
   bool CheckIsTimeSendSR();
 

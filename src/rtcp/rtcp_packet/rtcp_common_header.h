@@ -4,8 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "log.h"
-
 // RTCP header
 //  0                   1                   2                   3
 //  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -15,7 +13,7 @@
 
 #include "rtcp_typedef.h"
 
-class RtcpHeader {
+class RtcpCommonHeader {
  public:
   typedef enum {
     UNKNOWN = 0,
@@ -27,9 +25,9 @@ class RtcpHeader {
   } PAYLOAD_TYPE;
 
  public:
-  RtcpHeader();
-  RtcpHeader(const uint8_t* buffer, uint32_t size);
-  ~RtcpHeader();
+  RtcpCommonHeader();
+  RtcpCommonHeader(const uint8_t* buffer, uint32_t size);
+  ~RtcpCommonHeader();
 
  public:
   void SetVerion(uint8_t version) { version_ = version; }
@@ -51,8 +49,10 @@ class RtcpHeader {
   }
   uint16_t Length() const { return length_; }
 
-  int Encode(uint8_t version, uint8_t padding, uint8_t count_or_format,
+  int Create(uint8_t version, uint8_t padding, uint8_t count_or_format,
              uint8_t payload_type, uint16_t length, uint8_t* buffer);
+
+  size_t Parse(const uint8_t* buffer);
 
  private:
   uint8_t version_ : 2;

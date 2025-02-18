@@ -33,40 +33,40 @@ void RtpDataReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     io_statistics_->UpdateDataPacketLossCount(rtp_packet.SequenceNumber());
   }
 
-  if (CheckIsTimeSendRR()) {
-    RtcpReceiverReport rtcp_rr;
-    RtcpReportBlock report;
+  //   if (CheckIsTimeSendRR()) {
+  //     ReceiverReport rtcp_rr;
+  //     RtcpReportBlock report;
 
-    // auto duration = std::chrono::system_clock::now().time_since_epoch();
-    // auto seconds =
-    // std::chrono::duration_cast<std::chrono::seconds>(duration); uint32_t
-    // seconds_u32 = static_cast<uint32_t>(
-    //     std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+  //     // auto duration = std::chrono::system_clock::now().time_since_epoch();
+  //     // auto seconds =
+  //     // std::chrono::duration_cast<std::chrono::seconds>(duration); uint32_t
+  //     // seconds_u32 = static_cast<uint32_t>(
+  //     // std::chrono::duration_cast<std::chrono::seconds>(duration).count());
 
-    // uint32_t fraction_u32 = static_cast<uint32_t>(
-    //     std::chrono::duration_cast<std::chrono::nanoseconds>(duration -
-    //     seconds)
-    //         .count());
+  //     // uint32_t fraction_u32 = static_cast<uint32_t>(
+  //     //     std::chrono::duration_cast<std::chrono::nanoseconds>(duration -
+  //     //     seconds)
+  //     //         .count());
 
-    report.source_ssrc = 0x00;
-    report.fraction_lost = 0;
-    report.cumulative_lost = 0;
-    report.extended_high_seq_num = 0;
-    report.jitter = 0;
-    report.lsr = 0;
-    report.dlsr = 0;
+  //     report.source_ssrc = 0x00;
+  //     report.fraction_lost = 0;
+  //     report.cumulative_lost = 0;
+  //     report.extended_high_seq_num = 0;
+  //     report.jitter = 0;
+  //     report.lsr = 0;
+  //     report.dlsr = 0;
 
-    rtcp_rr.SetReportBlock(report);
+  //     rtcp_rr.SetReportBlock(report);
 
-    rtcp_rr.Encode();
+  //     rtcp_rr.Encode();
 
-    // SendRtcpRR(rtcp_rr);
-  }
+  //     // SendRtcpRR(rtcp_rr);
+  //   }
 
-  if (on_receive_data_) {
-    on_receive_data_((const char*)rtp_packet.Payload(),
-                     rtp_packet.PayloadSize());
-  }
+  //   if (on_receive_data_) {
+  //     on_receive_data_((const char*)rtp_packet.Payload(),
+  //                      rtp_packet.PayloadSize());
+  //   }
 }
 
 void RtpDataReceiver::SetSendDataFunc(
@@ -74,7 +74,7 @@ void RtpDataReceiver::SetSendDataFunc(
   data_send_func_ = data_send_func;
 }
 
-int RtpDataReceiver::SendRtcpRR(RtcpReceiverReport& rtcp_rr) {
+int RtpDataReceiver::SendRtcpRR(ReceiverReport& rtcp_rr) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;

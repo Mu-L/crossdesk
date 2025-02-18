@@ -122,35 +122,36 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     io_statistics_->UpdateVideoPacketLossCount(rtp_packet.SequenceNumber());
   }
 
-  if (CheckIsTimeSendRR()) {
-    RtcpReceiverReport rtcp_rr;
-    RtcpReportBlock report;
+  // if (CheckIsTimeSendRR()) {
+  //   ReceiverReport rtcp_rr;
+  //   RtcpReportBlock report;
 
-    // auto duration = std::chrono::system_clock::now().time_since_epoch();
-    // auto seconds =
-    // std::chrono::duration_cast<std::chrono::seconds>(duration); uint32_t
-    // seconds_u32 = static_cast<uint32_t>(
-    //     std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+  //   // auto duration = std::chrono::system_clock::now().time_since_epoch();
+  //   // auto seconds =
+  //   // std::chrono::duration_cast<std::chrono::seconds>(duration); uint32_t
+  //   // seconds_u32 = static_cast<uint32_t>(
+  //   // std::chrono::duration_cast<std::chrono::seconds>(duration).count());
 
-    // uint32_t fraction_u32 = static_cast<uint32_t>(
-    //     std::chrono::duration_cast<std::chrono::nanoseconds>(duration -
-    //     seconds)
-    //         .count());
+  //   // uint32_t fraction_u32 = static_cast<uint32_t>(
+  //   //     std::chrono::duration_cast<std::chrono::nanoseconds>(duration -
+  //   //     seconds)
+  //   //         .count());
 
-    report.source_ssrc = 0x00;
-    report.fraction_lost = 0;
-    report.cumulative_lost = 0;
-    report.extended_high_seq_num = 0;
-    report.jitter = 0;
-    report.lsr = 0;
-    report.dlsr = 0;
+  //   report.source_ssrc = 0x00;
+  //   report.fraction_lost = 0;
+  //   report.cumulative_lost = 0;
+  //   report.extended_high_seq_num = 0;
+  //   report.jitter = 0;
+  //   report.lsr = 0;
+  //   report.dlsr = 0;
 
-    rtcp_rr.SetReportBlock(report);
+  //   rtcp_rr.SetReportBlock(report);
 
-    rtcp_rr.Encode();
+  //   rtcp_rr.Encode();
 
-    // SendRtcpRR(rtcp_rr);
-  }
+  //   // SendRtcpRR(rtcp_rr);
+  // }
+
   if (rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::AV1) {
     RtpPacketAv1 rtp_packet_av1;
     rtp_packet_av1.Build(rtp_packet.Buffer().data(), rtp_packet.Size());
@@ -407,7 +408,7 @@ void RtpVideoReceiver::SetSendDataFunc(
   data_send_func_ = data_send_func;
 }
 
-int RtpVideoReceiver::SendRtcpRR(RtcpReceiverReport& rtcp_rr) {
+int RtpVideoReceiver::SendRtcpRR(ReceiverReport& rtcp_rr) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;

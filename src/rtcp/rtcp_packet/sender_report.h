@@ -1,71 +1,99 @@
 /*
  * @Author: DI JUNKUN
- * @Date: 2025-02-17
+ * @Date: 2025-02-18
  * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
  */
 
 #ifndef _SENDER_REPORT_H_
 #define _SENDER_REPORT_H_
 
+// SR
+//  0                   1                   2                   3
+//  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |V=2|P|   RC    |   PT=SR=200   |            length             |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                        SSRC of sender                         |
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |              NTP timestamp, most significant word             | sender
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ info
+// |             NTP timestamp, least significant word             |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                         RTP timestamp                         |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                     sender's packet count                     |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                      sender's octet count                     |
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |                 SSRC_1 (SSRC of first source)                 | report
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ block
+// | fraction lost |       cumulative number of packets lost       | 1
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |           extended highest sequence number received           |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                      interarrival jitter                      |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                         last SR (LSR)                         |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                   delay since last SR (DLSR)                  |
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |                 SSRC_2 (SSRC of second source)                | report
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ block
+// :                               ...                             : 2
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 #include <vector>
 
-#include "api/ntp/ntp_time.h"
-#include "report_block.h"
-#include "rtcp_packet.h"
+#include "rtcp_common_header.h"
+#include "rtcp_report_block.h"
 
-class CommonHeader;
-
-class SenderReport : public RtcpPacket {
+class SenderReport {
  public:
-  static constexpr uint8_t kPacketType = 200;
-  static constexpr size_t kMaxNumberOfReportBlocks = 0x1f;
+  typedef struct {
+    uint32_t sender_ssrc : 32;
+    uint64_t ntp_ts_msw : 64;
+    uint64_t ntp_ts_lsw : 64;
+    uint32_t rtp_ts : 32;
+    uint32_t sender_packet_count : 32;
+    uint32_t sender_octet_count : 32;
+  } SenderInfo;
 
+ public:
   SenderReport();
-  SenderReport(const SenderReport&);
-  SenderReport(SenderReport&&);
-  SenderReport& operator=(const SenderReport&);
-  SenderReport& operator=(SenderReport&&);
-  ~SenderReport() override;
+  ~SenderReport();
 
-  // Parse assumes header is already parsed and validated.
-  bool Parse(const CommonHeader& packet);
-
-  void SetNtp(webrtc::NtpTime ntp) { ntp_ = ntp; }
-  void SetRtpTimestamp(uint32_t rtp_timestamp) {
-    rtp_timestamp_ = rtp_timestamp;
+ public:
+  void SetSenderSsrc(uint32_t ssrc) { sender_info_.sender_ssrc = ssrc; }
+  void SetNtpTimestamp(uint64_t ntp_timestamp) {
+    sender_info_.ntp_ts_msw = ntp_timestamp >> 32;
+    sender_info_.ntp_ts_lsw = ntp_timestamp & 0xFFFFFFFF;
   }
-  void SetPacketCount(uint32_t packet_count) {
-    sender_packet_count_ = packet_count;
+  void SetTimestamp(uint32_t timestamp) { sender_info_.rtp_ts = timestamp; }
+  void SetSenderPacketCount(uint32_t packet_count) {
+    sender_info_.sender_packet_count = packet_count;
   }
-  void SetOctetCount(uint32_t octet_count) {
-    sender_octet_count_ = octet_count;
+  void SetSenderOctetCount(uint32_t octet_count) {
+    sender_info_.sender_octet_count = octet_count;
   }
-  bool AddReportBlock(const ReportBlock& block);
-  bool SetReportBlocks(std::vector<ReportBlock> blocks);
-  void ClearReportBlocks() { report_blocks_.clear(); }
+  void SetReportBlock(RtcpReportBlock &rtcp_report_block);
+  void SetReportBlocks(std::vector<RtcpReportBlock> &rtcp_report_blocks);
 
-  webrtc::NtpTime ntp() const { return ntp_; }
-  uint32_t rtp_timestamp() const { return rtp_timestamp_; }
-  uint32_t sender_packet_count() const { return sender_packet_count_; }
-  uint32_t sender_octet_count() const { return sender_octet_count_; }
+ public:
+  const uint8_t *Create();
+  size_t Parse();
 
-  const std::vector<ReportBlock>& report_blocks() const {
-    return report_blocks_;
-  }
-
-  size_t BlockLength() const override;
-
-  bool Create(uint8_t* packet, size_t* index, size_t max_length,
-              PacketReadyCallback callback) const override;
+  // Entire RTP buffer
+  const uint8_t *Buffer() const { return buffer_; }
+  size_t Size() const { return size_; }
 
  private:
-  static constexpr size_t kSenderBaseLength = 24;
+  RtcpCommonHeader rtcp_common_header_;
+  SenderInfo sender_info_;
+  std::vector<RtcpReportBlock> reports_;
 
-  webrtc::NtpTime ntp_;
-  uint32_t rtp_timestamp_;
-  uint32_t sender_packet_count_;
-  uint32_t sender_octet_count_;
-  std::vector<ReportBlock> report_blocks_;
+  // Entire RTCP buffer
+  uint8_t *buffer_;
+  size_t size_;
 };
 
 #endif

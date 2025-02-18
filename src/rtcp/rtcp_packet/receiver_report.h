@@ -1,50 +1,66 @@
 /*
  * @Author: DI JUNKUN
- * @Date: 2025-02-17
+ * @Date: 2025-02-18
  * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
  */
 
 #ifndef _RECEIVER_REPORT_H_
 #define _RECEIVER_REPORT_H_
 
-#include <stddef.h>
-#include <stdint.h>
+// RR
+//  0                   1                   2                   3
+//  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |V=2|P|   RC    |   PT=SR=200   |            length             |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                     SSRC of packet sender                     |
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |                 SSRC_1 (SSRC of first source)                 | report
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ block
+// | fraction lost |       cumulative number of packets lost       | 1
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |           extended highest sequence number received           |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                      interarrival jitter                      |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                         last SR (LSR)                         |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                   delay since last SR (DLSR)                  |
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |                 SSRC_2 (SSRC of second source)                | report
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ block
+// :                               ...                             : 2
+// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+// |                  profile-specific extensions                  |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 #include <vector>
 
-#include "report_block.h"
-#include "rtcp_packet.h"
+#include "rtcp_common_header.h"
+#include "rtcp_report_block.h"
 
-class CommonHeader;
-
-class ReceiverReport : public RtcpPacket {
+class ReceiverReport {
  public:
-  static constexpr uint8_t kPacketType = 201;
-  static constexpr size_t kMaxNumberOfReportBlocks = 0x1f;
-
   ReceiverReport();
-  ReceiverReport(const ReceiverReport&);
-  ~ReceiverReport() override;
+  ~ReceiverReport();
 
-  // Parse assumes header is already parsed and validated.
-  bool Parse(const CommonHeader& packet);
+ public:
+  void SetReportBlock(RtcpReportBlock &rtcp_report_block);
+  void SetReportBlocks(std::vector<RtcpReportBlock> &rtcp_report_blocks);
 
-  bool AddReportBlock(const ReportBlock& block);
-  bool SetReportBlocks(std::vector<ReportBlock> blocks);
+  const uint8_t *Create();
+  size_t Parse(const uint8_t *buffer);
 
-  const std::vector<ReportBlock>& report_blocks() const {
-    return report_blocks_;
-  }
-
-  size_t BlockLength() const override;
-
-  bool Create(uint8_t* packet, size_t* index, size_t max_length,
-              PacketReadyCallback callback) const override;
+  const uint8_t *Buffer() const { return buffer_; }
+  size_t Size() const { return size_; }
 
  private:
-  static constexpr size_t kRrBaseLength = 4;
+  RtcpCommonHeader rtcp_common_header_;
+  std::vector<RtcpReportBlock> reports_;
 
-  std::vector<ReportBlock> report_blocks_;
+  // Entire RTCP buffer
+  uint8_t *buffer_ = nullptr;
+  size_t size_ = 0;
 };
 
 #endif

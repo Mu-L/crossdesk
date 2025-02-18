@@ -11,8 +11,8 @@
 #include "io_statistics.h"
 #include "nack_requester.h"
 #include "receive_side_congestion_controller.h"
+#include "receiver_report.h"
 #include "ringbuffer.h"
-#include "rtcp_receiver_report.h"
 #include "rtcp_sender.h"
 #include "rtp_packet_av1.h"
 #include "rtp_packet_h264.h"
@@ -53,7 +53,7 @@ class RtpVideoReceiver : public ThreadBase,
 
  private:
   bool CheckIsTimeSendRR();
-  int SendRtcpRR(RtcpReceiverReport& rtcp_rr);
+  int SendRtcpRR(ReceiverReport& rtcp_rr);
 
   void SendCombinedRtcpPacket(
       std::vector<std::unique_ptr<RtcpPacket>> rtcp_packets);

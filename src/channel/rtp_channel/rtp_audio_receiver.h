@@ -10,7 +10,7 @@
 #include <functional>
 
 #include "io_statistics.h"
-#include "rtcp_receiver_report.h"
+#include "receiver_report.h"
 #include "rtp_packet.h"
 #include "rtp_statistics.h"
 
@@ -32,7 +32,7 @@ class RtpAudioReceiver {
 
  private:
   bool CheckIsTimeSendRR();
-  int SendRtcpRR(RtcpReceiverReport& rtcp_rr);
+  int SendRtcpRR(ReceiverReport& rtcp_rr);
 
  private:
   std::function<void(const char*, size_t)> on_receive_data_ = nullptr;

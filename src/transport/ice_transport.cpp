@@ -223,12 +223,12 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
   }
 
   switch (rtcp_block.type()) {
-    case RtcpPacket::PAYLOAD_TYPE::SR:
+    case RtcpPacket::RtcpPayloadType::SR:
       LOG_INFO("Sender report");
       // valid = HandleSenderReport(rtcp_block, rtcp_packet_info);
       // received_blocks[rtcp_packet_info->remote_ssrc].sender_report = true;
       break;
-    case RtcpPacket::PAYLOAD_TYPE::RR:
+    case RtcpPacket::RtcpPayloadType::RR:
       LOG_INFO("Receiver report");
       // valid = HandleReceiverReport(rtcp_block, rtcp_packet_info);
       break;
