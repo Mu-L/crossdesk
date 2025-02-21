@@ -44,6 +44,7 @@ typedef struct {
   size_t size;
   uint32_t width;
   uint32_t height;
+  uint64_t timestamp;
 } XVideoFrame;
 
 typedef struct {
@@ -132,6 +133,8 @@ DLLAPI int SendVideoFrame(PeerPtr* peer_ptr, const XVideoFrame* video_frame);
 DLLAPI int SendAudioFrame(PeerPtr* peer_ptr, const char* data, size_t size);
 
 DLLAPI int SendDataFrame(PeerPtr* peer_ptr, const char* data, size_t size);
+
+DLLAPI int64_t GetNowTime(PeerPtr* peer_ptr);
 
 #ifdef __cplusplus
 }

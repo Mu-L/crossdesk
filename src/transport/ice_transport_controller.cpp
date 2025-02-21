@@ -1,4 +1,6 @@
 #include "ice_transport_controller.h"
+
+#include "video_frame_wrapper.h"
 #if __APPLE__
 #else
 #include "nvcodec_api.h"
@@ -128,10 +130,9 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
 
   int ret = video_encoder_->Encode(
       video_frame,
-      [this](char* encoded_frame, size_t size,
-             VideoEncoder::VideoFrameType frame_type) -> int {
+      [this](std::shared_ptr<VideoFrameWrapper> encoded_frame) -> int {
         if (video_channel_send_) {
-          video_channel_send_->SendVideo(encoded_frame, size);
+          video_channel_send_->SendVideo(encoded_frame);
         }
 
         return 0;

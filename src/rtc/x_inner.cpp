@@ -52,8 +52,8 @@ void DestroyPeer(PeerPtr **peer_ptr) {
 }
 
 int Init(PeerPtr *peer_ptr, const char *user_id) {
-  if (!peer_ptr) {
-    LOG_ERROR("peer_ptr not created");
+  if (!peer_ptr || !peer_ptr->peer_connection) {
+    LOG_ERROR("Peer connection not created");
     return -1;
   }
 
@@ -63,8 +63,8 @@ int Init(PeerPtr *peer_ptr, const char *user_id) {
 
 int CreateConnection(PeerPtr *peer_ptr, const char *transmission_id,
                      const char *password) {
-  if (!peer_ptr) {
-    LOG_ERROR("peer_ptr not created");
+  if (!peer_ptr || !peer_ptr->peer_connection) {
+    LOG_ERROR("Peer connection not created");
     return -1;
   }
 
@@ -77,8 +77,8 @@ int CreateConnection(PeerPtr *peer_ptr, const char *transmission_id,
 int JoinConnection(PeerPtr *peer_ptr, const char *transmission_id,
                    const char *password) {
   int ret = -1;
-  if (!peer_ptr) {
-    LOG_ERROR("peer_ptr not created");
+  if (!peer_ptr || !peer_ptr->peer_connection) {
+    LOG_ERROR("Peer connection not created");
     return -1;
   }
 
@@ -88,8 +88,8 @@ int JoinConnection(PeerPtr *peer_ptr, const char *transmission_id,
 }
 
 int LeaveConnection(PeerPtr *peer_ptr, const char *transmission_id) {
-  if (!peer_ptr) {
-    LOG_ERROR("peer_ptr not created");
+  if (!peer_ptr || !peer_ptr->peer_connection) {
+    LOG_ERROR("Peer connection not created");
     return -1;
   }
 
@@ -99,8 +99,8 @@ int LeaveConnection(PeerPtr *peer_ptr, const char *transmission_id) {
 }
 
 DLLAPI int SendVideoFrame(PeerPtr *peer_ptr, const XVideoFrame *video_frame) {
-  if (!peer_ptr) {
-    LOG_ERROR("peer_ptr not created");
+  if (!peer_ptr || !peer_ptr->peer_connection) {
+    LOG_ERROR("Peer connection not created");
     return -1;
   }
 
@@ -118,8 +118,8 @@ DLLAPI int SendVideoFrame(PeerPtr *peer_ptr, const XVideoFrame *video_frame) {
 }
 
 DLLAPI int SendAudioFrame(PeerPtr *peer_ptr, const char *data, size_t size) {
-  if (!peer_ptr) {
-    LOG_ERROR("peer_ptr not created");
+  if (!peer_ptr || !peer_ptr->peer_connection) {
+    LOG_ERROR("Peer connection not created");
     return -1;
   }
 
@@ -134,8 +134,8 @@ DLLAPI int SendAudioFrame(PeerPtr *peer_ptr, const char *data, size_t size) {
 }
 
 int SendDataFrame(PeerPtr *peer_ptr, const char *data, size_t size) {
-  if (!peer_ptr) {
-    LOG_ERROR("peer_ptr not created");
+  if (!peer_ptr || !peer_ptr->peer_connection) {
+    LOG_ERROR("Peer connection not created");
     return -1;
   }
 
@@ -147,4 +147,12 @@ int SendDataFrame(PeerPtr *peer_ptr, const char *data, size_t size) {
   peer_ptr->peer_connection->SendDataFrame(data, size);
 
   return 0;
+}
+
+int64_t GetNowTime(PeerPtr *peer_ptr) {
+  if (!peer_ptr || !peer_ptr->peer_connection) {
+    LOG_ERROR("Peer connection not created");
+    return -1;
+  }
+  return peer_ptr->peer_connection->CurrentTime();
 }

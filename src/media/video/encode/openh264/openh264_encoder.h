@@ -24,10 +24,10 @@ class OpenH264Encoder : public VideoEncoder {
 
   int Init();
 
-  int Encode(const XVideoFrame* video_frame,
-             std::function<int(char* encoded_packets, size_t size,
-                               VideoFrameType frame_type)>
-                 on_encoded_image);
+  int Encode(
+      const XVideoFrame* video_frame,
+      std::function<int(std::shared_ptr<VideoFrameWrapper> encoded_frame)>
+          on_encoded_image);
 
   int ForceIdr();
 

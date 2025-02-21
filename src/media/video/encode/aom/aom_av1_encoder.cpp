@@ -266,10 +266,10 @@ int AomAv1Encoder::Init() {
   return 0;
 }
 
-int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
-                          std::function<int(char *encoded_packets, size_t size,
-                                            VideoFrameType frame_type)>
-                              on_encoded_image) {
+int AomAv1Encoder::Encode(
+    const XVideoFrame *video_frame,
+    std::function<int(std::shared_ptr<VideoFrameWrapper> encoded_frame)>
+        on_encoded_image) {
 #ifdef SAVE_RECEIVED_NV12_STREAM
   fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
 #endif
@@ -342,8 +342,15 @@ int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
       // LOG_INFO("Encoded frame qp = {}", qp);
 
       if (on_encoded_image) {
-        on_encoded_image((char *)encoded_frame_, encoded_frame_size_,
-                         frame_type);
+        std::shared_ptr<VideoFrameWrapper> encoded_frame =
+            std::make_shared<VideoFrameWrapper>(
+                encoded_frame_, encoded_frame_size_, video_frame->width,
+                video_frame->height);
+        encoded_frame->SetFrameType(frame_type);
+        encoded_frame->SetCaptureTimestamp(video_frame->timestamp);
+        encoded_frame->SetEncodedWidth(video_frame->width);
+        encoded_frame->SetEncodedHeight(video_frame->height);
+        on_encoded_image(encoded_frame);
 #ifdef SAVE_ENCODED_AV1_STREAM
         fwrite(encoded_frame_, 1, encoded_frame_size_, file_av1_);
 #endif

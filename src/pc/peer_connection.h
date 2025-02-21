@@ -108,6 +108,8 @@ class PeerConnection {
   int SendAudioFrame(const char *data, size_t size);
   int SendDataFrame(const char *data, size_t size);
 
+  int64_t CurrentTime();
+
  private:
   int Login();
 

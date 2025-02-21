@@ -16,6 +16,7 @@
 #include "rtp_packetizer.h"
 #include "rtp_video_sender.h"
 #include "transport_feedback_adapter.h"
+#include "video_frame_wrapper.h"
 
 class VideoChannelSend {
  public:
@@ -31,7 +32,7 @@ class VideoChannelSend {
   void Initialize(rtp::PAYLOAD_TYPE payload_type);
   void Destroy();
 
-  int SendVideo(char* data, size_t size);
+  int SendVideo(std::shared_ptr<VideoFrameWrapper> encoded_frame);
 
   void OnCongestionControlFeedback(
       Timestamp recv_ts,

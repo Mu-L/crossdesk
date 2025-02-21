@@ -181,8 +181,7 @@ int OpenH264Encoder::Init() {
 
 int OpenH264Encoder::Encode(
     const XVideoFrame *video_frame,
-    std::function<int(char *encoded_packets, size_t size,
-                      VideoFrameType frame_type)>
+    std::function<int(std::shared_ptr<VideoFrameWrapper> encoded_frame)>
         on_encoded_image) {
   if (!openh264_encoder_) {
     LOG_ERROR("Invalid openh264 encoder");
@@ -282,7 +281,15 @@ int OpenH264Encoder::Encode(
   encoded_frame_size_ = encoded_frame_size;
 
   if (on_encoded_image) {
-    on_encoded_image((char *)encoded_frame_, encoded_frame_size_, frame_type);
+    std::shared_ptr<VideoFrameWrapper> encoded_frame =
+        std::make_shared<VideoFrameWrapper>(encoded_frame_, encoded_frame_size_,
+                                            raw_frame_.iPicWidth,
+                                            raw_frame_.iPicHeight);
+    encoded_frame->SetFrameType(frame_type);
+    encoded_frame->SetCaptureTimestamp(video_frame->timestamp);
+    encoded_frame->SetEncodedWidth(raw_frame_.iPicWidth);
+    encoded_frame->SetEncodedHeight(raw_frame_.iPicHeight);
+    on_encoded_image(encoded_frame);
 #ifdef SAVE_ENCODED_H264_STREAM
     fwrite(encoded_frame_, 1, encoded_frame_size_, file_h264_);
 #endif

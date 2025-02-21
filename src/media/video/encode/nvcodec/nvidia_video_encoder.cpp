@@ -130,8 +130,7 @@ int NvidiaVideoEncoder::Init() {
 
 int NvidiaVideoEncoder::Encode(
     const XVideoFrame *video_frame,
-    std::function<int(char *encoded_packets, size_t size,
-                      VideoFrameType frame_type)>
+    std::function<int(std::shared_ptr<VideoFrameWrapper> encoded_frame)>
         on_encoded_image) {
   if (!encoder_) {
     LOG_ERROR("Invalid encoder");
@@ -182,7 +181,15 @@ int NvidiaVideoEncoder::Encode(
 
   for (const auto &packet : encoded_packets_) {
     if (on_encoded_image) {
-      on_encoded_image((char *)packet.data(), packet.size(), frame_type);
+      std::shared_ptr<VideoFrameWrapper> encoded_frame =
+          std::make_shared<VideoFrameWrapper>(packet.data(), packet.size(),
+                                              encoder_->GetEncodeWidth(),
+                                              encoder_->GetEncodeHeight());
+      encoded_frame->SetFrameType(frame_type);
+      encoded_frame->SetCaptureTimestamp(video_frame->timestamp);
+      encoded_frame->SetEncodedWidth(encoder_->GetEncodeWidth());
+      encoded_frame->SetEncodedHeight(encoder_->GetEncodeHeight());
+      on_encoded_image(encoded_frame);
 #ifdef SAVE_ENCODED_H264_STREAM
       fwrite((unsigned char *)packet.data(), 1, packet.size(), file_h264_);
 #endif

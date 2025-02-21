@@ -390,6 +390,13 @@ int PeerConnection::SendDataFrame(const char *data, size_t size) {
   return 0;
 }
 
+int64_t PeerConnection::CurrentTime() {
+  if (clock_) {
+    return clock_->CurrentTimeMs();
+  }
+  return 0;
+}
+
 void PeerConnection::ProcessSignal(const std::string &signal) {
   auto j = json::parse(signal);
   std::string type = j["type"];
