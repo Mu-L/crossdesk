@@ -72,11 +72,15 @@ class RtpVideoReceiver : public ThreadBase,
  private:
   void SendNack(const std::vector<uint16_t>& nack_list, bool buffering_allowed);
 
+  void SendRR();
+
   void RequestKeyFrame();
 
   void SendLossNotification(uint16_t last_decoded_seq_num,
                             uint16_t last_received_seq_num,
                             bool decodability_flag, bool buffering_allowed);
+
+  void ReviseFrequencyAndJitter(int payload_type_frequency);
 
  private:
   std::map<uint16_t, RtpPacketH264> incomplete_h264_frame_list_;
@@ -123,13 +127,24 @@ class RtpVideoReceiver : public ThreadBase,
   std::shared_ptr<webrtc::Clock> clock_;
   ReceiveSideCongestionController receive_side_congestion_controller_;
   RtcpFeedbackSenderInterface* active_remb_module_;
-  uint32_t feedback_ssrc_ = 0;
 
   std::unique_ptr<RtcpSender> rtcp_sender_;
   std::unique_ptr<NackRequester> nack_;
 
+  uint8_t fraction_lost_ = 0;
+  int32_t cumulative_lost_ = 0;
+  uint32_t jitter_ = 0;
+  uint16_t extended_high_seq_num_ = 0;
   uint32_t last_sr_ = 0;
-  uint32_t last_delay_ = 0;
+
+  int32_t cumulative_loss_ = 0;
+  int32_t last_report_cumulative_loss_ = 0;
+  int32_t cumulative_loss_rtcp_offset_ = 0;
+  std::optional<Timestamp> last_receive_time_;
+  int last_payload_type_frequency_ = 0;
+  uint16_t last_extended_high_seq_num_ = 0;
+  uint32_t jitter_q4_ = 0;
+  uint32_t last_received_timestamp_ = 0;
 
   uint32_t remote_ssrc = 0;
   uint32_t last_remote_ntp_timestamp = 0;

@@ -12,7 +12,7 @@
 #define RTCP_RR_INTERVAL 1000
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<SystemClock> clock)
-    : feedback_ssrc_(GenerateUniqueSsrc()),
+    : ssrc_(GenerateUniqueSsrc()),
       active_remb_module_(nullptr),
       receive_side_congestion_controller_(
           clock_,
@@ -30,13 +30,13 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<SystemClock> clock)
       nack_(std::make_unique<NackRequester>(clock_, this, this)),
       clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
   SetPeriod(std::chrono::milliseconds(5));
-  // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
+  rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 }
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<SystemClock> clock,
                                    std::shared_ptr<IOStatistics> io_statistics)
     : io_statistics_(io_statistics),
-      feedback_ssrc_(GenerateUniqueSsrc()),
+      ssrc_(GenerateUniqueSsrc()),
       receive_side_congestion_controller_(
           clock_,
           [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
@@ -53,7 +53,7 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<SystemClock> clock,
       nack_(std::make_unique<NackRequester>(clock_, this, this)),
       clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
   SetPeriod(std::chrono::milliseconds(5));
-  // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
+  rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 
 #ifdef SAVE_RTP_RECV_STREAM
   file_rtp_recv_ = fopen("rtp_recv_stream.h264", "w+b");
@@ -70,7 +70,7 @@ RtpVideoReceiver::~RtpVideoReceiver() {
     rtcp_thread_.join();
   }
 
-  SSRCManager::Instance().DeleteSsrc(feedback_ssrc_);
+  SSRCManager::Instance().DeleteSsrc(ssrc_);
 
   if (rtp_statistics_) {
     rtp_statistics_->Stop();
@@ -91,19 +91,75 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     rtp_statistics_->Start();
   }
 
+  webrtc::RtpPacketReceived rtp_packet_received;
+  rtp_packet_received.Build(rtp_packet.Buffer().data(), rtp_packet.Size());
+  rtp_packet_received.set_arrival_time(clock_->CurrentTime());
+  rtp_packet_received.set_ecn(EcnMarking::kEct0);
+  rtp_packet_received.set_recovered(false);
+  rtp_packet_received.set_payload_type_frequency(kVideoPayloadTypeFrequency);
+
+  webrtc::Timestamp now = clock_->CurrentTime();
   remote_ssrc_ = rtp_packet.Ssrc();
+  uint16_t sequence_number = rtp_packet.SequenceNumber();
+  if (last_receive_time_.has_value() == 0) {
+    extended_high_seq_num_ = sequence_number;
+  }
+
+  cumulative_loss_ += sequence_number - extended_high_seq_num_;
+  extended_high_seq_num_ = sequence_number;
+
+  // Calculate fraction lost.
+  int64_t exp_since_last = extended_high_seq_num_ - last_extended_high_seq_num_;
+  int32_t lost_since_last = cumulative_loss_ - last_report_cumulative_loss_;
+  if (exp_since_last > 0 && lost_since_last > 0) {
+    // Scale 0 to 255, where 255 is 100% loss.
+    fraction_lost_ = 255 * lost_since_last / exp_since_last;
+  }
+  cumulative_lost_ = cumulative_loss_ + cumulative_loss_rtcp_offset_;
+  if (cumulative_lost_ < 0) {
+    // Clamp to zero. Work around to accommodate for senders that misbehave with
+    // negative cumulative loss.
+    cumulative_lost_ = 0;
+    cumulative_loss_rtcp_offset_ = -cumulative_loss_;
+  }
+  if (cumulative_lost_ > 0x7fffff) {
+    // Packets lost is a 24 bit signed field, and thus should be clamped, as
+    // described in https://datatracker.ietf.org/doc/html/rfc3550#appendix-A.3
+    cumulative_lost_ = 0x7fffff;
+  }
+
+  webrtc::TimeDelta receive_diff = now - *last_receive_time_;
+  uint32_t receive_diff_rtp =
+      (receive_diff * rtp_packet_received.payload_type_frequency())
+          .seconds<uint32_t>();
+  int32_t time_diff_samples =
+      receive_diff_rtp -
+      (rtp_packet_received.Timestamp() - last_received_timestamp_);
+
+  ReviseFrequencyAndJitter(rtp_packet_received.payload_type_frequency());
+
+  // lib_jingle sometimes deliver crazy jumps in TS for the same stream.
+  // If this happens, don't update jitter value. Use 5 secs video frequency
+  // as the threshold.
+  if (time_diff_samples < 5 * kVideoPayloadTypeFrequency &&
+      time_diff_samples > -5 * kVideoPayloadTypeFrequency) {
+    // Note we calculate in Q4 to avoid using float.
+    int32_t jitter_diff_q4 = (std::abs(time_diff_samples) << 4) - jitter_q4_;
+    jitter_q4_ += ((jitter_diff_q4 + 8) >> 4);
+  }
+
+  jitter_ = jitter_q4_ >> 4;
+
+  last_extended_high_seq_num_ = extended_high_seq_num_;
+  last_report_cumulative_loss_ = cumulative_loss_;
+  last_received_timestamp_ = rtp_packet_received.Timestamp();
+  last_receive_time_ = now;
 
 #ifdef SAVE_RTP_RECV_STREAM
   fwrite((unsigned char*)rtp_packet.Payload(), 1, rtp_packet.PayloadSize(),
          file_rtp_recv_);
 #endif
 
-  webrtc::RtpPacketReceived rtp_packet_received;
-  rtp_packet_received.Build(rtp_packet.Buffer().data(), rtp_packet.Size());
-  rtp_packet_received.set_arrival_time(clock_->CurrentTime());
-  rtp_packet_received.set_ecn(EcnMarking::kEct0);
-  rtp_packet_received.set_recovered(false);
-  rtp_packet_received.set_payload_type_frequency(0);
   receive_side_congestion_controller_.OnReceivedPacket(rtp_packet_received,
                                                        MediaType::VIDEO);
 
@@ -447,7 +503,7 @@ void RtpVideoReceiver::SendCombinedRtcpPacket(
   // LOG_ERROR("Send combined rtcp packet");
 
   for (auto& rtcp_packet : rtcp_packets) {
-    rtcp_packet->SetSenderSsrc(feedback_ssrc_);
+    rtcp_packet->SetSenderSsrc(ssrc_);
     rtcp_sender_->AppendPacket(*rtcp_packet);
     rtcp_sender_->Send();
   }
@@ -503,6 +559,59 @@ bool RtpVideoReceiver::Process() {
   return true;
 }
 
+void RtpVideoReceiver::ReviseFrequencyAndJitter(int payload_type_frequency) {
+  if (payload_type_frequency == last_payload_type_frequency_) {
+    return;
+  }
+
+  if (payload_type_frequency != 0) {
+    if (last_payload_type_frequency_ != 0) {
+      // Value in "jitter_q4_" variable is a number of samples.
+      // I.e. jitter = timestamp (s) * frequency (Hz).
+      // Since the frequency has changed we have to update the number of samples
+      // accordingly. The new value should rely on a new frequency.
+
+      // If we don't do such procedure we end up with the number of samples that
+      // cannot be converted into TimeDelta correctly
+      // (i.e. jitter = jitter_q4_ >> 4 / payload_type_frequency).
+      // In such case, the number of samples has a "mix".
+
+      // Doing so we pretend that everything prior and including the current
+      // packet were computed on packet's frequency.
+      jitter_q4_ = static_cast<int>(static_cast<uint64_t>(jitter_q4_) *
+                                    payload_type_frequency /
+                                    last_payload_type_frequency_);
+    }
+    // If last_payload_type_frequency_ is not present, the jitter_q4_
+    // variable has its initial value.
+
+    // Keep last_payload_type_frequency_ up to date and non-zero (set).
+    last_payload_type_frequency_ = payload_type_frequency;
+  }
+}
+
+void RtpVideoReceiver::SendRR() {
+  uint32_t now = CompactNtp(clock_->CurrentNtpTime());
+  uint32_t receive_time = last_arrival_ntp_timestamp;
+  uint32_t delay_since_last_sr = now - receive_time;
+
+  ReceiverReport rtcp_rr;
+  RtcpReportBlock report;
+
+  report.SetMediaSsrc(ssrc_);
+  report.SetMediaSsrc(fraction_lost_);
+  report.SetFractionLost(fraction_lost_);
+  report.SetExtHighestSeqNum(extended_high_seq_num_);
+  report.SetJitter(jitter_);
+  report.SetLastSr(last_remote_ntp_timestamp);
+  report.SetDelayLastSr(delay_since_last_sr);
+
+  rtcp_rr.SetReportBlock(report);
+
+  rtcp_rr.Build();
+  SendRtcpRR(rtcp_rr);
+}
+
 void RtpVideoReceiver::RtcpThread() {
   while (!rtcp_stop_.load()) {
     std::unique_lock<std::mutex> lock(rtcp_mtx_);
@@ -518,7 +627,7 @@ void RtpVideoReceiver::RtcpThread() {
                          now - last_send_rtcp_rr_ts_)
                          .count();
       if (elapsed >= rtcp_rr_interval_ms_) {
-        LOG_ERROR("Send video rr [{}]", (void*)this);
+        SendRR();
         last_send_rtcp_rr_ts_ = now;
       }
     }
@@ -531,7 +640,7 @@ void RtpVideoReceiver::SendNack(const std::vector<uint16_t>& nack_list,
                                 bool buffering_allowed) {
   if (!nack_list.empty()) {
     webrtc::rtcp::Nack nack;
-    nack.SetSenderSsrc(feedback_ssrc_);
+    nack.SetSenderSsrc(ssrc_);
     nack.SetMediaSsrc(remote_ssrc_);
     nack.SetPacketIds(std::move(nack_list));
 
@@ -576,20 +685,4 @@ void RtpVideoReceiver::OnSenderReport(const SenderReport& sender_report) {
   packets_sent = sender_report.SenderPacketCount();
   bytes_sent = sender_report.SenderOctetCount();
   reports_count++;
-
-  LOG_WARN(
-      "OnSenderReport remote_ssrc[{}], last_remote_ntp_timestamp[{}], "
-      "last_remote_rtp_timestamp[{}], last_arrival_timestamp[{}], "
-      "last_arrival_ntp_timestamp[{}], packets_sent[{}], bytes_sent[{}], "
-      "reports_count[{}]",
-      remote_ssrc, last_remote_ntp_timestamp, last_remote_rtp_timestamp,
-      last_arrival_timestamp, last_arrival_ntp_timestamp, packets_sent,
-      bytes_sent, reports_count);
-
-  // last_sr_ = ((uint32_t)(ntp_time / 0x100000000) << 16) |
-  //            ((uint32_t)(ntp_time % 0x100000000) >> 16);
-  // last_delay_ = DivideRoundToNearest(
-  //     (clock_->CurrentTime().us() - now_time) * 0x10000, 1000000);
-
-  // LOG_WARN("OnSenderReport [{}][{}] {}", last_sr_, last_delay_, now_time);
 }
