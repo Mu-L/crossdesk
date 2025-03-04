@@ -338,6 +338,13 @@ void IceTransportController::OnSenderReport(const SenderReport& sender_report) {
   data_channel_receive_->OnSenderReport(sender_report);
 }
 
+void IceTransportController::OnReceiverReport(
+    const ReceiverReport& receiver_report) {
+  video_channel_send_->OnReceiverReport(receiver_report);
+  audio_channel_send_->OnReceiverReport(receiver_report);
+  data_channel_send_->OnReceiverReport(receiver_report);
+}
+
 void IceTransportController::OnCongestionControlFeedback(
     const webrtc::rtcp::CongestionControlFeedback& feedback) {
   std::optional<webrtc::TransportPacketsFeedback> feedback_msg =

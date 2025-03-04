@@ -101,57 +101,39 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   webrtc::Timestamp now = clock_->CurrentTime();
   remote_ssrc_ = rtp_packet.Ssrc();
   uint16_t sequence_number = rtp_packet.SequenceNumber();
-  if (last_receive_time_.has_value() == 0) {
-    extended_high_seq_num_ = sequence_number;
+  --cumulative_loss_;
+  if (!last_receive_time_.has_value()) {
+    last_extended_high_seq_num_ = sequence_number - 1;
+    extended_high_seq_num_ = sequence_number - 1;
   }
 
   cumulative_loss_ += sequence_number - extended_high_seq_num_;
   extended_high_seq_num_ = sequence_number;
 
-  // Calculate fraction lost.
-  int64_t exp_since_last = extended_high_seq_num_ - last_extended_high_seq_num_;
-  int32_t lost_since_last = cumulative_loss_ - last_report_cumulative_loss_;
-  if (exp_since_last > 0 && lost_since_last > 0) {
-    // Scale 0 to 255, where 255 is 100% loss.
-    fraction_lost_ = 255 * lost_since_last / exp_since_last;
-  }
-  cumulative_lost_ = cumulative_loss_ + cumulative_loss_rtcp_offset_;
-  if (cumulative_lost_ < 0) {
-    // Clamp to zero. Work around to accommodate for senders that misbehave with
-    // negative cumulative loss.
-    cumulative_lost_ = 0;
-    cumulative_loss_rtcp_offset_ = -cumulative_loss_;
-  }
-  if (cumulative_lost_ > 0x7fffff) {
-    // Packets lost is a 24 bit signed field, and thus should be clamped, as
-    // described in https://datatracker.ietf.org/doc/html/rfc3550#appendix-A.3
-    cumulative_lost_ = 0x7fffff;
-  }
+  if (rtp_packet_received.Timestamp() != last_received_timestamp_) {
+    webrtc::TimeDelta receive_diff = now - *last_receive_time_;
+    uint32_t receive_diff_rtp =
+        (receive_diff * rtp_packet_received.payload_type_frequency())
+            .seconds<uint32_t>();
+    int32_t time_diff_samples =
+        receive_diff_rtp -
+        (rtp_packet_received.Timestamp() - last_received_timestamp_);
 
-  webrtc::TimeDelta receive_diff = now - *last_receive_time_;
-  uint32_t receive_diff_rtp =
-      (receive_diff * rtp_packet_received.payload_type_frequency())
-          .seconds<uint32_t>();
-  int32_t time_diff_samples =
-      receive_diff_rtp -
-      (rtp_packet_received.Timestamp() - last_received_timestamp_);
+    ReviseFrequencyAndJitter(rtp_packet_received.payload_type_frequency());
 
-  ReviseFrequencyAndJitter(rtp_packet_received.payload_type_frequency());
+    // lib_jingle sometimes deliver crazy jumps in TS for the same stream.
+    // If this happens, don't update jitter value. Use 5 secs video frequency
+    // as the threshold.
+    if (time_diff_samples < 5 * kVideoPayloadTypeFrequency &&
+        time_diff_samples > -5 * kVideoPayloadTypeFrequency) {
+      // Note we calculate in Q4 to avoid using float.
+      int32_t jitter_diff_q4 = (std::abs(time_diff_samples) << 4) - jitter_q4_;
+      jitter_q4_ += ((jitter_diff_q4 + 8) >> 4);
+    }
 
-  // lib_jingle sometimes deliver crazy jumps in TS for the same stream.
-  // If this happens, don't update jitter value. Use 5 secs video frequency
-  // as the threshold.
-  if (time_diff_samples < 5 * kVideoPayloadTypeFrequency &&
-      time_diff_samples > -5 * kVideoPayloadTypeFrequency) {
-    // Note we calculate in Q4 to avoid using float.
-    int32_t jitter_diff_q4 = (std::abs(time_diff_samples) << 4) - jitter_q4_;
-    jitter_q4_ += ((jitter_diff_q4 + 8) >> 4);
+    jitter_ = jitter_q4_ >> 4;
   }
 
-  jitter_ = jitter_q4_ >> 4;
-
-  last_extended_high_seq_num_ = extended_high_seq_num_;
-  last_report_cumulative_loss_ = cumulative_loss_;
   last_received_timestamp_ = rtp_packet_received.Timestamp();
   last_receive_time_ = now;
 
@@ -592,24 +574,50 @@ void RtpVideoReceiver::ReviseFrequencyAndJitter(int payload_type_frequency) {
 
 void RtpVideoReceiver::SendRR() {
   uint32_t now = CompactNtp(clock_->CurrentNtpTime());
+
+  // Calculate fraction lost.
+  int64_t exp_since_last = extended_high_seq_num_ - last_extended_high_seq_num_;
+  int32_t lost_since_last = cumulative_loss_ - last_report_cumulative_loss_;
+  if (exp_since_last > 0 && lost_since_last > 0) {
+    // Scale 0 to 255, where 255 is 100% loss.
+    fraction_lost_ = 255 * lost_since_last / exp_since_last;
+  } else {
+    fraction_lost_ = 0;
+  }
+
+  cumulative_lost_ = cumulative_loss_ + cumulative_loss_rtcp_offset_;
+  if (cumulative_lost_ < 0) {
+    // Clamp to zero. Work around to accommodate for senders that misbehave with
+    // negative cumulative loss.
+    cumulative_lost_ = 0;
+    cumulative_loss_rtcp_offset_ = -cumulative_loss_;
+  }
+  if (cumulative_lost_ > 0x7fffff) {
+    // Packets lost is a 24 bit signed field, and thus should be clamped, as
+    // described in https://datatracker.ietf.org/doc/html/rfc3550#appendix-A.3
+    cumulative_lost_ = 0x7fffff;
+  }
+
   uint32_t receive_time = last_arrival_ntp_timestamp;
   uint32_t delay_since_last_sr = now - receive_time;
 
   ReceiverReport rtcp_rr;
   RtcpReportBlock report;
 
-  report.SetMediaSsrc(ssrc_);
-  report.SetMediaSsrc(fraction_lost_);
+  report.SetMediaSsrc(remote_ssrc_);
   report.SetFractionLost(fraction_lost_);
+  report.SetCumulativeLost(cumulative_lost_);
   report.SetExtHighestSeqNum(extended_high_seq_num_);
   report.SetJitter(jitter_);
   report.SetLastSr(last_remote_ntp_timestamp);
   report.SetDelayLastSr(delay_since_last_sr);
-
+  rtcp_rr.SetSenderSsrc(ssrc_);
   rtcp_rr.SetReportBlock(report);
-
   rtcp_rr.Build();
   SendRtcpRR(rtcp_rr);
+
+  last_extended_high_seq_num_ = extended_high_seq_num_;
+  last_report_cumulative_loss_ = cumulative_loss_;
 }
 
 void RtpVideoReceiver::RtcpThread() {
@@ -626,7 +634,7 @@ void RtpVideoReceiver::RtcpThread() {
       auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                          now - last_send_rtcp_rr_ts_)
                          .count();
-      if (elapsed >= rtcp_rr_interval_ms_) {
+      if (elapsed >= rtcp_rr_interval_ms_ && last_receive_time_.has_value()) {
         SendRR();
         last_send_rtcp_rr_ts_ = now;
       }

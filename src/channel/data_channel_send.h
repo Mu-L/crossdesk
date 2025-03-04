@@ -29,7 +29,9 @@ class DataChannelSend {
     return 0;
   }
 
-  int SendData(const char *data, size_t size);
+  int SendData(const char* data, size_t size);
+
+  void OnReceiverReport(const ReceiverReport& receiver_report) {}
 
  private:
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;

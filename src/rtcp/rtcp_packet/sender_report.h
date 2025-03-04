@@ -64,7 +64,10 @@ class SenderReport {
   ~SenderReport();
 
  public:
-  void SetSenderSsrc(uint32_t ssrc) { sender_info_.sender_ssrc = ssrc; }
+  void SetSenderSsrc(uint32_t ssrc) {
+    sender_ssrc_ = ssrc;
+    sender_info_.sender_ssrc = ssrc;
+  }
   void SetNtpTimestamp(uint64_t ntp_timestamp) {
     sender_info_.ntp_ts_msw =
         ntp_timestamp / webrtc::NtpTime::kFractionsPerSecond;
@@ -81,7 +84,7 @@ class SenderReport {
   void SetReportBlock(RtcpReportBlock &rtcp_report_block);
   void SetReportBlocks(std::vector<RtcpReportBlock> &rtcp_report_blocks);
 
-  uint32_t SenderSsrc() const { return sender_info_.sender_ssrc; }
+  uint32_t SenderSsrc() const { return sender_ssrc_; }
   uint32_t NtpTimestamp() const {
     return (sender_info_.ntp_ts_msw << 16) | sender_info_.ntp_ts_lsw >> 16;
   }
@@ -100,6 +103,7 @@ class SenderReport {
   size_t Size() const { return size_; }
 
  private:
+  uint32_t sender_ssrc_;
   RtcpCommonHeader rtcp_common_header_;
   SenderInfo sender_info_;
   std::vector<RtcpReportBlock> reports_;

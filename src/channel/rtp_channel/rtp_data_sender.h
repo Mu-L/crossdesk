@@ -10,6 +10,7 @@
 #include <functional>
 
 #include "io_statistics.h"
+#include "receiver_report.h"
 #include "ringbuffer.h"
 #include "rtp_packet.h"
 #include "rtp_statistics.h"
@@ -26,6 +27,7 @@ class RtpDataSender : public ThreadBase {
   void Enqueue(std::vector<std::shared_ptr<RtpPacket>> rtp_packets);
   void SetSendDataFunc(std::function<int(const char *, size_t)> data_send_func);
   uint32_t GetSsrc() { return ssrc_; }
+  void OnReceiverReport(const ReceiverReport &receiver_report) {}
 
  private:
  private:

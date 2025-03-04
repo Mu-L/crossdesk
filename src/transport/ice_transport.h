@@ -133,6 +133,9 @@ class IceTransport {
   bool HandleSenderReport(const RtcpCommonHeader &rtcp_block,
                           RtcpPacketInfo *rtcp_packet_info);
 
+  bool HandleReceiverReport(const RtcpCommonHeader &rtcp_block,
+                            RtcpPacketInfo *rtcp_packet_info);
+
   bool HandleCongestionControlFeedback(const RtcpCommonHeader &rtcp_block,
                                        RtcpPacketInfo *rtcp_packet_info);
 

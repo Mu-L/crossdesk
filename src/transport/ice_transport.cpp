@@ -230,8 +230,7 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
       // received_blocks[rtcp_packet_info->remote_ssrc].sender_report = true;
       break;
     case RtcpPacket::RtcpPayloadType::RR:
-      LOG_INFO("Receiver report");
-      // valid = HandleReceiverReport(rtcp_block, rtcp_packet_info);
+      valid = HandleReceiverReport(rtcp_block, rtcp_packet_info);
       break;
     case RtpFeedback::kPacketType:
       switch (rtcp_block.fmt()) {
@@ -309,6 +308,19 @@ bool IceTransport::HandleSenderReport(const RtcpCommonHeader &rtcp_block,
 
   if (ice_transport_controller_) {
     ice_transport_controller_->OnSenderReport(sender_report);
+  }
+  return true;
+}
+
+bool IceTransport::HandleReceiverReport(const RtcpCommonHeader &rtcp_block,
+                                        RtcpPacketInfo *rtcp_packet_info) {
+  ReceiverReport receiver_report;
+  if (!receiver_report.Parse(rtcp_block)) {
+    return false;
+  }
+
+  if (ice_transport_controller_) {
+    ice_transport_controller_->OnReceiverReport(receiver_report);
   }
   return true;
 }

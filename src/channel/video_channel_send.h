@@ -45,6 +45,12 @@ class VideoChannelSend {
       Timestamp recv_ts,
       const webrtc::rtcp::CongestionControlFeedback& feedback);
 
+  void OnReceiverReport(const ReceiverReport& receiver_report) {
+    if (rtp_video_sender_) {
+      rtp_video_sender_->OnReceiverReport(receiver_report);
+    }
+  }
+
  private:
   void PostUpdates(webrtc::NetworkControlUpdate update);
   void UpdateControlState();

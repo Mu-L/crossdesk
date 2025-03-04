@@ -174,3 +174,15 @@ bool RtpVideoSender::Process() {
 
   return true;
 }
+
+void RtpVideoSender::OnReceiverReport(const ReceiverReport& receiver_report) {
+  std::vector<RtcpReportBlock> reports = receiver_report.GetReportBlocks();
+
+  for (auto r : reports) {
+    LOG_WARN(
+        "r_ssrc [{}], f_lost [{}], c_lost [{}], h_seq [{}], jitter [{}], "
+        "lsr [{}], dlsr [{}] ",
+        r.SourceSsrc(), r.FractionLost() / 255.0, r.CumulativeLost(),
+        r.ExtendedHighSeqNum(), r.Jitter(), r.LastSr(), r.DelaySinceLastSr());
+  }
+}

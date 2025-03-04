@@ -45,8 +45,12 @@ class ReceiverReport {
   ~ReceiverReport();
 
  public:
+  void SetSenderSsrc(uint32_t ssrc) { sender_ssrc_ = ssrc; }
   void SetReportBlock(RtcpReportBlock &rtcp_report_block);
   void SetReportBlocks(std::vector<RtcpReportBlock> &rtcp_report_blocks);
+
+  uint32_t SenderSsrc() const { return sender_ssrc_; }
+  std::vector<RtcpReportBlock> GetReportBlocks() const { return reports_; }
 
   const uint8_t *Build();
   size_t Parse(const RtcpCommonHeader &packet);
@@ -55,6 +59,7 @@ class ReceiverReport {
   size_t Size() const { return size_; }
 
  private:
+  uint32_t sender_ssrc_;
   RtcpCommonHeader rtcp_common_header_;
   std::vector<RtcpReportBlock> reports_;
 

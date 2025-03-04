@@ -6,6 +6,7 @@
 #include "api/clock/clock.h"
 #include "clock/system_clock.h"
 #include "io_statistics.h"
+#include "receiver_report.h"
 #include "ringbuffer.h"
 #include "rtp_packet.h"
 #include "rtp_packet_history.h"
@@ -28,6 +29,7 @@ class RtpVideoSender : public ThreadBase {
   void SetOnSentPacketFunc(
       std::function<void(const webrtc::RtpPacketToSend &)> on_sent_packet_func);
   uint32_t GetSsrc() { return ssrc_; }
+  void OnReceiverReport(const ReceiverReport &receiver_report);
 
  private:
   int SendRtpPacket(

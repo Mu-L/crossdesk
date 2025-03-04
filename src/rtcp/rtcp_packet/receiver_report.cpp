@@ -21,7 +21,7 @@ void ReceiverReport::SetReportBlocks(
 
 const uint8_t *ReceiverReport::Build() {
   size_t buffer_size =
-      DEFAULT_SR_SIZE + reports_.size() * RtcpReportBlock::kLength;
+      DEFAULT_RR_SIZE + reports_.size() * RtcpReportBlock::kLength;
   if (!buffer_ || buffer_size != size_) {
     delete[] buffer_;
     buffer_ = nullptr;
@@ -34,6 +34,12 @@ const uint8_t *ReceiverReport::Build() {
       rtcp_common_header_.Create(DEFAULT_RTCP_VERSION, 0, DEFAULT_RR_BLOCK_NUM,
                                  RTCP_TYPE::RR, DEFAULT_RR_SIZE, buffer_);
 
+  buffer_[pos] = sender_ssrc_ >> 24 & 0xFF;
+  buffer_[pos + 1] = sender_ssrc_ >> 16 & 0xFF;
+  buffer_[pos + 2] = sender_ssrc_ >> 8 & 0xFF;
+  buffer_[pos + 3] = sender_ssrc_ & 0xFF;
+  pos += 4;
+
   for (const auto &report : reports_) {
     pos += report.Create(buffer_ + pos);
   }
@@ -43,12 +49,18 @@ const uint8_t *ReceiverReport::Build() {
 
 size_t ReceiverReport::Parse(const RtcpCommonHeader &packet) {
   reports_.clear();
-  size_t pos = packet.payload_size_bytes();
+  rtcp_common_header_ = packet;
 
-  for (int i = 0; i < rtcp_common_header_.fmt(); i++) {
+  const uint8_t *payload = packet.payload();
+  const uint8_t *payload_end = packet.payload() + packet.payload_size_bytes();
+  size_t pos = 0;
+  sender_ssrc_ = (payload[pos] << 24) + (payload[pos + 1] << 16) +
+                 (payload[pos + 2] << 8) + payload[pos + 3];
+  pos += 4;
+  while (payload + pos < payload_end) {
     RtcpReportBlock report;
-    pos += report.Parse(buffer_ + pos);
-    reports_.emplace_back(std::move(report));
+    pos += report.Parse(payload + pos);
+    reports_.push_back(std::move(report));
   }
 
   return pos;
