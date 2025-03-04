@@ -15,7 +15,7 @@
 #include <windows.h>
 #endif
 
-int64_t ConvertToNtpTime(int64_t time_us) {
+int64_t SystemClock::ConvertToNtpTime(int64_t time_us) {
   constexpr int64_t kMicrosecondsPerSecond = 1000000;
   constexpr uint64_t kNtpFractionalUnit = 0x100000000;  // 2^32
   uint32_t seconds = static_cast<uint32_t>(time_us / kMicrosecondsPerSecond);
@@ -119,4 +119,22 @@ int64_t SystemClock::CurrentUtcTimeMs() {
 
 int64_t SystemClock::CurrentUtcTime() {
   return CurrentUtcTimeNs() / 1000000000LL;
+}
+
+int64_t SystemClock::NtpToUtc(int64_t ntp_time) {
+  constexpr int64_t kNtpEpochOffset =
+      2208988800LL;  // NTP epoch starts at 1900-01-01, Unix epoch starts at
+                     // 1970-01-01
+  constexpr int64_t kMicrosecondsPerSecond = 1000000;
+  constexpr uint64_t kNtpFractionalUnit = 0x100000000;  // 2^32
+
+  uint32_t seconds = static_cast<uint32_t>(ntp_time / kNtpFractionalUnit);
+  uint32_t fractions = static_cast<uint32_t>(ntp_time % kNtpFractionalUnit);
+
+  int64_t unix_seconds = static_cast<int64_t>(seconds) - kNtpEpochOffset;
+  int64_t microseconds =
+      (static_cast<int64_t>(fractions) * kMicrosecondsPerSecond) /
+      kNtpFractionalUnit;
+
+  return unix_seconds * kMicrosecondsPerSecond + microseconds;
 }

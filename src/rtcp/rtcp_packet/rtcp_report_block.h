@@ -45,6 +45,10 @@ class RtcpReportBlock {
  public:
   size_t Create(uint8_t* buffer) const;
   size_t Parse(const uint8_t* buffer);
+  void SetReportBlock(uint32_t sender_ssrc, const RtcpReportBlock& report_block,
+                      int64_t report_block_timestamp_utc,
+                      int64_t report_block_timestamp);
+  void AddRoundTripTimeSample(int64_t rtt);
 
  public:
   uint32_t SourceSsrc() const { return source_ssrc_; }
@@ -56,6 +60,7 @@ class RtcpReportBlock {
   uint32_t DelaySinceLastSr() const { return delay_since_last_sr_; }
 
  private:
+  uint32_t sender_ssrc_;
   uint32_t source_ssrc_;     // 32 bits
   uint8_t fraction_lost_;    // 8 bits representing a fixed point value 0..1
   int32_t cumulative_lost_;  // Signed 24-bit value
@@ -63,6 +68,13 @@ class RtcpReportBlock {
   uint32_t jitter_;                 // 32 bits
   uint32_t last_sr_;                // 32 bits
   uint32_t delay_since_last_sr_;    // 32 bits, units of 1/65536 seconds
+
+  int64_t report_block_timestamp_utc_;
+  int64_t report_block_timestamp_;
+
+  int64_t last_rtt_;
+  int64_t sum_rtt_;
+  size_t num_rtts_;
 };
 
 #endif

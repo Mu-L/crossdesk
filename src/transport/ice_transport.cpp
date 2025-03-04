@@ -299,6 +299,38 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
   return true;
 }
 
+void IceTransport::HandleReportBlock(const RtcpReportBlock &rtcp_report_block,
+                                     RtcpPacketInfo *packet_information,
+                                     uint32_t remote_ssrc) {
+  int64_t now = clock_->CurrentTime();
+
+  RtcpReportBlock report_block_data;
+
+  int64_t now_ntp = clock_->ConvertToNtpTime(now);
+  // Number of seconds since 1900 January 1 00:00 GMT (see
+  // https://tools.ietf.org/html/rfc868).
+  report_block_data.SetReportBlock(remote_ssrc, rtcp_report_block,
+                                   clock_->NtpToUtc(now_ntp), now);
+
+  uint32_t send_time_ntp = rtcp_report_block.LastSr();
+  if (send_time_ntp != 0) {
+    uint32_t delay_ntp = rtcp_report_block.DelaySinceLastSr();
+    // Local NTP time.
+    constexpr uint64_t kNtpFractionalUnit = 0x100000000;
+    uint32_t seconds = now_ntp / kNtpFractionalUnit;
+    uint32_t fractions = now_ntp % kNtpFractionalUnit;
+    uint32_t receive_time_ntp = (seconds << 16) | (fractions >> 16);
+    // RTT in 1/(2^16) seconds.
+    uint32_t rtt_ntp = receive_time_ntp - delay_ntp - send_time_ntp;
+    // Convert to 1/1000 seconds (milliseconds).
+    int64_t rtt = static_cast<int64_t>((rtt_ntp * 1000) / (1 << 16));
+    report_block_data.AddRoundTripTimeSample(rtt);
+    packet_information->rtt = rtt;
+  }
+
+  packet_information->report_block_datas.push_back(report_block_data);
+}
+
 bool IceTransport::HandleSenderReport(const RtcpCommonHeader &rtcp_block,
                                       RtcpPacketInfo *rtcp_packet_info) {
   SenderReport sender_report;
@@ -319,8 +351,17 @@ bool IceTransport::HandleReceiverReport(const RtcpCommonHeader &rtcp_block,
     return false;
   }
 
+  const uint32_t remote_ssrc = receiver_report.SenderSsrc();
+  rtcp_packet_info->remote_ssrc = remote_ssrc;
+
+  for (const RtcpReportBlock &rtcp_report_block :
+       receiver_report.GetReportBlocks()) {
+    HandleReportBlock(rtcp_report_block, rtcp_packet_info, remote_ssrc);
+  }
+
   if (ice_transport_controller_) {
-    ice_transport_controller_->OnReceiverReport(receiver_report);
+    ice_transport_controller_->OnReceiverReport(
+        rtcp_packet_info->report_block_datas);
   }
   return true;
 }

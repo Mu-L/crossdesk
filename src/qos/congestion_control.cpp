@@ -72,6 +72,18 @@ CongestionControl::CongestionControl()
 
 CongestionControl::~CongestionControl() {}
 
+NetworkControlUpdate CongestionControl::OnTransportLossReport(
+    TransportLossReport msg) {
+  if (packet_feedback_only_) {
+    return NetworkControlUpdate();
+  }
+  int64_t total_packets_delta =
+      msg.packets_received_delta + msg.packets_lost_delta;
+  bandwidth_estimation_->UpdatePacketsLost(
+      msg.packets_lost_delta, total_packets_delta, msg.receive_time);
+  return NetworkControlUpdate();
+}
+
 NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
     TransportPacketsFeedback report) {
   if (report.packet_feedbacks.empty()) {

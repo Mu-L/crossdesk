@@ -16,13 +16,14 @@
 
 #include "congestion_control_feedback.h"
 #include "nack.h"
+#include "report_block_data.h"
 
 struct RtcpPacketInfo {
   uint32_t packet_type_flags = 0;  // RTCPPacketTypeFlags bit field.
 
   uint32_t remote_ssrc = 0;
   std::vector<uint16_t> nack_sequence_numbers;
-  // std::vector<ReportBlockData> report_block_datas;
+  std::vector<RtcpReportBlock> report_block_datas;
   std::optional<int64_t> rtt;
   uint32_t receiver_estimated_max_bitrate_bps = 0;
   std::optional<webrtc::rtcp::CongestionControlFeedback>

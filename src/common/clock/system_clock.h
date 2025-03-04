@@ -29,6 +29,10 @@ class SystemClock {
   int64_t CurrentUtcTimeMs();
   int64_t CurrentUtcTimeUs();
   int64_t CurrentUtcTimeNs();
+
+  int64_t ConvertToNtpTime(int64_t time_us);
+
+  int64_t NtpToUtc(int64_t ntp_time);
 };
 
 #endif

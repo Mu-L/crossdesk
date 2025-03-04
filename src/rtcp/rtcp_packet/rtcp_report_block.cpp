@@ -24,13 +24,19 @@
 // 24 +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 
 RtcpReportBlock::RtcpReportBlock()
-    : source_ssrc_(0),
+    : sender_ssrc_(0),
+      source_ssrc_(0),
       fraction_lost_(0),
       cumulative_lost_(0),
       extended_high_seq_num_(0),
       jitter_(0),
       last_sr_(0),
-      delay_since_last_sr_(0) {}
+      delay_since_last_sr_(0),
+      report_block_timestamp_utc_(0),
+      report_block_timestamp_(0),
+      last_rtt_(0),
+      sum_rtt_(0),
+      num_rtts_(0) {}
 
 size_t RtcpReportBlock::Create(uint8_t* buffer) const {
   buffer[0] = (source_ssrc_ >> 24) & 0xFF;
@@ -84,4 +90,24 @@ size_t RtcpReportBlock::Parse(const uint8_t* buffer) {
   delay_since_last_sr_ =
       (buffer[20] << 24) | (buffer[21] << 16) | (buffer[22] << 8) | buffer[23];
   return RtcpReportBlock::kLength;
+}
+
+void RtcpReportBlock::SetReportBlock(uint32_t sender_ssrc,
+                                     const RtcpReportBlock& report_block,
+                                     int64_t report_block_timestamp_utc,
+                                     int64_t report_block_timestamp) {
+  sender_ssrc_ = sender_ssrc;
+  source_ssrc_ = report_block.SourceSsrc();
+  fraction_lost_ = report_block.FractionLost();
+  cumulative_lost_ = report_block.CumulativeLost();
+  extended_high_seq_num_ = report_block.ExtendedHighSeqNum();
+  jitter_ = report_block.Jitter();
+  report_block_timestamp_utc_ = report_block_timestamp_utc;
+  report_block_timestamp_ = report_block_timestamp;
+}
+
+void RtcpReportBlock::AddRoundTripTimeSample(int64_t rtt) {
+  last_rtt_ = rtt;
+  sum_rtt_ += rtt;
+  ++num_rtts_;
 }

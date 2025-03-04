@@ -130,6 +130,10 @@ class IceTransport {
   bool ParseRtcpPacket(const uint8_t *buffer, size_t size,
                        RtcpPacketInfo *rtcp_packet_info);
 
+  void HandleReportBlock(const RtcpReportBlock &rtcp_report_block,
+                         RtcpPacketInfo *packet_information,
+                         uint32_t remote_ssrc);
+
   bool HandleSenderReport(const RtcpCommonHeader &rtcp_block,
                           RtcpPacketInfo *rtcp_packet_info);
 

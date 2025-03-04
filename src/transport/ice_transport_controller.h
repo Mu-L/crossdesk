@@ -62,7 +62,7 @@ class IceTransportController
 
  public:
   void OnSenderReport(const SenderReport &sender_report);
-  void OnReceiverReport(const ReceiverReport& receiver_report);
+  void OnReceiverReport(const std::vector<RtcpReportBlock> &report_block_datas);
   void OnCongestionControlFeedback(
       const webrtc::rtcp::CongestionControlFeedback &feedback);
 
@@ -101,6 +101,7 @@ class IceTransportController
 
  private:
   std::shared_ptr<SystemClock> clock_;
+  std::shared_ptr<webrtc::Clock> webrtc_clock_ = nullptr;
   webrtc::TransportFeedbackAdapter transport_feedback_adapter_;
   std::unique_ptr<CongestionControl> controller_;
 
@@ -119,6 +120,13 @@ class IceTransportController
 
  private:
   int64_t target_bitrate_ = 0;
+
+  struct LossReport {
+    uint32_t extended_highest_sequence_number = 0;
+    int cumulative_lost = 0;
+  };
+  std::map<uint32_t, LossReport> last_report_blocks_;
+  webrtc::Timestamp last_report_block_time_;
 };
 
 #endif

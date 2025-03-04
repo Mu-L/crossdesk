@@ -22,6 +22,8 @@ class CongestionControl {
   ~CongestionControl();
 
  public:
+  NetworkControlUpdate OnTransportLossReport(TransportLossReport msg);
+
   NetworkControlUpdate OnTransportPacketsFeedback(
       TransportPacketsFeedback report);
 

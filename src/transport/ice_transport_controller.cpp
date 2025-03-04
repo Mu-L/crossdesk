@@ -6,14 +6,19 @@
 #include "nvcodec_api.h"
 #endif
 
+#include "api/transport/network_types.h"
+
 IceTransportController::IceTransportController(
     std::shared_ptr<SystemClock> clock)
-    : clock_(clock),
+    : last_report_block_time_(
+          webrtc::Timestamp::Millis(webrtc_clock_->TimeInMilliseconds())),
       b_force_i_frame_(true),
       video_codec_inited_(false),
       audio_codec_inited_(false),
       load_nvcodec_dll_success_(false),
-      hardware_acceleration_(false) {}
+      hardware_acceleration_(false),
+      clock_(clock),
+      webrtc_clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {}
 
 IceTransportController::~IceTransportController() {
   user_data_ = nullptr;
@@ -339,10 +344,48 @@ void IceTransportController::OnSenderReport(const SenderReport& sender_report) {
 }
 
 void IceTransportController::OnReceiverReport(
-    const ReceiverReport& receiver_report) {
-  video_channel_send_->OnReceiverReport(receiver_report);
-  audio_channel_send_->OnReceiverReport(receiver_report);
-  data_channel_send_->OnReceiverReport(receiver_report);
+    const std::vector<RtcpReportBlock>& report_block_datas) {
+  webrtc::Timestamp now = webrtc_clock_->CurrentTime();
+  if (report_block_datas.empty()) return;
+
+  int total_packets_lost_delta = 0;
+  int total_packets_delta = 0;
+
+  for (const RtcpReportBlock& report_block : report_block_datas) {
+    auto [it, inserted] =
+        last_report_blocks_.try_emplace(report_block.SourceSsrc());
+    LossReport& last_loss_report = it->second;
+    if (!inserted) {
+      total_packets_delta += report_block.ExtendedHighSeqNum() -
+                             last_loss_report.extended_highest_sequence_number;
+      total_packets_lost_delta +=
+          report_block.CumulativeLost() - last_loss_report.cumulative_lost;
+    }
+    last_loss_report.extended_highest_sequence_number =
+        report_block.ExtendedHighSeqNum();
+    last_loss_report.cumulative_lost = report_block.CumulativeLost();
+  }
+  // Can only compute delta if there has been previous blocks to compare to. If
+  // not, total_packets_delta will be unchanged and there's nothing more to do.
+  if (!total_packets_delta) return;
+  int packets_received_delta = total_packets_delta - total_packets_lost_delta;
+  // To detect lost packets, at least one packet has to be received. This check
+  // is needed to avoid bandwith detection update in
+  // VideoSendStreamTest.SuspendBelowMinBitrate
+
+  if (packets_received_delta < 1) {
+    return;
+  }
+  webrtc::TransportLossReport msg;
+  msg.packets_lost_delta = total_packets_lost_delta;
+  msg.packets_received_delta = packets_received_delta;
+  msg.receive_time = now;
+  msg.start_time = last_report_block_time_;
+  msg.end_time = now;
+  if (controller_) {
+    PostUpdates(controller_->OnTransportLossReport(msg));
+  }
+  last_report_block_time_ = now;
 }
 
 void IceTransportController::OnCongestionControlFeedback(

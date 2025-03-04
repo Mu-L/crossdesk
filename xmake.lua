@@ -141,8 +141,10 @@ target("qos")
 target("channel")
     set_kind("object")
     add_deps("log", "rtp", "rtcp", "ice", "qos")
-    add_files("src/channel/*.cpp", "src/channel/rtp_channel/*.cpp")
-    add_includedirs("src/channel", "src/channel/rtp_channel", {public = true})
+    add_files("src/channel/meida_channel/*.cpp",
+    "src/channel/rtp_channel/*.cpp")
+    add_includedirs("src/channel/meida_channel",
+    "src/channel/rtp_channel", {public = true})
 
 target("transport")
     set_kind("object")
