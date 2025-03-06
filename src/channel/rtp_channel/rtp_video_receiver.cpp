@@ -76,6 +76,8 @@ RtpVideoReceiver::~RtpVideoReceiver() {
     rtp_statistics_->Stop();
   }
 
+  delete[] nv12_data_;
+
 #ifdef SAVE_RTP_RECV_STREAM
   if (file_rtp_recv_) {
     fflush(file_rtp_recv_);
@@ -370,15 +372,26 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(
 
         size_t complete_frame_size = 0;
         int frame_fragment_count = 0;
-        for (uint16_t start = it->first;
-             start <= rtp_packet_h264.SequenceNumber(); start++) {
-          memcpy(nv12_data_ + complete_frame_size,
-                 incomplete_h264_frame_list_[start].Payload(),
-                 incomplete_h264_frame_list_[start].PayloadSize());
+        uint16_t start = it->first;
+        uint16_t end = rtp_packet_h264.SequenceNumber();
+        for (uint16_t seq = start; seq <= end; seq++) {
+          complete_frame_size += incomplete_h264_frame_list_[seq].PayloadSize();
+        }
 
-          complete_frame_size +=
-              incomplete_h264_frame_list_[start].PayloadSize();
-          incomplete_h264_frame_list_.erase(start);
+        if (!nv12_data_) {
+          nv12_data_ = new uint8_t[NV12_BUFFER_SIZE];
+        } else if (complete_frame_size > NV12_BUFFER_SIZE) {
+          delete[] nv12_data_;
+          nv12_data_ = new uint8_t[complete_frame_size];
+        }
+
+        uint8_t* dest = nv12_data_;
+        for (uint16_t seq = start; seq <= end; seq++) {
+          size_t payload_size = incomplete_h264_frame_list_[seq].PayloadSize();
+          memcpy(dest, incomplete_h264_frame_list_[seq].Payload(),
+                 payload_size);
+          dest += payload_size;
+          incomplete_h264_frame_list_.erase(seq);
           frame_fragment_count++;
         }
         compelete_video_frame_queue_.push(
@@ -386,7 +399,7 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(
 
         return true;
       } else {
-        LOG_WARN("What happened?")
+        LOG_WARN("What happened?");
         return false;
       }
     }
