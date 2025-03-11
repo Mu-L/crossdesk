@@ -66,11 +66,105 @@ CongestionControl::CongestionControl()
           AcknowledgedBitrateEstimatorInterface::Create()),
       pacing_factor_(kDefaultPaceMultiplier),
       min_total_allocated_bitrate_(DataRate::Zero()),
-      max_padding_rate_(DataRate::Zero())
+      max_padding_rate_(DataRate::Zero()) {
+  NetworkControllerConfig config;
 
-{}
+  config.constraints.at_time = Timestamp::PlusInfinity();
+  config.constraints.min_data_rate = DataRate::BitsPerSec(300000);
+  config.constraints.max_data_rate = DataRate::BitsPerSec(5000000);
+  config.constraints.starting_rate = DataRate::BitsPerSec(2500000);
+
+  config.stream_based_config.at_time = Timestamp::PlusInfinity();
+  config.stream_based_config.requests_alr_probing = true;
+  config.stream_based_config.enable_repeated_initial_probing = true;
+  config.stream_based_config.pacing_factor = kDefaultPaceMultiplier;
+  config.stream_based_config.min_total_allocated_bitrate = DataRate::Zero();
+  config.stream_based_config.max_padding_rate = DataRate::Zero();
+  config.stream_based_config.max_total_allocated_bitrate = DataRate::Zero();
+
+  initial_config_ = config;
+}
 
 CongestionControl::~CongestionControl() {}
+
+NetworkControlUpdate CongestionControl::OnProcessInterval(ProcessInterval msg) {
+  NetworkControlUpdate update;
+  if (initial_config_) {
+    update.probe_cluster_configs =
+        ResetConstraints(initial_config_->constraints);
+    update.pacer_config = GetPacingRates(msg.at_time);
+
+    if (initial_config_->stream_based_config.requests_alr_probing) {
+      probe_controller_->EnablePeriodicAlrProbing(
+          *initial_config_->stream_based_config.requests_alr_probing);
+    }
+    if (initial_config_->stream_based_config.enable_repeated_initial_probing) {
+      probe_controller_->EnableRepeatedInitialProbing(
+          *initial_config_->stream_based_config
+               .enable_repeated_initial_probing);
+    }
+    std::optional<DataRate> total_bitrate =
+        initial_config_->stream_based_config.max_total_allocated_bitrate;
+    if (total_bitrate) {
+      auto probes = probe_controller_->OnMaxTotalAllocatedBitrate(
+          *total_bitrate, msg.at_time);
+      update.probe_cluster_configs.insert(update.probe_cluster_configs.end(),
+                                          probes.begin(), probes.end());
+    }
+    initial_config_.reset();
+  }
+
+  bandwidth_estimation_->UpdateEstimate(msg.at_time);
+  std::optional<int64_t> start_time_ms =
+      alr_detector_->GetApplicationLimitedRegionStartTime();
+  probe_controller_->SetAlrStartTimeMs(start_time_ms);
+
+  auto probes = probe_controller_->Process(msg.at_time);
+  update.probe_cluster_configs.insert(update.probe_cluster_configs.end(),
+                                      probes.begin(), probes.end());
+
+  update.congestion_window = current_data_window_;
+
+  MaybeTriggerOnNetworkChanged(&update, msg.at_time);
+  return update;
+}
+
+void CongestionControl::ClampConstraints() {
+  // TODO(holmer): We should make sure the default bitrates are set to 10 kbps,
+  // and that we don't try to set the min bitrate to 0 from any applications.
+  // The congestion controller should allow a min bitrate of 0.
+  min_data_rate_ = std::max(min_target_rate_, kCongestionControllerMinBitrate);
+  if (use_min_allocatable_as_lower_bound_) {
+    min_data_rate_ = std::max(min_data_rate_, min_total_allocated_bitrate_);
+  }
+  if (max_data_rate_ < min_data_rate_) {
+    LOG_WARN("max bitrate smaller than min bitrate");
+    max_data_rate_ = min_data_rate_;
+  }
+  if (starting_rate_ && starting_rate_ < min_data_rate_) {
+    LOG_WARN("start bitrate smaller than min bitrate");
+    starting_rate_ = min_data_rate_;
+  }
+}
+
+std::vector<ProbeClusterConfig> CongestionControl::ResetConstraints(
+    TargetRateConstraints new_constraints) {
+  min_target_rate_ = new_constraints.min_data_rate.value_or(DataRate::Zero());
+  max_data_rate_ =
+      new_constraints.max_data_rate.value_or(DataRate::PlusInfinity());
+  starting_rate_ = new_constraints.starting_rate;
+  ClampConstraints();
+
+  bandwidth_estimation_->SetBitrates(starting_rate_, min_data_rate_,
+                                     max_data_rate_, new_constraints.at_time);
+
+  if (starting_rate_) delay_based_bwe_->SetStartBitrate(*starting_rate_);
+  delay_based_bwe_->SetMinBitrate(min_data_rate_);
+
+  return probe_controller_->SetBitrates(
+      min_data_rate_, starting_rate_.value_or(DataRate::Zero()), max_data_rate_,
+      new_constraints.at_time);
+}
 
 NetworkControlUpdate CongestionControl::OnTransportLossReport(
     TransportLossReport msg) {
@@ -236,10 +330,6 @@ NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
 
   // No valid RTT could be because send-side BWE isn't used, in which case
   // we don't try to limit the outstanding packets.
-  // if (rate_control_settings_.UseCongestionWindow() &&
-  //     max_feedback_rtt.IsFinite()) {
-  //   UpdateCongestionWindowSize();
-  // }
   // if (congestion_window_pushback_controller_ && current_data_window_) {
   //   congestion_window_pushback_controller_->SetDataWindow(
   //       *current_data_window_);

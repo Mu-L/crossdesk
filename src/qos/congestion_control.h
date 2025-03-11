@@ -8,6 +8,7 @@
 #include "acknowledged_bitrate_estimator_interface.h"
 #include "alr_detector.h"
 #include "api/network_state_predictor.h"
+#include "api/transport/network_control.h"
 #include "api/transport/network_types.h"
 #include "congestion_window_pushback_controller.h"
 #include "delay_based_bwe.h"
@@ -22,6 +23,8 @@ class CongestionControl {
   ~CongestionControl();
 
  public:
+  NetworkControlUpdate OnProcessInterval(ProcessInterval msg);
+
   NetworkControlUpdate OnTransportLossReport(TransportLossReport msg);
 
   NetworkControlUpdate OnTransportPacketsFeedback(
@@ -31,6 +34,9 @@ class CongestionControl {
                                     Timestamp at_time);
 
  private:
+  void ClampConstraints();
+  std::vector<ProbeClusterConfig> ResetConstraints(
+      TargetRateConstraints new_constraints);
   PacerConfig GetPacingRates(Timestamp at_time) const;
 
  private:
@@ -51,6 +57,8 @@ class CongestionControl {
   std::unique_ptr<DelayBasedBwe> delay_based_bwe_;
   std::unique_ptr<AcknowledgedBitrateEstimatorInterface>
       acknowledged_bitrate_estimator_;
+
+  std::optional<NetworkControllerConfig> initial_config_;
 
   DataRate min_target_rate_ = DataRate::Zero();
   DataRate min_data_rate_ = DataRate::Zero();

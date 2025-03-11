@@ -70,7 +70,8 @@ class RtpVideoReceiver : public ThreadBase,
   void RtcpThread();
 
  private:
-  void SendNack(const std::vector<uint16_t>& nack_list, bool buffering_allowed);
+  void SendNack(const std::vector<uint16_t>& nack_list,
+                bool buffering_allowed) override;
 
   void SendRR();
 

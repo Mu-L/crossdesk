@@ -18,7 +18,9 @@ IceTransportController::IceTransportController(
       load_nvcodec_dll_success_(false),
       hardware_acceleration_(false),
       clock_(clock),
-      webrtc_clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {}
+      webrtc_clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
+  SetPeriod(std::chrono::milliseconds(25));
+}
 
 IceTransportController::~IceTransportController() {
   user_data_ = nullptr;
@@ -429,6 +431,12 @@ void IceTransportController::HandleTransportPacketsFeedback(
   UpdateCongestedState();
 }
 
+void IceTransportController::UpdateControllerWithTimeInterval() {
+  ProcessInterval msg;
+  msg.at_time = Timestamp::Millis(webrtc_clock_->TimeInMilliseconds());
+  PostUpdates(controller_->OnProcessInterval(msg));
+}
+
 void IceTransportController::OnSentRtpPacket(
     const webrtc::RtpPacketToSend& packet) {
   webrtc::PacedPacketInfo pacing_info;
@@ -452,35 +460,37 @@ void IceTransportController::OnSentRtpPacket(
 void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
   // UpdateControlState();
 
-  int target_bitrate = update.target_rate.has_value()
-                           ? (update.target_rate->target_rate.bps() == 0
-                                  ? target_bitrate_
-                                  : update.target_rate->target_rate.bps())
-                           : target_bitrate_;
-  if (target_bitrate != target_bitrate_) {
-    target_bitrate_ = target_bitrate;
-    int width, height, target_width, target_height;
-    video_encoder_->GetResolution(&width, &height);
+  if (update.target_rate) {
+    int target_bitrate = update.target_rate.has_value()
+                             ? (update.target_rate->target_rate.bps() == 0
+                                    ? target_bitrate_
+                                    : update.target_rate->target_rate.bps())
+                             : target_bitrate_;
+    if (target_bitrate != target_bitrate_) {
+      target_bitrate_ = target_bitrate;
+      int width, height, target_width, target_height;
+      video_encoder_->GetResolution(&width, &height);
 
-    if (0 == resolution_adapter_->GetResolution(target_bitrate_, width, height,
-                                                &target_width,
-                                                &target_height)) {
-      if (target_width != target_width_ || target_height != target_height_) {
-        target_width_ = target_width;
-        target_height_ = target_height;
+      if (0 == resolution_adapter_->GetResolution(target_bitrate_, width,
+                                                  height, &target_width,
+                                                  &target_height)) {
+        if (target_width != target_width_ || target_height != target_height_) {
+          target_width_ = target_width;
+          target_height_ = target_height;
 
-        b_force_i_frame_ = true;
-        LOG_INFO("Set target resolution [{}x{}]", target_width_.value(),
-                 target_height_.value());
+          b_force_i_frame_ = true;
+          // LOG_INFO("Set target resolution [{}x{}]", target_width_.value(),
+          //          target_height_.value());
+        }
+      } else if (target_width_.has_value() && target_height_.has_value()) {
+        target_width_.reset();
+        target_height_.reset();
+        // LOG_INFO("Use original resolution [{}x{}]", source_width_,
+        //          source_height_);
       }
-    } else if (target_width_.has_value() && target_height_.has_value()) {
-      target_width_.reset();
-      target_height_.reset();
-      LOG_INFO("Use original resolution [{}x{}]", source_width_,
-               source_height_);
+      video_encoder_->SetTargetBitrate(target_bitrate_);
+      LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
     }
-    video_encoder_->SetTargetBitrate(target_bitrate_);
-    LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
   }
 }
 
@@ -492,4 +502,11 @@ void IceTransportController::UpdateControlState() {
 void IceTransportController::UpdateCongestedState() {
   if (controller_) {
   }
+}
+
+bool IceTransportController::Process() {
+  webrtc::ProcessInterval msg;
+  msg.at_time = Timestamp::Millis(webrtc_clock_->TimeInMilliseconds());
+  PostUpdates(controller_->OnProcessInterval(msg));
+  return true;
 }

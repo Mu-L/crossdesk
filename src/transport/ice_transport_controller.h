@@ -35,7 +35,8 @@ typedef void (*OnReceiveData)(const char *, size_t, const char *, const size_t,
                               void *);
 
 class IceTransportController
-    : public std::enable_shared_from_this<IceTransportController> {
+    : public std::enable_shared_from_this<IceTransportController>,
+      public ThreadBase {
  public:
   IceTransportController(std::shared_ptr<SystemClock> clock);
   ~IceTransportController();
@@ -74,12 +75,16 @@ class IceTransportController
   int CreateAudioCodec();
 
  private:
+  void UpdateControllerWithTimeInterval();
   void OnSentRtpPacket(const webrtc::RtpPacketToSend &packet);
   void HandleTransportPacketsFeedback(
       const webrtc::TransportPacketsFeedback &feedback);
   void PostUpdates(webrtc::NetworkControlUpdate update);
   void UpdateControlState();
   void UpdateCongestedState();
+
+ private:
+  bool Process() override;
 
  private:
   std::unique_ptr<VideoChannelSend> video_channel_send_ = nullptr;

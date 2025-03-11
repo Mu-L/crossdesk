@@ -49,6 +49,7 @@ int IceTransport::InitIceTransmission(
     std::string &turn_username, std::string &turn_password,
     rtp::PAYLOAD_TYPE video_codec_payload_type) {
   ice_transport_controller_ = std::make_shared<IceTransportController>(clock_);
+
   ice_agent_ = std::make_unique<IceAgent>(
       offer_peer_, use_trickle_ice_, use_reliable_ice_, enable_turn_,
       force_turn_, stun_ip, stun_port, turn_ip, turn_port, turn_username,
@@ -642,6 +643,7 @@ std::string IceTransport::GetRemoteCapabilities(const std::string &remote_sdp) {
           remote_user_id_, negotiated_video_pt_, hardware_acceleration_,
           ice_agent_, ice_io_statistics_, on_receive_video_, on_receive_audio_,
           on_receive_data_, user_data_);
+      ice_transport_controller_->Start();
     }
 
     remote_capabilities_got_ = true;
