@@ -113,10 +113,10 @@ target("ws")
 target("rtp")
     set_kind("object")
     add_deps("log", "common", "frame", "ringbuffer", "thread", "rtcp", "fec", "statistics")
-    add_files("src/rtp/*.cpp", 
+    add_files("src/rtp/rtp_statistics/*.cpp", 
     "src/rtp/rtp_packet/*.cpp",
     "src/rtp/rtp_packetizer/*.cpp")
-    add_includedirs("src/rtp", 
+    add_includedirs("src/rtp/rtp_statistics", 
     "src/rtp/rtp_packet",
     "src/rtp/rtp_packetizer", {public = true})
 
@@ -148,7 +148,7 @@ target("channel")
 
 target("transport")
     set_kind("object")
-    add_deps("log", "ws", "ice", "channel", "rtp", "rtcp", "statistics", "media")
+    add_deps("log", "ws", "ice", "channel", "rtp", "rtcp", "statistics", "media", "qos")
     add_files("src/transport/*.cpp")
     add_includedirs("src/transport", {public = true})
 

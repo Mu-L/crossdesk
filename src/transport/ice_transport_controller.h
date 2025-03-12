@@ -14,12 +14,14 @@
 #include "audio_channel_send.h"
 #include "audio_decoder.h"
 #include "audio_encoder.h"
+#include "bitrate_prober.h"
 #include "clock/system_clock.h"
 #include "congestion_control.h"
 #include "congestion_control_feedback.h"
 #include "data_channel_receive.h"
 #include "data_channel_send.h"
 #include "ice_agent.h"
+#include "packet_sender.h"
 #include "resolution_adapter.h"
 #include "transport_feedback_adapter.h"
 #include "video_channel_receive.h"
@@ -103,7 +105,7 @@ class IceTransportController
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpPacketizer> rtp_packetizer_ = nullptr;
-  std::unique_ptr<RtpVideoSender> rtp_video_sender_ = nullptr;
+  std::unique_ptr<PacketSender> packet_sender_ = nullptr;
   std::string remote_user_id_;
   void *user_data_ = nullptr;
 
@@ -112,6 +114,7 @@ class IceTransportController
   std::shared_ptr<webrtc::Clock> webrtc_clock_ = nullptr;
   webrtc::TransportFeedbackAdapter transport_feedback_adapter_;
   std::unique_ptr<CongestionControl> controller_;
+  BitrateProber prober_;
 
  private:
   std::unique_ptr<VideoEncoder> video_encoder_ = nullptr;

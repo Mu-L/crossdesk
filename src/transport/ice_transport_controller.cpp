@@ -52,6 +52,7 @@ void IceTransportController::Create(
   CreateAudioCodec();
 
   controller_ = std::make_unique<CongestionControl>();
+  packet_sender_ = std::make_unique<PacketSender>(ice_agent, webrtc_clock_);
   resolution_adapter_ = std::make_unique<ResolutionAdapter>();
 
   video_channel_send_ = std::make_unique<VideoChannelSend>(
@@ -471,7 +472,6 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
       target_bitrate_ = target_bitrate;
       int width, height, target_width, target_height;
       video_encoder_->GetResolution(&width, &height);
-
       if (0 == resolution_adapter_->GetResolution(target_bitrate_, width,
                                                   height, &target_width,
                                                   &target_height)) {
@@ -480,18 +480,19 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
           target_height_ = target_height;
 
           b_force_i_frame_ = true;
-          // LOG_INFO("Set target resolution [{}x{}]", target_width_.value(),
-          //          target_height_.value());
         }
       } else if (target_width_.has_value() && target_height_.has_value()) {
         target_width_.reset();
         target_height_.reset();
-        // LOG_INFO("Use original resolution [{}x{}]", source_width_,
-        //          source_height_);
       }
       video_encoder_->SetTargetBitrate(target_bitrate_);
       LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
     }
+  }
+
+  if (!update.probe_cluster_configs.empty()) {
+    packet_sender_->CreateProbeClusters(
+        std::move(update.probe_cluster_configs));
   }
 }
 
