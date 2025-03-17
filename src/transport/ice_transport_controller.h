@@ -21,6 +21,7 @@
 #include "data_channel_receive.h"
 #include "data_channel_send.h"
 #include "ice_agent.h"
+#include "packet_sender.h"
 #include "packet_sender_imp.h"
 #include "resolution_adapter.h"
 #include "transport_feedback_adapter.h"
@@ -107,7 +108,7 @@ class IceTransportController
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpPacketizer> rtp_packetizer_ = nullptr;
-  std::unique_ptr<PacketSenderImp> packet_sender_ = nullptr;
+  std::shared_ptr<PacketSenderImp> packet_sender_ = nullptr;
   std::string remote_user_id_;
   void *user_data_ = nullptr;
 

@@ -9,10 +9,12 @@ VideoChannelSend::~VideoChannelSend() {}
 
 VideoChannelSend::VideoChannelSend(
     std::shared_ptr<SystemClock> clock, std::shared_ptr<IceAgent> ice_agent,
+    std::shared_ptr<PacketSender> packet_sender,
     std::shared_ptr<IOStatistics> ice_io_statistics,
     std::function<void(const webrtc::RtpPacketToSend& packet)>
         on_sent_packet_func)
     : ice_agent_(ice_agent),
+      packet_sender_(packet_sender),
       ice_io_statistics_(ice_io_statistics),
       on_sent_packet_func_(on_sent_packet_func),
       clock_(clock){};
@@ -76,8 +78,8 @@ int VideoChannelSend::SendVideo(
         rtp_packetizer_->Build((uint8_t*)encoded_frame->Buffer(),
                                (uint32_t)encoded_frame->Size(),
                                encoded_frame->CaptureTimestamp(), true);
-    rtp_video_sender_->Enqueue(std::move(rtp_packets),
-                               encoded_frame->CaptureTimestamp());
+    packet_sender_->EnqueueRtpPacket(std::move(rtp_packets),
+                                     encoded_frame->CaptureTimestamp());
   }
 
   return 0;

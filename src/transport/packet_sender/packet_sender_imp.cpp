@@ -251,3 +251,46 @@ void PacketSenderImp::UpdateStats() {
 PacketSenderImp::Stats PacketSenderImp::GetStats() const {
   return current_stats_;
 }
+
+/*----------------------------------------------------------------------------*/
+
+int PacketSenderImp::EnqueueRtpPacket(
+    std::vector<std::unique_ptr<RtpPacket>> &rtp_packets,
+    int64_t capture_timestamp_ms) {
+  std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> to_send_rtp_packets;
+  for (auto &rtp_packet : rtp_packets) {
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send(
+        static_cast<webrtc::RtpPacketToSend *>(rtp_packet.release()));
+    rtp_packet_to_send->set_capture_time(
+        webrtc::Timestamp::Millis(capture_timestamp_ms));
+    rtp_packet_to_send->set_transport_sequence_number(transport_seq_++);
+
+    switch (rtp_packet_to_send->PayloadType()) {
+      case rtp::PAYLOAD_TYPE::H264:
+        rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
+        break;
+      case rtp::PAYLOAD_TYPE::AV1:
+        rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
+        break;
+      case rtp::PAYLOAD_TYPE::H264_FEC_SOURCE:
+        rtp_packet_to_send->set_packet_type(
+            webrtc::RtpPacketMediaType::kForwardErrorCorrection);
+        break;
+      case rtp::PAYLOAD_TYPE::H264_FEC_REPAIR:
+        rtp_packet_to_send->set_packet_type(
+            webrtc::RtpPacketMediaType::kForwardErrorCorrection);
+        break;
+      case rtp::PAYLOAD_TYPE::OPUS:
+        rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kAudio);
+        break;
+      default:
+        rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
+        break;
+    }
+
+    to_send_rtp_packets.push_back(std::move(rtp_packet_to_send));
+  }
+
+  EnqueuePackets(std::move(to_send_rtp_packets));
+  return 0;
+}

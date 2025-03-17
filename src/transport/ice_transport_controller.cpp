@@ -53,7 +53,7 @@ void IceTransportController::Create(
   CreateAudioCodec();
 
   controller_ = std::make_unique<CongestionControl>();
-  packet_sender_ = std::make_unique<PacketSenderImp>(ice_agent, webrtc_clock_);
+  packet_sender_ = std::make_shared<PacketSenderImp>(ice_agent, webrtc_clock_);
   packet_sender_->SetPacingRates(DataRate::BitsPerSec(300000),
                                  DataRate::Zero());
   packet_sender_->SetOnSentPacketFunc(
@@ -67,7 +67,7 @@ void IceTransportController::Create(
   resolution_adapter_ = std::make_unique<ResolutionAdapter>();
 
   video_channel_send_ = std::make_unique<VideoChannelSend>(
-      clock_, ice_agent, ice_io_statistics,
+      clock_, ice_agent, packet_sender_, ice_io_statistics,
       [this](const webrtc::RtpPacketToSend& packet) {
         OnSentRtpPacket(packet);
       });
@@ -78,10 +78,10 @@ void IceTransportController::Create(
         return video_channel_send_->GeneratePadding(size, capture_timestamp_ms);
       });
 
-  audio_channel_send_ =
-      std::make_unique<AudioChannelSend>(ice_agent, ice_io_statistics);
-  data_channel_send_ =
-      std::make_unique<DataChannelSend>(ice_agent, ice_io_statistics);
+  audio_channel_send_ = std::make_unique<AudioChannelSend>(
+      ice_agent, packet_sender_, ice_io_statistics);
+  data_channel_send_ = std::make_unique<DataChannelSend>(
+      ice_agent, packet_sender_, ice_io_statistics);
 
   video_channel_send_->Initialize(video_codec_payload_type);
   audio_channel_send_->Initialize(rtp::PAYLOAD_TYPE::OPUS);

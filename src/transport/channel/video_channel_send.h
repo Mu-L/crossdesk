@@ -13,6 +13,7 @@
 #include "congestion_control.h"
 #include "congestion_control_feedback.h"
 #include "ice_agent.h"
+#include "packet_sender.h"
 #include "rtp_packetizer.h"
 #include "rtp_video_sender.h"
 #include "transport_feedback_adapter.h"
@@ -23,6 +24,7 @@ class VideoChannelSend {
   VideoChannelSend();
   VideoChannelSend(std::shared_ptr<SystemClock> clock,
                    std::shared_ptr<IceAgent> ice_agent,
+                   std::shared_ptr<PacketSender> packet_sender,
                    std::shared_ptr<IOStatistics> ice_io_statistics,
                    std::function<void(const webrtc::RtpPacketToSend& packet)>
                        on_sent_packet_func_);
@@ -71,6 +73,7 @@ class VideoChannelSend {
   void UpdateCongestedState();
 
  private:
+  std::shared_ptr<PacketSender> packet_sender_ = nullptr;
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpPacketizer> rtp_packetizer_ = nullptr;
