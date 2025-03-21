@@ -53,8 +53,10 @@ void IceTransportController::Create(
   CreateVideoCodec(clock_, video_codec_payload_type, hardware_acceleration);
   CreateAudioCodec();
 
+  task_queue_ = std::make_shared<TaskQueue>();
   controller_ = std::make_unique<CongestionControl>();
-  packet_sender_ = std::make_shared<PacketSenderImp>(ice_agent, webrtc_clock_);
+  packet_sender_ =
+      std::make_shared<PacketSenderImp>(ice_agent, webrtc_clock_, task_queue_);
   packet_sender_->SetPacingRates(DataRate::BitsPerSec(300000),
                                  DataRate::Zero());
   packet_sender_->SetSendBurstInterval(TimeDelta::Millis(40));
@@ -481,9 +483,13 @@ void IceTransportController::OnReceiverReport(
   msg.receive_time = now;
   msg.start_time = last_report_block_time_;
   msg.end_time = now;
-  if (controller_) {
-    PostUpdates(controller_->OnTransportLossReport(msg));
-  }
+
+  task_queue_->PostTask([this, msg]() mutable {
+    if (controller_) {
+      PostUpdates(controller_->OnTransportLossReport(msg));
+    }
+  });
+
   last_report_block_time_ = now;
 }
 
@@ -492,17 +498,16 @@ void IceTransportController::OnCongestionControlFeedback(
   std::optional<webrtc::TransportPacketsFeedback> feedback_msg =
       transport_feedback_adapter_.ProcessCongestionControlFeedback(
           feedback, Timestamp::Micros(clock_->CurrentTimeUs()));
-  if (feedback_msg) {
-    HandleTransportPacketsFeedback(*feedback_msg);
+  if (feedback_msg.has_value()) {
+    task_queue_->PostTask([this, feedback_msg]() mutable {
+      if (controller_) {
+        PostUpdates(
+            controller_->OnTransportPacketsFeedback(feedback_msg.value()));
+      }
+    });
+
+    UpdateCongestedState();
   }
-}
-
-void IceTransportController::HandleTransportPacketsFeedback(
-    const webrtc::TransportPacketsFeedback& feedback) {
-  if (controller_)
-    PostUpdates(controller_->OnTransportPacketsFeedback(feedback));
-
-  UpdateCongestedState();
 }
 
 void IceTransportController::OnReceiveNack(
@@ -510,12 +515,6 @@ void IceTransportController::OnReceiveNack(
   if (video_channel_send_) {
     video_channel_send_->OnReceiveNack(nack_sequence_numbers);
   }
-}
-
-void IceTransportController::UpdateControllerWithTimeInterval() {
-  ProcessInterval msg;
-  msg.at_time = Timestamp::Millis(webrtc_clock_->TimeInMilliseconds());
-  PostUpdates(controller_->OnProcessInterval(msg));
 }
 
 void IceTransportController::OnSentRtpPacket(
@@ -604,8 +603,11 @@ std::optional<bool> IceTransportController::GetCongestedStateUpdate() const {
 }
 
 bool IceTransportController::Process() {
-  webrtc::ProcessInterval msg;
-  msg.at_time = Timestamp::Millis(webrtc_clock_->TimeInMilliseconds());
-  PostUpdates(controller_->OnProcessInterval(msg));
+  task_queue_->PostTask([this]() mutable {
+    webrtc::ProcessInterval msg;
+    msg.at_time = Timestamp::Millis(webrtc_clock_->TimeInMilliseconds());
+    PostUpdates(controller_->OnProcessInterval(msg));
+  });
+
   return true;
 }

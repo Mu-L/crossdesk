@@ -6,7 +6,8 @@
 const int PacketSenderImp::kNoPacketHoldback = -1;
 
 PacketSenderImp::PacketSenderImp(std::shared_ptr<IceAgent> ice_agent,
-                                 std::shared_ptr<webrtc::Clock> clock)
+                                 std::shared_ptr<webrtc::Clock> clock,
+                                 std::shared_ptr<TaskQueue> task_queue)
     : ice_agent_(ice_agent),
       clock_(clock),
       pacing_controller_(clock.get(), this),
@@ -18,7 +19,8 @@ PacketSenderImp::PacketSenderImp(std::shared_ptr<IceAgent> ice_agent,
       packet_size_(/*alpha=*/0.95),
       include_overhead_(false),
       last_send_time_(webrtc::Timestamp::Millis(0)),
-      last_call_time_(webrtc::Timestamp::Millis(0)) {}
+      last_call_time_(webrtc::Timestamp::Millis(0)),
+      task_queue_(task_queue) {}
 
 PacketSenderImp::~PacketSenderImp() {}
 
@@ -80,7 +82,7 @@ void PacketSenderImp::SetPacingRates(webrtc::DataRate pacing_rate,
 
 void PacketSenderImp::EnqueuePackets(
     std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets) {
-  task_queue_.PostTask([this, packets = std::move(packets)]() mutable {
+  task_queue_->PostTask([this, packets = std::move(packets)]() mutable {
     for (auto &packet : packets) {
       size_t packet_size = packet->payload_size() + packet->padding_size();
       if (include_overhead_) {
@@ -94,7 +96,7 @@ void PacketSenderImp::EnqueuePackets(
 }
 
 void PacketSenderImp::RemovePacketsForSsrc(uint32_t ssrc) {
-  task_queue_.PostTask([this, ssrc] {
+  task_queue_->PostTask([this, ssrc] {
     pacing_controller_.RemovePacketsForSsrc(ssrc);
     MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
   });
@@ -226,7 +228,7 @@ void PacketSenderImp::MaybeProcessPackets(
   if (next_process_time_.IsMinusInfinity() ||
       next_process_time_ > next_send_time) {
     // Prefer low precision if allowed and not probing.
-    task_queue_.PostDelayedTask(
+    task_queue_->PostDelayedTask(
         [this, next_send_time]() { MaybeProcessPackets(next_send_time); },
         time_to_next_process.RoundUpTo(webrtc::TimeDelta::Millis(1)).ms());
     next_process_time_ = next_send_time;
@@ -281,7 +283,6 @@ int PacketSenderImp::EnqueueRtpPacket(
         rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
         break;
     }
-
     // webrtc::PacedPacketInfo cluster_info;
     // SendPacket(std::move(rtp_packet_to_send), cluster_info);
 

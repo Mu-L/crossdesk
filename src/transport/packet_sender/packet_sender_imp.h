@@ -31,7 +31,8 @@ class PacketSenderImp : public PacketSender,
   static const int kNoPacketHoldback;
 
   PacketSenderImp(std::shared_ptr<IceAgent> ice_agent,
-                  std::shared_ptr<webrtc::Clock> clock);
+                  std::shared_ptr<webrtc::Clock> clock,
+                  std::shared_ptr<TaskQueue> task_queue);
   ~PacketSenderImp();
 
  public:
@@ -221,7 +222,7 @@ class PacketSenderImp : public PacketSender,
   // Protects against ProcessPackets reentry from packet sent receipts.
   bool processing_packets_ = false;
 
-  TaskQueue task_queue_;
+  std::shared_ptr<TaskQueue> task_queue_;
   int64_t transport_seq_ = 0;
   std::map<int32_t, int16_t> ssrc_seq_;
 

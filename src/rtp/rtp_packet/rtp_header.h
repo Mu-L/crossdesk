@@ -52,7 +52,7 @@ struct RTPHeader {
   bool marker_ = false;
   uint8_t payload_type_ = 0;
   uint16_t sequence_number_ = 1;
-  uint64_t timestamp_ = 0;
+  uint32_t timestamp_ = 0;
   uint32_t ssrc_ = 0;
   uint32_t csrcs_[kMaxRtpCsrcSize];
   size_t padding_len;

@@ -55,14 +55,15 @@ class RtpVideoReceiver : public ThreadBase,
   bool CheckIsAv1FrameCompleted(RtpPacketAv1& rtp_packet_av1);
 
  private:
-  void ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264);
+  bool ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264);
   bool CheckIsH264FrameCompletedFuaEndReceived(RtpPacketH264& rtp_packet_h264);
   bool CheckIsH264FrameCompletedMissSeqReceived(RtpPacketH264& rtp_packet_h264);
   bool PopCompleteFrame(uint16_t start_seq, uint16_t end_seq,
-                        uint64_t timestamp);
+                        uint32_t timestamp);
 
  private:
-  bool CheckIsTimeSendRR();
+  bool CheckIsTimeSendRR(uint32_t now);
+  void CheckIsTimeUpdateNack(uint32_t now);
   int SendRtcpRR(ReceiverReport& rtcp_rr);
 
   void SendCombinedRtcpPacket(
@@ -106,6 +107,7 @@ class RtpVideoReceiver : public ThreadBase,
   uint32_t total_rtp_payload_recv_ = 0;
 
   uint32_t last_send_rtcp_rr_packet_ts_ = 0;
+  uint32_t last_nack_update_ts_ = 0;
   std::function<int(const char*, size_t)> data_send_func_ = nullptr;
 
  private:

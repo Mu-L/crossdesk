@@ -107,7 +107,7 @@ void VideoChannelSend::Destroy() {
 
 int VideoChannelSend::SendVideo(std::shared_ptr<EncodedFrame> encoded_frame) {
   if (rtp_video_sender_ && rtp_packetizer_) {
-    int64_t rtp_timestamp =
+    int32_t rtp_timestamp =
         delta_ntp_internal_ms_ +
         static_cast<uint32_t>(encoded_frame->CapturedTimestamp() / 1000);
     std::vector<std::unique_ptr<RtpPacket>> rtp_packets =

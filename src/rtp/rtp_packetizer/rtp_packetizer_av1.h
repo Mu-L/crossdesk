@@ -33,7 +33,7 @@ class RtpPacketizerAv1 : public RtpPacketizer {
   bool marker_;
   uint32_t payload_type_;
   uint16_t sequence_number_;
-  uint64_t timestamp_;
+  uint32_t timestamp_;
   uint32_t ssrc_;
   std::vector<uint32_t> csrcs_;
   uint16_t profile_;

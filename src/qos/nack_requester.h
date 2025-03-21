@@ -48,6 +48,8 @@ class NackRequester {
   int OnReceivedPacket(uint16_t seq_num);
   int OnReceivedPacket(uint16_t seq_num, bool is_recovered);
 
+  void ProcessNacks();
+
  private:
   void ClearUpTo(uint16_t seq_num);
   void UpdateRtt(int64_t rtt_ms);

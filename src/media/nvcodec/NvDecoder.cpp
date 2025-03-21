@@ -901,7 +901,7 @@ uint8_t *NvDecoder::GetFrame(int64_t *pTimestamp) {
 
 uint8_t *NvDecoder::GetLockedFrame(int64_t *pTimestamp) {
   uint8_t *pFrame;
-  uint64_t timestamp;
+  uint32_t timestamp;
   if (m_nDecodedFrame > 0) {
     std::lock_guard<std::mutex> lock(m_mtxVPFrame);
     m_nDecodedFrame--;
@@ -924,7 +924,7 @@ void NvDecoder::UnlockFrame(uint8_t **pFrame) {
   m_vpFrame.insert(m_vpFrame.end(), &pFrame[0], &pFrame[1]);
 
   // add a dummy entry for timestamp
-  uint64_t timestamp[2] = {0};
+  uint32_t timestamp[2] = {0};
   m_vTimestamp.insert(m_vTimestamp.end(), &timestamp[0], &timestamp[1]);
 }
 #pragma warning(pop)

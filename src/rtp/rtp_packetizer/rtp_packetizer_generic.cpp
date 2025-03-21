@@ -54,7 +54,7 @@ std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerGeneric::Build(
       payload_size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
 
   // TODO: use frame timestamp
-  uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+  uint32_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
                            std::chrono::system_clock::now().time_since_epoch())
                            .count();
 

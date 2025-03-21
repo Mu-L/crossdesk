@@ -547,7 +547,7 @@ void RtpCodec::Encode(uint8_t* buffer, uint32_t size,
     }
   } else if (rtp::PAYLOAD_TYPE::AV1 == payload_type_) {
     std::vector<Obu> obus = ParseObus(buffer, size);
-    uint64_t timestamp =
+    uint32_t timestamp =
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch())
             .count();

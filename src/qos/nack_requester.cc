@@ -56,6 +56,15 @@ int NackRequester::OnReceivedPacket(uint16_t seq_num) {
   return OnReceivedPacket(seq_num, false);
 }
 
+void NackRequester::ProcessNacks() {
+  std::vector<uint16_t> nack_batch = GetNackBatch(kTimeOnly);
+  if (!nack_batch.empty()) {
+    // This batch of NACKs is triggered externally; there is no external
+    // initiator who can batch them with other feedback messages.
+    nack_sender_->SendNack(nack_batch, /*buffering_allowed=*/false);
+  }
+}
+
 int NackRequester::OnReceivedPacket(uint16_t seq_num, bool is_recovered) {
   bool is_retransmitted = true;
 

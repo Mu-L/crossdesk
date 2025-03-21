@@ -82,7 +82,13 @@ std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::BuildNalu(
   marker_ = 1;
   payload_type_ = rtp::PAYLOAD_TYPE(payload_type_);
   sequence_number_++;
-  timestamp_ = rtp::kMsToRtpTimestamp * rtp_timestamp;
+
+  // TODO: use frame timestamp
+  uint32_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
+  timestamp_ = timestamp;
 
   if (!csrc_count_) {
   }
@@ -149,7 +155,7 @@ std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::BuildFua(
       payload_size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
 
   // TODO: use frame timestamp
-  uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+  uint32_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
                            std::chrono::system_clock::now().time_since_epoch())
                            .count();
 
@@ -227,6 +233,7 @@ std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::BuildFua(
     if (use_rtp_packet_to_send) {
       std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet =
           std::make_unique<webrtc::RtpPacketToSend>();
+      rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
       rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
       rtp_packets.emplace_back(std::move(rtp_packet));
     } else {

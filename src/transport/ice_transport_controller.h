@@ -24,6 +24,7 @@
 #include "packet_sender.h"
 #include "packet_sender_imp.h"
 #include "resolution_adapter.h"
+#include "task_queue.h"
 #include "transport_feedback_adapter.h"
 #include "video_channel_receive.h"
 #include "video_channel_send.h"
@@ -82,10 +83,7 @@ class IceTransportController
   int CreateAudioCodec();
 
  private:
-  void UpdateControllerWithTimeInterval();
   void OnSentRtpPacket(const webrtc::RtpPacketToSend &packet);
-  void HandleTransportPacketsFeedback(
-      const webrtc::TransportPacketsFeedback &feedback);
   void PostUpdates(webrtc::NetworkControlUpdate update);
   void UpdateControlState();
   void UpdateCongestedState();
@@ -121,6 +119,7 @@ class IceTransportController
   webrtc::TransportFeedbackAdapter transport_feedback_adapter_;
   std::unique_ptr<CongestionControl> controller_;
   BitrateProber prober_;
+  std::shared_ptr<TaskQueue> task_queue_;
   webrtc::DataSize congestion_window_size_;
   bool is_congested_ = false;
 

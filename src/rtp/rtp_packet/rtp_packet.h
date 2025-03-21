@@ -204,7 +204,7 @@ class RtpPacket {
   void SetSequenceNumber(uint16_t sequence_number) {
     sequence_number_ = sequence_number;
   }
-  void SetTimestamp(uint64_t timestamp) { timestamp_ = timestamp; }
+  void SetTimestamp(uint32_t timestamp) { timestamp_ = timestamp; }
   void SetSsrc(uint32_t ssrc) { ssrc_ = ssrc; }
   void SetCsrcs(std::vector<uint32_t> &csrcs) { csrcs_ = csrcs; }
   void SetSize(size_t size) { size_ = size; }
@@ -297,7 +297,7 @@ class RtpPacket {
   bool marker_ = false;
   uint8_t payload_type_ = 0;
   uint16_t sequence_number_ = 1;
-  uint64_t timestamp_ = 0;
+  uint32_t timestamp_ = 0;
   uint32_t ssrc_ = 0;
   std::vector<uint32_t> csrcs_;
 

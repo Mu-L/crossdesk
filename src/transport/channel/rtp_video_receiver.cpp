@@ -11,7 +11,8 @@
 
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
-#define MAX_WAIT_TIME_MS 20  // 20ms
+#define MAX_WAIT_TIME_MS 20      // 20ms
+#define NACK_UPDATE_INTERVAL 20  // 20ms
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<SystemClock> clock)
     : ssrc_(GenerateUniqueSsrc()),
@@ -148,11 +149,6 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
          file_rtp_recv_);
 #endif
 
-  receive_side_congestion_controller_.OnReceivedPacket(rtp_packet_received,
-                                                       MediaType::VIDEO);
-
-  nack_->OnReceivedPacket(rtp_packet.SequenceNumber());
-
   last_recv_bytes_ = (uint32_t)rtp_packet.PayloadSize();
   total_rtp_payload_recv_ += (uint32_t)rtp_packet.PayloadSize();
   total_rtp_packets_recv_++;
@@ -166,6 +162,13 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     io_statistics_->IncrementVideoInboundRtpPacketCount();
     io_statistics_->UpdateVideoPacketLossCount(rtp_packet.SequenceNumber());
   }
+
+  uint32_t now_ts = static_cast<uint32_t>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now().time_since_epoch())
+          .count());
+
+  CheckIsTimeUpdateNack(now_ts);
 
   // if (CheckIsTimeSendRR()) {
   //   ReceiverReport rtcp_rr;
@@ -208,14 +211,20 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     RtpPacketH264 rtp_packet_h264;
     if (rtp_packet_h264.Build(rtp_packet.Buffer().data(), rtp_packet.Size())) {
       rtp_packet_h264.GetFrameHeaderInfo();
-      ProcessH264RtpPacket(rtp_packet_h264);
-    } else {
-      LOG_ERROR("Invalid h264 rtp packet");
+      bool is_missing_packet = ProcessH264RtpPacket(rtp_packet_h264);
+      if (!is_missing_packet) {
+        receive_side_congestion_controller_.OnReceivedPacket(
+            rtp_packet_received, MediaType::VIDEO);
+        nack_->OnReceivedPacket(rtp_packet.SequenceNumber(), true);
+      } else {
+        nack_->OnReceivedPacket(rtp_packet.SequenceNumber(), false);
+      }
     }
   }
 }
 
-void RtpVideoReceiver::ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264) {
+bool RtpVideoReceiver::ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264) {
+  bool is_missing_packet = false;
   if (!fec_enable_) {
     if (rtp::PAYLOAD_TYPE::H264 == rtp_packet_h264.PayloadType()) {
       rtp::NAL_UNIT_TYPE nalu_type = rtp_packet_h264.NalUnitType();
@@ -232,21 +241,31 @@ void RtpVideoReceiver::ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264) {
       } else if (rtp::NAL_UNIT_TYPE::FU_A == nalu_type) {
         incomplete_h264_frame_list_[rtp_packet_h264.SequenceNumber()] =
             rtp_packet_h264;
-        if (incomplete_h264_frame_list_.find(
-                rtp_packet_h264.SequenceNumber()) ==
-            incomplete_h264_frame_list_.end()) {
-          LOG_ERROR("missing seq {}", rtp_packet_h264.SequenceNumber());
-        }
         if (rtp_packet_h264.FuAEnd()) {
           CheckIsH264FrameCompletedFuaEndReceived(rtp_packet_h264);
         } else {
           auto missing_seqs_iter =
               missing_sequence_numbers_.find(rtp_packet_h264.Timestamp());
+          auto missing_seqs_wait_ts_iter =
+              missing_sequence_numbers_wait_time_.find(
+                  rtp_packet_h264.Timestamp());
           if (missing_seqs_iter != missing_sequence_numbers_.end()) {
-            auto missing_seqs = missing_seqs_iter->second;
-            if (missing_seqs.find(rtp_packet_h264.SequenceNumber()) !=
-                missing_seqs.end()) {
-              CheckIsH264FrameCompletedMissSeqReceived(rtp_packet_h264);
+            if (missing_seqs_wait_ts_iter !=
+                missing_sequence_numbers_wait_time_.end()) {
+              if (clock_->CurrentTime().ms() -
+                      missing_seqs_wait_ts_iter->second <=
+                  MAX_WAIT_TIME_MS) {
+                auto missing_seqs = missing_seqs_iter->second;
+                if (missing_seqs.find(rtp_packet_h264.SequenceNumber()) !=
+                    missing_seqs.end()) {
+                  CheckIsH264FrameCompletedMissSeqReceived(rtp_packet_h264);
+                  is_missing_packet = true;
+                }
+              } else {
+                missing_sequence_numbers_wait_time_.erase(
+                    missing_seqs_wait_ts_iter);
+                missing_sequence_numbers_.erase(missing_seqs_iter);
+              }
             }
           }
         }
@@ -359,6 +378,8 @@ void RtpVideoReceiver::ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264) {
   //     }
   //   }
   // }
+
+  return is_missing_packet;
 }
 
 void RtpVideoReceiver::ProcessAv1RtpPacket(RtpPacketAv1& rtp_packet_av1) {
@@ -384,7 +405,7 @@ void RtpVideoReceiver::ProcessAv1RtpPacket(RtpPacketAv1& rtp_packet_av1) {
 
 bool RtpVideoReceiver::CheckIsH264FrameCompletedFuaEndReceived(
     RtpPacketH264& rtp_packet_h264) {
-  uint64_t timestamp = rtp_packet_h264.Timestamp();
+  uint32_t timestamp = rtp_packet_h264.Timestamp();
   uint16_t end_seq = rtp_packet_h264.SequenceNumber();
   fua_end_sequence_numbers_[timestamp] = end_seq;
   uint16_t start_seq = 0;
@@ -427,7 +448,7 @@ bool RtpVideoReceiver::CheckIsH264FrameCompletedMissSeqReceived(
     return false;
   }
 
-  uint64_t timestamp = rtp_packet_h264.Timestamp();
+  uint32_t timestamp = rtp_packet_h264.Timestamp();
   uint16_t end_seq = fua_end_sequence_numbers_[timestamp];
   uint16_t start_seq = 0;
   bool has_start = false;
@@ -468,7 +489,7 @@ bool RtpVideoReceiver::CheckIsH264FrameCompletedMissSeqReceived(
 }
 
 bool RtpVideoReceiver::PopCompleteFrame(uint16_t start_seq, uint16_t end_seq,
-                                        uint64_t timestamp) {
+                                        uint32_t timestamp) {
   size_t complete_frame_size = 0;
   int frame_fragment_count = 0;
 
@@ -630,17 +651,21 @@ void RtpVideoReceiver::SendRemb(int64_t bitrate_bps,
   active_remb_module_->SetRemb(bitrate_bps, std::move(ssrcs));
 }
 
-bool RtpVideoReceiver::CheckIsTimeSendRR() {
-  uint32_t now_ts = static_cast<uint32_t>(
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::system_clock::now().time_since_epoch())
-          .count());
-
-  if (now_ts - last_send_rtcp_rr_packet_ts_ >= RTCP_RR_INTERVAL) {
-    last_send_rtcp_rr_packet_ts_ = now_ts;
+bool RtpVideoReceiver::CheckIsTimeSendRR(uint32_t now) {
+  if (now - last_send_rtcp_rr_packet_ts_ >= RTCP_RR_INTERVAL) {
+    last_send_rtcp_rr_packet_ts_ = now;
     return true;
   } else {
     return false;
+  }
+}
+
+void RtpVideoReceiver::CheckIsTimeUpdateNack(uint32_t now) {
+  if (now - last_nack_update_ts_ >= NACK_UPDATE_INTERVAL) {
+    last_send_rtcp_rr_packet_ts_ = now;
+    if (nack_) {
+      nack_->ProcessNacks();
+    }
   }
 }
 
