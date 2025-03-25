@@ -54,10 +54,25 @@ class TaskQueue {
         std::chrono::steady_clock::now() + std::chrono::milliseconds(delay_ms);
     {
       std::unique_lock<std::mutex> lock(mutex_);
-      taskQueue_.emplace(execute_time,
-                         std::move(task));  // 确保参数匹配 TaskItem 构造
+      taskQueue_.emplace(execute_time, std::move(task));
     }
     cond_var_.notify_one();
+  }
+
+  void ClearTasks() {
+    {
+      std::unique_lock<std::mutex> lock(mutex_);
+      stop_ = true;
+      while (!taskQueue_.empty()) {
+        taskQueue_.pop();
+      }
+    }
+    cond_var_.notify_all();
+    for (std::thread &worker : workers_) {
+      if (worker.joinable()) {
+        worker.join();
+      }
+    }
   }
 
  private:

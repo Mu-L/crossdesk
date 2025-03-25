@@ -26,6 +26,13 @@ IceTransportController::IceTransportController(
 }
 
 IceTransportController::~IceTransportController() {
+  if (task_queue_cc_) {
+    task_queue_cc_->ClearTasks();
+  }
+  if (task_queue_encode_) {
+    task_queue_encode_->ClearTasks();
+  }
+
   user_data_ = nullptr;
   video_codec_inited_ = false;
   audio_codec_inited_ = false;
