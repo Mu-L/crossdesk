@@ -248,7 +248,7 @@ class RtpPacket {
     return rtp::PAYLOAD_TYPE(payload_type_);
   }
   uint16_t SequenceNumber() const { return sequence_number_; }
-  uint64_t Timestamp() const { return timestamp_; }
+  uint32_t Timestamp() const { return timestamp_; }
   uint32_t Ssrc() const { return ssrc_; }
   std::vector<uint32_t> Csrcs() const { return csrcs_; };
   uint16_t ExtensionProfile() const { return extension_profile_; }

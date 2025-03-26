@@ -195,6 +195,27 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     ProcessAv1RtpPacket(rtp_packet_av1);
   } else if (rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::H264 ||
              rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::H264 - 1) {
+    // std::unique_ptr<RtpPacketH264> rtp_packet_h264 =
+    //     std::make_unique<RtpPacketH264>();
+    // if (rtp_packet_h264->Build(rtp_packet.Buffer().data(),
+    // rtp_packet.Size())) {
+    //   std::vector<std::unique_ptr<RtpPacketH264>> complete_frame = std::move(
+    //       h264_frame_assembler_.InsertPacket(std::move(rtp_packet_h264)));
+    //   if (!complete_frame.empty()) {
+    //     for (auto& frame : complete_frame) {
+    //       ReceivedFrame received_frame(frame->Payload(),
+    //       frame->PayloadSize());
+    //       received_frame.SetReceivedTimestamp(clock_->CurrentTime().us());
+    //       received_frame.SetCapturedTimestamp(
+    //           (static_cast<int64_t>(frame->Timestamp()) /
+    //                rtp::kMsToRtpTimestamp -
+    //            delta_ntp_internal_ms_) *
+    //           1000);
+    //       compelete_video_frame_queue_.push(received_frame);
+    //     }
+    //   }
+    // }
+
     RtpPacketH264 rtp_packet_h264;
     if (rtp_packet_h264.Build(rtp_packet.Buffer().data(), rtp_packet.Size())) {
       rtp_packet_h264.GetFrameHeaderInfo();

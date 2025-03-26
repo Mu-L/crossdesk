@@ -11,6 +11,7 @@
 #include "api/clock/clock.h"
 #include "clock/system_clock.h"
 #include "fec_decoder.h"
+#include "h264_frame_assember.h"
 #include "io_statistics.h"
 #include "nack_requester.h"
 #include "receive_side_congestion_controller.h"
@@ -125,6 +126,7 @@ class RtpVideoReceiver : public ThreadBase,
       missing_sequence_numbers_;
   std::unordered_map<uint64_t, uint16_t> fua_end_sequence_numbers_;
   std::unordered_map<uint64_t, int64_t> missing_sequence_numbers_wait_time_;
+  H264FrameAssembler h264_frame_assembler_;
 
  private:
   std::thread rtcp_thread_;

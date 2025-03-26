@@ -149,7 +149,7 @@ target("transport")
 
 target("media")
     set_kind("object")
-    add_deps("log", "frame", "common")
+    add_deps("log", "frame", "common", "rtp")
     if is_os("windows") then
         add_files("src/media/video/encode/*.cpp",
         "src/media/video/decode/*.cpp",
@@ -214,10 +214,12 @@ target("media")
     end
     add_files("src/media/audio/encode/*.cpp",
         "src/media/audio/decode/*.cpp",
-        "src/media/resolution_adapter/*.cpp")
+        "src/media/resolution_adapter/*.cpp",
+        "src/media/video/assemble_frame/*.cpp")
     add_includedirs("src/media/audio/encode",
         "src/media/audio/decode",
         "src/media/resolution_adapter",
+        "src/media/video/assemble_frame",
         "src/interface", {public = true})
 
 target("pc")

@@ -329,7 +329,7 @@ class RtpPacket {
     // ParseRtpData();
     return sequence_number_;
   }
-  uint64_t Timestamp() const {
+  uint32_t Timestamp() const {
     // ParseRtpData();
     return timestamp_;
   }
