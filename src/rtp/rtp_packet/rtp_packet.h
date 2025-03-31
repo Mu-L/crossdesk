@@ -239,6 +239,12 @@ class RtpPacket {
   }
 
  public:
+  struct Extension {
+    uint8_t id;
+    uint8_t len;
+    std::vector<uint8_t> data;
+  };
+
   // Get Header
   uint32_t Version() const { return version_; }
   bool HasPadding() const { return has_padding_; }
@@ -252,6 +258,8 @@ class RtpPacket {
   uint32_t Ssrc() const { return ssrc_; }
   std::vector<uint32_t> Csrcs() const { return csrcs_; };
   uint16_t ExtensionProfile() const { return extension_profile_; }
+  uint16_t ExtensionLen() const { return extension_len_; }
+  std::vector<Extension> Extensions() const { return extensions_; }
 
   uint32_t GetAbsoluteSendTimestamp(uint32_t *abs_send_time) const {
     if (!extensions_.empty()) {
@@ -305,11 +313,6 @@ class RtpPacket {
   // Extension header
   uint16_t extension_profile_ = 0;
   uint16_t extension_len_ = 0;
-  struct Extension {
-    uint8_t id;
-    uint8_t len;
-    std::vector<uint8_t> data;
-  };
   std::vector<Extension> extensions_;
 
   // Payload

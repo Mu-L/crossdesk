@@ -29,6 +29,11 @@ class CopyOnWriteBuffer {
     buffer_ = std::make_shared<std::vector<uint8_t>>(data, data + size);
   }
 
+  void InsertDataAt(size_t offset, const uint8_t* data, size_t size) {
+    EnsureUnique();
+    buffer_->insert(buffer_->begin() + offset, data, data + size);
+  }
+
   const uint8_t* data() const { return buffer_ ? buffer_->data() : nullptr; }
 
   size_t size() const { return buffer_ ? buffer_->size() : 0; }

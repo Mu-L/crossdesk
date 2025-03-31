@@ -68,10 +68,7 @@ class PacketSenderImp : public PacketSender,
         ssrc_seq_[packet->Ssrc()] = 1;
       }
 
-      if (packet->packet_type().value() !=
-          webrtc::RtpPacketMediaType::kRetransmission) {
-        packet->UpdateSequenceNumber(ssrc_seq_[packet->Ssrc()]++);
-      }
+      packet->UpdateSequenceNumber(ssrc_seq_[packet->Ssrc()]++);
 
       on_sent_packet_func_(std::move(packet));
     }

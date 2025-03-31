@@ -44,6 +44,8 @@ class RtpPacketToSend : public ::RtpPacket {
 
   ~RtpPacketToSend();
 
+  bool BuildRtxPacket();
+
   // Time in local time base as close as it can to frame capture time.
   webrtc::Timestamp capture_time() const { return capture_time_; }
   void set_capture_time(webrtc::Timestamp time) { capture_time_ = time; }
@@ -169,6 +171,9 @@ class RtpPacketToSend : public ::RtpPacket {
   bool is_red_ = false;
   bool send_as_ect1_ = false;
   std::optional<TimeDelta> time_in_send_queue_;
+
+ private:
+  std::vector<uint8_t> rtp_packet_frame_;
 };
 
 }  // namespace webrtc

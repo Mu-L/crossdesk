@@ -217,9 +217,16 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
         rtp_packet_h264->Build(rtp_packet.Buffer().data(), rtp_packet.Size())) {
       rtp_packet_h264->GetFrameHeaderInfo();
 
-      if (rtp_packet.PayloadType() != rtp::PAYLOAD_TYPE::RTX) {
+      if (rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::RTX) {
         receive_side_congestion_controller_.OnReceivedPacket(
             rtp_packet_received, MediaType::VIDEO);
+
+        size_t osn_offset = rtp_packet.HeaderSize();
+        uint16_t osn = rtp_packet.Buffer().data()[osn_offset] << 8 |
+                       rtp_packet.Buffer().data()[osn_offset + 1];
+        uint32_t abs_send_time = 0;
+        LOG_WARN("!!!!!!!!!!! osn = {}, abs {}", osn,
+                 rtp_packet.GetAbsoluteSendTimestamp(&abs_send_time));
         nack_->OnReceivedPacket(rtp_packet.SequenceNumber(), true);
       } else {
         nack_->OnReceivedPacket(rtp_packet.SequenceNumber(), false);
