@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <map>
+#include <mutex>
 #include <queue>
 #include <set>
 #include <unordered_map>
@@ -61,8 +62,6 @@ class RtpVideoReceiver : public ThreadBase,
   void ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264);
   bool CheckIsH264FrameCompleted(RtpPacketH264& rtp_packet_h264, bool is_start,
                                  bool is_end, bool is_rtx);
-  bool CheckIsH264FrameCompletedFuaEndReceived(RtpPacketH264& rtp_packet_h264);
-  bool CheckIsH264FrameCompletedMissSeqReceived(RtpPacketH264& rtp_packet_h264);
   bool PopCompleteFrame(uint16_t start_seq, uint16_t end_seq,
                         uint32_t timestamp);
 
@@ -103,6 +102,15 @@ class RtpVideoReceiver : public ThreadBase,
       nullptr;
   uint32_t last_complete_frame_ts_ = 0;
   RingBuffer<ReceivedFrame> compelete_video_frame_queue_;
+
+ private:
+  struct PendingFrame {
+    std::unique_ptr<ReceivedFrame> frame;
+    bool is_complete = false;
+    int64_t arrival_time = 0;
+  };
+  std::map<uint32_t, PendingFrame> pending_frames_;
+  std::mutex pending_frames_mtx_;
 
  private:
   std::shared_ptr<IOStatistics> io_statistics_ = nullptr;
