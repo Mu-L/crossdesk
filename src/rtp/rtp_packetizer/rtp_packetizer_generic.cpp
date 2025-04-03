@@ -69,7 +69,7 @@ std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerGeneric::Build(
     payload_type_ = rtp::PAYLOAD_TYPE(payload_type_);
     sequence_number_++;
     timestamp_ = timestamp;
-    ssrc_ = ssrc_;
+    // ssrc_ = ssrc_;
 
     if (!csrc_count_) {
     }
