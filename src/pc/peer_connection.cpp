@@ -13,14 +13,13 @@ PeerConnection::PeerConnection() {}
 
 PeerConnection::~PeerConnection() { user_data_ = nullptr; }
 
-int PeerConnection::Init(PeerConnectionParams params,
-                         const std::string &user_id) {
+int PeerConnection::Init(PeerConnectionParams params) {
   if (inited_) {
     LOG_INFO("Peer already inited");
     return 0;
   }
   // Todo: checkout user_id unique or not
-  user_id_ = user_id;
+  user_id_ = params.user_id;
 
   if (params.use_cfg_file) {
     INIReader reader(params.cfg_path);
@@ -103,7 +102,8 @@ int PeerConnection::Init(PeerConnectionParams params,
     if (WsStatus::WsOpening == ws_status) {
       ws_status_ = WsStatus::WsOpening;
       signal_status_ = SignalStatus::SignalConnecting;
-      on_signal_status_(SignalStatus::SignalConnecting, user_data_);
+      on_signal_status_(SignalStatus::SignalConnecting, user_id_.data(),
+                        user_id_.size(), user_data_);
     } else if (WsStatus::WsOpened == ws_status) {
       ws_status_ = WsStatus::WsOpened;
       LOG_INFO("Login to signal server");
@@ -111,19 +111,23 @@ int PeerConnection::Init(PeerConnectionParams params,
     } else if (WsStatus::WsFailed == ws_status) {
       ws_status_ = WsStatus::WsFailed;
       signal_status_ = SignalStatus::SignalFailed;
-      on_signal_status_(SignalStatus::SignalFailed, user_data_);
+      on_signal_status_(SignalStatus::SignalFailed, user_id_.data(),
+                        user_id_.size(), user_data_);
     } else if (WsStatus::WsClosed == ws_status) {
       ws_status_ = WsStatus::WsClosed;
       signal_status_ = SignalStatus::SignalClosed;
-      on_signal_status_(SignalStatus::SignalClosed, user_data_);
+      on_signal_status_(SignalStatus::SignalClosed, user_id_.data(),
+                        user_id_.size(), user_data_);
     } else if (WsStatus::WsReconnecting == ws_status) {
       ws_status_ = WsStatus::WsReconnecting;
       signal_status_ = SignalStatus::SignalReconnecting;
-      on_signal_status_(SignalStatus::SignalReconnecting, user_data_);
+      on_signal_status_(SignalStatus::SignalReconnecting, user_id_.data(),
+                        user_id_.size(), user_data_);
     } else if (WsStatus::WsServerClosed == ws_status) {
       ws_status_ = WsStatus::WsServerClosed;
       signal_status_ = SignalStatus::SignalServerClosed;
-      on_signal_status_(SignalStatus::SignalServerClosed, user_data_);
+      on_signal_status_(SignalStatus::SignalServerClosed, user_id_.data(),
+                        user_id_.size(), user_data_);
     }
   };
 
@@ -196,7 +200,7 @@ int PeerConnection::Init(PeerConnectionParams params,
   // do {
   // } while (SignalStatus::SignalConnected != GetSignalStatus());
 
-  LOG_INFO("[{}] Init finish", user_id);
+  LOG_INFO("[{}] Init finish", user_id_);
 
   inited_ = true;
   return 0;
@@ -414,7 +418,8 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
                            user_id_.data(), user_id_.size(), user_data_);
         LOG_INFO("Login success with id [{}]", user_id_);
         signal_status_ = SignalStatus::SignalConnected;
-        on_signal_status_(SignalStatus::SignalConnected, user_data_);
+        on_signal_status_(SignalStatus::SignalConnected, user_id_.data(),
+                          user_id_.size(), user_data_);
       } else if (j["status"].get<std::string>() == "fail") {
         LOG_WARN("Login failed with id [{}]", user_id_);
       }

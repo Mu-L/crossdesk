@@ -38,6 +38,8 @@ PeerPtr *CreatePeer(const Params *params) {
   peer_ptr->pc_params.on_signal_status = params->on_signal_status;
   peer_ptr->pc_params.on_connection_status = params->on_connection_status;
   peer_ptr->pc_params.net_status_report = params->net_status_report;
+
+  peer_ptr->pc_params.user_id = params->user_id;
   peer_ptr->pc_params.user_data = params->user_data;
 
   return peer_ptr;
@@ -51,13 +53,13 @@ void DestroyPeer(PeerPtr **peer_ptr) {
   *peer_ptr = nullptr;
 }
 
-int Init(PeerPtr *peer_ptr, const char *user_id) {
+int Init(PeerPtr *peer_ptr) {
   if (!peer_ptr || !peer_ptr->peer_connection) {
     LOG_ERROR("Peer connection not created");
     return -1;
   }
 
-  peer_ptr->peer_connection->Init(peer_ptr->pc_params, user_id);
+  peer_ptr->peer_connection->Init(peer_ptr->pc_params);
   return 0;
 }
 

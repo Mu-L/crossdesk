@@ -80,7 +80,7 @@ typedef void (*OnReceiveBuffer)(const char*, size_t, const char*, const size_t,
 typedef void (*OnReceiveVideoFrame)(const XVideoFrame*, const char*,
                                     const size_t, void*);
 
-typedef void (*OnSignalStatus)(SignalStatus, void*);
+typedef void (*OnSignalStatus)(SignalStatus, const char*, const size_t, void*);
 
 typedef void (*OnConnectionStatus)(ConnectionStatus, const char*, const size_t,
                                    void*);
@@ -114,6 +114,8 @@ typedef struct {
   OnSignalStatus on_signal_status;
   OnConnectionStatus on_connection_status;
   NetStatusReport net_status_report;
+
+  const char* user_id;
   void* user_data;
 } Params;
 
@@ -121,7 +123,7 @@ DLLAPI PeerPtr* CreatePeer(const Params* params);
 
 DLLAPI void DestroyPeer(PeerPtr** peer_ptr);
 
-DLLAPI int Init(PeerPtr* peer_ptr, const char* user_id);
+DLLAPI int Init(PeerPtr* peer_ptr);
 
 DLLAPI int CreateConnection(PeerPtr* peer_ptr, const char* transmission_id,
                             const char* password);

@@ -26,7 +26,8 @@ typedef void (*OnReceiveBuffer)(const char *, size_t, const char *,
 typedef void (*OnReceiveVideoFrame)(const XVideoFrame *video_frame,
                                     const char *, const size_t, void *);
 
-typedef void (*OnSignalStatus)(SignalStatus, void *);
+typedef void (*OnSignalStatus)(SignalStatus, const char *, const size_t,
+                               void *);
 
 typedef void (*OnConnectionStatus)(ConnectionStatus, const char *, const size_t,
                                    void *);
@@ -60,6 +61,8 @@ typedef struct {
   OnSignalStatus on_signal_status;
   OnConnectionStatus on_connection_status;
   NetStatusReport net_status_report;
+
+  const char *user_id;
   void *user_data;
 } PeerConnectionParams;
 
@@ -88,7 +91,7 @@ class PeerConnection {
   ~PeerConnection();
 
  public:
-  int Init(PeerConnectionParams params, const std::string &user_id);
+  int Init(PeerConnectionParams params);
 
   int Create(const std::string &transmission_id = "",
              const std::string &password = "");
