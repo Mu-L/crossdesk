@@ -371,6 +371,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
     render->password_validating_ = false;
     render->password_validating_time_++;
     if (render->connect_button_pressed_) {
+      render->connect_button_pressed_ = false;
       props->connection_established_ = false;
       render->connect_button_label_ =
           render->connect_button_pressed_
