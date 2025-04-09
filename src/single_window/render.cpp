@@ -431,10 +431,12 @@ int Render::CreateRtcConnection() {
     mouse_controller_is_started_ = false;
   }
 
-  if (start_keyboard_capturer_ && !keyboard_capturer_is_started_) {
-    StartKeyboardCapturer();
-    keyboard_capturer_is_started_ = true;
-  } else if (!start_keyboard_capturer_ && keyboard_capturer_is_started_) {
+  if (start_keyboard_capturer_ && foucs_on_stream_window_) {
+    if (!keyboard_capturer_is_started_) {
+      StartKeyboardCapturer();
+      keyboard_capturer_is_started_ = true;
+    }
+  } else if (keyboard_capturer_is_started_) {
     StopKeyboardCapturer();
     keyboard_capturer_is_started_ = false;
   }
@@ -858,8 +860,7 @@ int Render::Run() {
             }
 
             std::string host_name = it.first;
-            PeerPtr* peer_client = peer_map_[host_name];
-            if (peer_client) {
+            if (props->peer_) {
               std::string client_id;
               if (host_name == client_id_) {
                 client_id = "C-" + std::string(client_id_);
@@ -867,9 +868,9 @@ int Render::Run() {
                 client_id = client_id_;
               }
               LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
-              LeaveConnection(peer_client, host_name.c_str());
+              LeaveConnection(props->peer_, host_name.c_str());
               LOG_INFO("Destroy peer [{}]", client_id);
-              DestroyPeer(&peer_client);
+              DestroyPeer(&props->peer_);
             }
 
             props->streaming_ = false;
@@ -1000,8 +1001,49 @@ int Render::Run() {
 
         SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,
                           props->texture_width_);
+      } else if (event.type == SDL_MOUSEMOTION ||
+                 event.type == SDL_MOUSEBUTTONDOWN ||
+                 event.type == SDL_MOUSEBUTTONUP ||
+                 event.type == SDL_MOUSEWHEEL) {
+        if (!foucs_on_stream_window_) {
+          continue;
+        }
+
+        for (auto& it : client_properties_) {
+          auto props = it.second;
+          if (props->control_mouse_) {
+            ProcessMouseEvent(event);
+          }
+        }
+      } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+        if (stream_window_) {
+          if (SDL_GetWindowID(stream_window_) == event.window.windowID) {
+            foucs_on_stream_window_ = true;
+            LOG_INFO("Focus on stream window");
+          }
+        }
+
+        if (main_window_) {
+          if (SDL_GetWindowID(main_window_) == event.window.windowID) {
+            foucs_on_main_window_ = true;
+            LOG_INFO("Focus on main window");
+          }
+        }
+      } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+        if (stream_window_) {
+          if (SDL_GetWindowID(stream_window_) == event.window.windowID) {
+            foucs_on_stream_window_ = false;
+            LOG_INFO("Lost focus on stream window");
+          }
+        }
+
+        if (main_window_) {
+          if (SDL_GetWindowID(main_window_) == event.window.windowID) {
+            foucs_on_main_window_ = false;
+            LOG_INFO("Lost focus on main window");
+          }
+        }
       } else {
-        ProcessMouseEvent(event);
       }
     }
 
@@ -1103,7 +1145,7 @@ int Render::Run() {
     }
 
     std::string host_name = it.first;
-    PeerPtr* peer_client = peer_map_[host_name];
+    PeerPtr* peer_client = props->peer_;
     if (peer_client) {
       std::string client_id;
       if (host_name == client_id_) {

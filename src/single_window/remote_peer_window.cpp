@@ -78,9 +78,8 @@ int Render::RemoteWindow() {
         ConnectTo(remote_id_, remote_password_, false);
       }
 
-      std::string client_id = "C-" + remote_id_;
-      if (client_properties_.find(client_id) != client_properties_.end()) {
-        auto props = client_properties_[client_id];
+      if (client_properties_.find(remote_id_) != client_properties_.end()) {
+        auto props = client_properties_[remote_id_];
         if (props->rejoin_) {
           ConnectTo(remote_id_, remote_password_,
                     client_properties_[remote_id_]->remember_password_);
@@ -107,41 +106,37 @@ static int InputTextCallback(ImGuiInputTextCallbackData *data) {
   return 0;
 }
 
-int Render::ConnectTo(const std::string &host_name, const char *password,
+int Render::ConnectTo(const std::string &remote_id, const char *password,
                       bool remember_password) {
-  LOG_INFO("Connect to [{}]", host_name);
+  LOG_INFO("Connect to [{}]", remote_id);
 
-  std::string client_id = "C-" + host_name;
-  if (client_properties_.find(client_id) == client_properties_.end()) {
-    client_properties_[client_id] =
+  if (client_properties_.find(remote_id) == client_properties_.end()) {
+    client_properties_[remote_id] =
         std::make_shared<SubStreamWindowProperties>();
-  }
+    auto props = client_properties_[remote_id];
+    props->local_id_ = "C-" + remote_id;
+    props->remote_id_ = remote_id;
+    memcpy(&props->params_, &params_, sizeof(Params));
+    props->params_.user_id = props->local_id_.c_str();
+    props->peer_ = CreatePeer(&props->params_);
 
-  auto props = client_properties_[client_id];
-  props->connection_status_ = ConnectionStatus::Connecting;
-  props->remember_password_ = remember_password;
-  memcpy(props->remote_password_, password, 6);
-
-  int ret = -1;
-
-  if (!props->connection_established_) {
-    if (peer_map_.find(client_id) == peer_map_.end()) {
-      memcpy(&props->params_, &params_, sizeof(Params));
-      props->params_.user_id = client_id.c_str();
-      peer_map_[client_id] = CreatePeer(&props->params_);
-    }
-
-    if (peer_map_[client_id]) {
-      LOG_INFO("[{}] Create peer instance successful", client_id);
-      Init(peer_map_[client_id]);
-      LOG_INFO("[{}] Peer init finish", client_id);
+    if (props->peer_) {
+      LOG_INFO("[{}] Create peer instance successful", props->local_id_);
+      Init(props->peer_);
+      LOG_INFO("[{}] Peer init finish", props->local_id_);
     } else {
-      LOG_INFO("Create peer [{}] instance failed", client_id);
+      LOG_INFO("Create peer [{}] instance failed", props->local_id_);
     }
 
-    ret = JoinConnection(peer_map_[client_id], host_name.c_str(), password);
+    props->connection_status_ = ConnectionStatus::Connecting;
+    props->remember_password_ = remember_password;
+    memcpy(props->remote_password_, password, 6);
+  }
+  int ret = -1;
+  auto props = client_properties_[remote_id];
+  if (!props->connection_established_) {
+    ret = JoinConnection(props->peer_, remote_id.c_str(), password);
     if (0 == ret) {
-      is_client_mode_ = true;
       props->rejoin_ = false;
     } else {
       props->rejoin_ = true;

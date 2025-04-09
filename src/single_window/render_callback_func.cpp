@@ -43,38 +43,41 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
       video_height = props->video_height_;
       render_width = props->stream_render_rect_.w;
       render_height = props->stream_render_rect_.h;
-    }
-  }
 
-  float ratio_x = (float)video_width / (float)render_width;
-  float ratio_y = (float)video_height / (float)render_height;
+      float ratio_x = (float)video_width / (float)render_width;
+      float ratio_y = (float)video_height / (float)render_height;
 
-  RemoteAction remote_action;
-  remote_action.m.x = (size_t)(event.button.x * ratio_x);
-  remote_action.m.y = (size_t)(event.button.y * ratio_y);
+      RemoteAction remote_action;
+      remote_action.m.x = (size_t)(event.button.x * ratio_x);
+      remote_action.m.y = (size_t)(event.button.y * ratio_y);
 
-  if (SDL_MOUSEBUTTONDOWN == event.type) {
-    remote_action.type = ControlType::mouse;
-    if (SDL_BUTTON_LEFT == event.button.button) {
-      remote_action.m.flag = MouseFlag::left_down;
-    } else if (SDL_BUTTON_RIGHT == event.button.button) {
-      remote_action.m.flag = MouseFlag::right_down;
+      if (SDL_MOUSEBUTTONDOWN == event.type) {
+        remote_action.type = ControlType::mouse;
+        if (SDL_BUTTON_LEFT == event.button.button) {
+          remote_action.m.flag = MouseFlag::left_down;
+        } else if (SDL_BUTTON_RIGHT == event.button.button) {
+          remote_action.m.flag = MouseFlag::right_down;
+        }
+        remote_action.m.flag = MouseFlag::move;
+        SendDataFrame(peer_, (const char *)&remote_action,
+                      sizeof(remote_action));
+      } else if (SDL_MOUSEBUTTONUP == event.type) {
+        remote_action.type = ControlType::mouse;
+        if (SDL_BUTTON_LEFT == event.button.button) {
+          remote_action.m.flag = MouseFlag::left_up;
+        } else if (SDL_BUTTON_RIGHT == event.button.button) {
+          remote_action.m.flag = MouseFlag::right_up;
+        }
+        remote_action.m.flag = MouseFlag::move;
+        SendDataFrame(peer_, (const char *)&remote_action,
+                      sizeof(remote_action));
+      } else if (SDL_MOUSEMOTION == event.type) {
+        remote_action.type = ControlType::mouse;
+        remote_action.m.flag = MouseFlag::move;
+        SendDataFrame(peer_, (const char *)&remote_action,
+                      sizeof(remote_action));
+      }
     }
-    remote_action.m.flag = MouseFlag::move;
-    SendDataFrame(peer_, (const char *)&remote_action, sizeof(remote_action));
-  } else if (SDL_MOUSEBUTTONUP == event.type) {
-    remote_action.type = ControlType::mouse;
-    if (SDL_BUTTON_LEFT == event.button.button) {
-      remote_action.m.flag = MouseFlag::left_up;
-    } else if (SDL_BUTTON_RIGHT == event.button.button) {
-      remote_action.m.flag = MouseFlag::right_up;
-    }
-    remote_action.m.flag = MouseFlag::move;
-    SendDataFrame(peer_, (const char *)&remote_action, sizeof(remote_action));
-  } else if (SDL_MOUSEMOTION == event.type) {
-    remote_action.type = ControlType::mouse;
-    remote_action.m.flag = MouseFlag::move;
-    SendDataFrame(peer_, (const char *)&remote_action, sizeof(remote_action));
   }
 
   return 0;
@@ -87,9 +90,13 @@ void Render::SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
   }
 
   if (1) {
-    if ("Connected" == render->connection_status_str_) {
-      SendAudioFrame(render->peer_, (const char *)stream, len);
+    for (auto it : render->client_properties_) {
+      auto props = it.second;
+      if (props->connection_status_ == ConnectionStatus::Connected) {
+        SendAudioFrame(props->peer_, (const char *)stream, len);
+      }
     }
+
   } else {
     memcpy(render->audio_buffer_, stream, len);
     render->audio_len_ = len;
@@ -102,8 +109,11 @@ void Render::SdlCaptureAudioOut([[maybe_unused]] void *userdata,
                                 [[maybe_unused]] Uint8 *stream,
                                 [[maybe_unused]] int len) {
   // Render *render = (Render *)userdata;
-  // if ("Connected" == render->connection_status_str_) {
-  //   SendAudioFrame(render->peer_,  (const char *)stream, len);
+  // for (auto it : render->client_properties_) {
+  //   auto props = it.second;
+  //   if (props->connection_status_ == SignalStatus::SignalConnected) {
+  //     SendAudioFrame(props->peer_, (const char *)stream, len);
+  //   }
   // }
 
   // if (!render->audio_buffer_fresh_) {
@@ -223,15 +233,15 @@ void Render::OnSignalStatusCb(SignalStatus status, const char *user_id,
   if (!render) {
     return;
   }
-  std::string remote_id(user_id, user_id_size);
 
-  if (remote_id == render->client_id_) {
+  std::string client_id(user_id, user_id_size);
+  if (client_id == render->client_id_) {
     render->signal_status_ = status;
     if (SignalStatus::SignalConnecting == status) {
       render->signal_connected_ = false;
     } else if (SignalStatus::SignalConnected == status) {
       render->signal_connected_ = true;
-      LOG_INFO("[{}] connected to signal server", remote_id);
+      LOG_INFO("[{}] connected to signal server", client_id);
     } else if (SignalStatus::SignalFailed == status) {
       render->signal_connected_ = false;
     } else if (SignalStatus::SignalClosed == status) {
@@ -242,6 +252,11 @@ void Render::OnSignalStatusCb(SignalStatus status, const char *user_id,
       render->signal_connected_ = false;
     }
   } else {
+    if (client_id.rfind("C-", 0) != 0) {
+      return;
+    }
+
+    std::string remote_id(client_id.begin() + 2, client_id.end());
     if (render->client_properties_.find(remote_id) ==
         render->client_properties_.end()) {
       return;
@@ -292,11 +307,8 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
   props->connection_status_ = status;
   render->show_connection_status_window_ = true;
   if (ConnectionStatus::Connecting == status) {
-    render->connection_status_str_ = "Connecting";
   } else if (ConnectionStatus::Gathering == status) {
-    render->connection_status_str_ = "Gathering";
   } else if (ConnectionStatus::Connected == status) {
-    render->connection_status_str_ = "Connected";
     if (!render->need_to_create_stream_window_) {
       render->need_to_create_stream_window_ = true;
     }
@@ -324,18 +336,15 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
           (int)(render->stream_window_height_ - render->title_bar_height_);
     }
 
-    if (render->peer_reserved_ || !render->is_client_mode_) {
+    if (!render->is_client_mode_) {
       render->start_screen_capturer_ = true;
       render->start_mouse_controller_ = true;
     }
   } else if (ConnectionStatus::Disconnected == status) {
-    render->connection_status_str_ = "Disconnected";
     render->password_validating_time_ = 0;
   } else if (ConnectionStatus::Failed == status) {
-    render->connection_status_str_ = "Failed";
     render->password_validating_time_ = 0;
   } else if (ConnectionStatus::Closed == status) {
-    render->connection_status_str_ = "Closed";
     render->password_validating_time_ = 0;
     render->start_screen_capturer_ = false;
     render->start_mouse_controller_ = false;
@@ -357,7 +366,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
                         props->texture_width_);
     }
   } else if (ConnectionStatus::IncorrectPassword == status) {
-    render->connection_status_str_ = "Incorrect password";
     render->password_validating_ = false;
     render->password_validating_time_++;
     if (render->connect_button_pressed_) {
@@ -368,7 +376,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
               : localization::connect[render->localization_language_index_];
     }
   } else if (ConnectionStatus::NoSuchTransmissionId == status) {
-    render->connection_status_str_ = "No such transmission id";
     if (render->connect_button_pressed_) {
       props->connection_established_ = false;
       render->connect_button_label_ =

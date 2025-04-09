@@ -31,6 +31,9 @@ class Render {
  public:
   struct SubStreamWindowProperties {
     Params params_;
+    PeerPtr *peer_ = nullptr;
+    std::string local_id_ = "";
+    std::string remote_id_ = "";
     bool exit_ = false;
     bool signal_connected_ = false;
     SignalStatus signal_status_ = SignalStatus::SignalClosed;
@@ -40,6 +43,7 @@ class Render {
     bool mouse_control_button_pressed_ = false;
     bool mouse_controller_is_started_ = false;
     bool audio_capture_button_pressed_ = false;
+    bool control_mouse_ = false;
     bool streaming_ = false;
     bool is_control_bar_in_left_ = true;
     bool control_bar_hovered_ = false;
@@ -117,7 +121,7 @@ class Render {
 
  private:
   int CreateRtcConnection();
-  int ConnectTo(const std::string &host_name, const char *password,
+  int ConnectTo(const std::string &remote_id, const char *password,
                 bool remember_password);
   int CreateMainWindow();
   int DestroyMainWindow();
@@ -243,6 +247,8 @@ class Render {
   bool screen_capturer_is_started_ = false;
   bool start_keyboard_capturer_ = false;
   bool keyboard_capturer_is_started_ = false;
+  bool foucs_on_main_window_ = false;
+  bool foucs_on_stream_window_ = false;
   bool audio_capture_ = false;
   int main_window_width_real_ = 720;
   int main_window_height_real_ = 540;
@@ -334,7 +340,6 @@ class Render {
   double regenerate_password_start_time_ = 0;
   SignalStatus signal_status_ = SignalStatus::SignalClosed;
   std::string signal_status_str_ = "";
-  std::string connection_status_str_ = "";
   bool signal_connected_ = false;
   PeerPtr *peer_ = nullptr;
   PeerPtr *peer_reserved_ = nullptr;
@@ -368,7 +373,6 @@ class Render {
   /* ------ sub stream window property start ------ */
   std::unordered_map<std::string, std::shared_ptr<SubStreamWindowProperties>>
       client_properties_;
-  std::unordered_map<std::string, PeerPtr *> peer_map_;
   /* ------ stream window property end ------ */
 
   std::unordered_map<std::string, std::shared_ptr<SubStreamWindowProperties>>
