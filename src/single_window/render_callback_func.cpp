@@ -311,7 +311,8 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
   if (ConnectionStatus::Connecting == status) {
   } else if (ConnectionStatus::Gathering == status) {
   } else if (ConnectionStatus::Connected == status) {
-    if (!render->need_to_create_stream_window_) {
+    if (!render->need_to_create_stream_window_ &&
+        !render->client_properties_.empty()) {
       render->need_to_create_stream_window_ = true;
     }
 
