@@ -53,7 +53,7 @@ void RtpVideoSender::Enqueue(
 
     to_send_rtp_packets.push_back(std::move(rtp_packet_to_send));
   }
-  enqueue_packets_func_(std::move(to_send_rtp_packets));
+  enqueue_packets_func_(to_send_rtp_packets);
 }
 
 void RtpVideoSender::SetSendDataFunc(

@@ -37,6 +37,8 @@ class AnyInvocable<R(Args...)> {
   // 移动赋值运算符
   AnyInvocable& operator=(AnyInvocable&&) = default;
 
+  explicit operator bool() const { return static_cast<bool>(callable_); }
+
  private:
   // 抽象基类，允许不同类型的可调用对象
   struct CallableBase {

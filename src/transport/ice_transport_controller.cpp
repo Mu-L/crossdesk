@@ -203,33 +203,33 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
     b_force_i_frame_ = false;
   }
 
-  XVideoFrame new_frame;
-  new_frame.data = nullptr;
-  new_frame.width = video_frame->width;
-  new_frame.height = video_frame->height;
-  new_frame.size = video_frame->size;
-  new_frame.captured_timestamp = video_frame->captured_timestamp;
-  if (target_width_.has_value() && target_height_.has_value()) {
-    if (target_width_.value() < video_frame->width &&
-        target_height_.value() < video_frame->height) {
-      resolution_adapter_->ResolutionDowngrade(
-          video_frame, target_width_.value(), target_height_.value(),
-          &new_frame);
-    } else {
-      new_frame.data = new char[video_frame->size];
-      memcpy((void*)new_frame.data, (void*)video_frame->data,
-             video_frame->size);
-    }
-  }
-
-  RawFrame raw_frame((const uint8_t*)new_frame.data, new_frame.size,
-                     new_frame.width, new_frame.height);
-  raw_frame.SetCapturedTimestamp(video_frame->captured_timestamp);
-
-  delete[] new_frame.data;
-
   if (task_queue_encode_ && video_encoder_) {
-    task_queue_encode_->PostTask([this, raw_frame]() mutable {
+    auto video_frame_copy = std::make_shared<XVideoFrame>(*video_frame);
+    task_queue_encode_->PostTask([this, video_frame_copy]() mutable {
+      XVideoFrame new_frame;
+      new_frame.data = nullptr;
+      new_frame.width = video_frame_copy->width;
+      new_frame.height = video_frame_copy->height;
+      new_frame.size = video_frame_copy->size;
+      new_frame.captured_timestamp = video_frame_copy->captured_timestamp;
+      if (target_width_.has_value() && target_height_.has_value()) {
+        if (target_width_.value() < video_frame_copy->width &&
+            target_height_.value() < video_frame_copy->height) {
+          resolution_adapter_->ResolutionDowngrade(
+              video_frame_copy.get(), target_width_.value(),
+              target_height_.value(), &new_frame);
+        } else {
+          new_frame.data = new char[video_frame_copy->size];
+          memcpy((void*)new_frame.data, (void*)video_frame_copy->data,
+                 video_frame_copy->size);
+        }
+      }
+
+      RawFrame raw_frame((const uint8_t*)new_frame.data, new_frame.size,
+                         new_frame.width, new_frame.height);
+      raw_frame.SetCapturedTimestamp(video_frame_copy->captured_timestamp);
+      delete[] new_frame.data;
+
       int ret = video_encoder_->Encode(
           std::move(raw_frame),
           [this](const EncodedFrame& encoded_frame) -> int {

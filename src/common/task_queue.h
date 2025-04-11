@@ -104,8 +104,6 @@ class TaskQueue {
                                [this]() { return stop_; });
         }
 
-        if (stop_ && taskQueue_.empty()) return;
-
         task = std::move(
             const_cast<AnyInvocable<void()> &>(taskQueue_.top().task));
         taskQueue_.pop();
