@@ -158,7 +158,8 @@ int Render::ConnectTo(const std::string &remote_id, const char *password,
   if (!props->connection_established_) {
     props->remember_password_ = remember_password;
     if (strcmp(password, "") != 0) {
-      memcpy(props->remote_password_, password, sizeof(password));
+      strncpy(props->remote_password_, password,
+              sizeof(props->remote_password_));
     }
     ret = JoinConnection(props->peer_, remote_id.c_str(), password);
     if (0 == ret) {

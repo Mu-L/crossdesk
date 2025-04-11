@@ -711,7 +711,7 @@ typedef unsigned char validate_uint32[sizeof(stbi__uint32) == 4 ? 1 : -1];
 #ifdef STBI_HAS_LROTL
 #define stbi_lrot(x, y) _lrotl(x, y)
 #else
-#define stbi_lrot(x, y) (((x) << (y)) | ((x) >> (-(y)&31)))
+#define stbi_lrot(x, y) (((x) << (y)) | ((x) >> (-(y) & 31)))
 #endif
 
 #if defined(STBI_MALLOC) && defined(STBI_FREE) && \
@@ -1784,7 +1784,7 @@ static stbi__uint32 stbi__get32le(stbi__context *s) {
 #endif
 
 #define STBI__BYTECAST(x) \
-  ((stbi_uc)((x)&255))  // truncate int to byte without warnings
+  ((stbi_uc)((x) & 255))  // truncate int to byte without warnings
 
 #if defined(STBI_NO_JPEG) && defined(STBI_NO_PNG) && defined(STBI_NO_BMP) && \
     defined(STBI_NO_PSD) && defined(STBI_NO_TGA) && defined(STBI_NO_GIF) &&  \
@@ -1831,7 +1831,7 @@ static unsigned char *stbi__convert_format(unsigned char *data, int img_n,
     unsigned char *src = data + j * x * img_n;
     unsigned char *dest = good + j * x * req_comp;
 
-#define STBI__COMBO(a, b) ((a)*8 + (b))
+#define STBI__COMBO(a, b) ((a) * 8 + (b))
 #define STBI__CASE(a, b)  \
   case STBI__COMBO(a, b): \
     for (i = x - 1; i >= 0; --i, src += a, dest += b)
@@ -1931,7 +1931,7 @@ static stbi__uint16 *stbi__convert_format16(stbi__uint16 *data, int img_n,
     stbi__uint16 *src = data + j * x * img_n;
     stbi__uint16 *dest = good + j * x * req_comp;
 
-#define STBI__COMBO(a, b) ((a)*8 + (b))
+#define STBI__COMBO(a, b) ((a) * 8 + (b))
 #define STBI__CASE(a, b)  \
   case STBI__COMBO(a, b): \
     for (i = x - 1; i >= 0; --i, src += a, dest += b)
@@ -2590,8 +2590,8 @@ stbi_inline static stbi_uc stbi__clamp(int x) {
   return (stbi_uc)x;
 }
 
-#define stbi__f2f(x) ((int)(((x)*4096 + 0.5)))
-#define stbi__fsh(x) ((x)*4096)
+#define stbi__f2f(x) ((int)(((x) * 4096 + 0.5)))
+#define stbi__fsh(x) ((x) * 4096)
 
 // derived from jidctint -- DCT_ISLOW
 #define STBI__IDCT_1D(s0, s1, s2, s3, s4, s5, s6, s7)     \
@@ -3694,7 +3694,7 @@ static int stbi__decode_jpeg_image(stbi__jpeg *j) {
   if (!stbi__decode_jpeg_header(j, STBI__SCAN_load)) return 0;
   m = stbi__get_marker(j);
   while (!stbi__EOI(m)) {
-    if (stbi__SOS(m)) {
+    if (stbi__SOS(m) == true) {
       if (!stbi__process_scan_header(j)) return 0;
       if (!stbi__parse_entropy_coded_data(j)) return 0;
       if (j->marker == STBI__MARKER_none) {
@@ -3704,7 +3704,7 @@ static int stbi__decode_jpeg_image(stbi__jpeg *j) {
       }
       m = stbi__get_marker(j);
       if (STBI__RESTART(m)) m = stbi__get_marker(j);
-    } else if (stbi__DNL(m)) {
+    } else if (stbi__DNL(m) == true) {
       int Ld = stbi__get16be(j->s);
       stbi__uint32 NL = stbi__get16be(j->s);
       if (Ld != 4) return stbi__err("bad DNL len", "Corrupt JPEG");
@@ -3929,7 +3929,7 @@ static stbi_uc *stbi__resample_row_generic(stbi_uc *out, stbi_uc *in_near,
 
 // this is a reduced-precision calculation of YCbCr-to-RGB introduced
 // to make sure the code produces the same results in both SIMD and scalar
-#define stbi__float2fixed(x) (((int)((x)*4096.0f + 0.5f)) << 8)
+#define stbi__float2fixed(x) (((int)((x) * 4096.0f + 0.5f)) << 8)
 static void stbi__YCbCr_to_RGB_row(stbi_uc *out, const stbi_uc *y,
                                    const stbi_uc *pcb, const stbi_uc *pcr,
                                    int count, int step) {
@@ -7579,8 +7579,7 @@ static char *stbi__hdr_gettoken(stbi__context *z, char *buffer) {
     buffer[len++] = c;
     if (len == STBI__HDR_BUFLEN - 1) {
       // flush to end of line
-      while (!stbi__at_eof(z) && stbi__get8(z) != '\n')
-        ;
+      while (!stbi__at_eof(z) && stbi__get8(z) != '\n');
       break;
     }
     c = (char)stbi__get8(z);
