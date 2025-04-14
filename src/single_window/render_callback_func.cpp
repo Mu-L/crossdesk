@@ -54,8 +54,6 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
         event.button.y <=
             props->stream_render_rect_.y + props->stream_render_rect_.h) {
       controlled_remote_id_ = it.first;
-      video_width = props->video_width_;
-      video_height = props->video_height_;
       render_width = props->stream_render_rect_.w;
       render_height = props->stream_render_rect_.h;
 
@@ -65,8 +63,10 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
           (float)props->original_display_height_ / (float)render_height;
 
       RemoteAction remote_action;
-      remote_action.m.x = (size_t)(event.button.x * ratio_x);
-      remote_action.m.y = (size_t)(event.button.y * ratio_y);
+      remote_action.m.x =
+          (size_t)((event.button.x - props->stream_render_rect_.x) * ratio_x);
+      remote_action.m.y =
+          (size_t)((event.button.y - props->stream_render_rect_.y) * ratio_y);
 
       if (SDL_MOUSEBUTTONDOWN == event.type) {
         remote_action.type = ControlType::mouse;
