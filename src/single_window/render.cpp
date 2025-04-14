@@ -194,7 +194,8 @@ int Render::StartScreenCapturer() {
 
   int screen_capturer_init_ret = screen_capturer_->Init(
       60, [this](unsigned char* data, int size, int width, int height) -> void {
-        if (!hostname_sent_ && width > 0 && height > 0) {
+        if (!hostname_sent_ && width > 0 && height > 0 &&
+            start_screen_capturer_) {
           original_display_width_ = width;
           original_display_height_ = height;
           std::string host_name = GetHostName();
