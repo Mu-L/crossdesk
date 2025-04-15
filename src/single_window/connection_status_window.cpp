@@ -159,6 +159,8 @@ int Render::ConnectionStatusWindow(
           ImGui::IsKeyPressed(ImGuiKey_Enter)) {
         show_connection_status_window_ = false;
         re_enter_remote_id_ = true;
+        DestroyPeer(&props->peer_);
+        client_properties_.erase(props->remote_id_);
       }
     }
 
