@@ -57,16 +57,40 @@ int MouseController::SendMouseCommand(RemoteAction remote_action) {
     memset(&event, 0, sizeof(event));
     gettimeofday(&event.time, NULL);
 
-    if (remote_action.m.flag == MouseFlag::left_down) {
-      SimulateKeyDown(uinput_fd_, BTN_LEFT);
-    } else if (remote_action.m.flag == MouseFlag::left_up) {
-      SimulateKeyUp(uinput_fd_, BTN_LEFT);
-    } else if (remote_action.m.flag == MouseFlag::right_down) {
-      SimulateKeyDown(uinput_fd_, BTN_RIGHT);
-    } else if (remote_action.m.flag == MouseFlag::right_up) {
-      SimulateKeyUp(uinput_fd_, BTN_RIGHT);
-    } else {
-      SetMousePosition(uinput_fd_, mouse_pos_x, mouse_pos_y);
+    switch (remote_action.m.flag) {
+      case MouseFlag::left_down:
+        SimulateKeyDown(uinput_fd_, BTN_LEFT);
+        break;
+      case MouseFlag::left_up:
+        SimulateKeyUp(uinput_fd_, BTN_LEFT);
+        break;
+      case MouseFlag::right_down:
+        SimulateKeyDown(uinput_fd_, BTN_RIGHT);
+        break;
+      case MouseFlag::right_up:
+        SimulateKeyUp(uinput_fd_, BTN_RIGHT);
+        break;
+      case MouseFlag::middle_down:
+        SimulateKeyDown(uinput_fd_, BTN_MIDDLE);
+        break;
+      case MouseFlag::middle_up:
+        SimulateKeyUp(uinput_fd_, BTN_MIDDLE);
+        break;
+      case MouseFlag::wheel_vertical:
+        event.type = EV_REL;
+        event.code = REL_WHEEL;
+        event.value = remote_action.m.s;
+        write(uinput_fd_, &event, sizeof(event));
+        break;
+      case MouseFlag::wheel_horizontal:
+        event.type = EV_REL;
+        event.code = REL_HWHEEL;
+        event.value = remote_action.m.s;
+        write(uinput_fd_, &event, sizeof(event));
+        break;
+      default:
+        SetMousePosition(uinput_fd_, mouse_pos_x, mouse_pos_y);
+        break;
     }
   }
 

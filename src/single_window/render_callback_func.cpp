@@ -74,6 +74,8 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
           remote_action.m.flag = MouseFlag::left_down;
         } else if (SDL_BUTTON_RIGHT == event.button.button) {
           remote_action.m.flag = MouseFlag::right_down;
+        } else if (SDL_BUTTON_MIDDLE == event.button.button) {
+          remote_action.m.flag = MouseFlag::middle_down;
         }
         SendDataFrame(props->peer_, (const char *)&remote_action,
                       sizeof(remote_action));
@@ -83,12 +85,33 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
           remote_action.m.flag = MouseFlag::left_up;
         } else if (SDL_BUTTON_RIGHT == event.button.button) {
           remote_action.m.flag = MouseFlag::right_up;
+        } else if (SDL_BUTTON_MIDDLE == event.button.button) {
+          remote_action.m.flag = MouseFlag::middle_up;
         }
         SendDataFrame(props->peer_, (const char *)&remote_action,
                       sizeof(remote_action));
       } else if (SDL_MOUSEMOTION == event.type) {
         remote_action.type = ControlType::mouse;
         remote_action.m.flag = MouseFlag::move;
+        SendDataFrame(props->peer_, (const char *)&remote_action,
+                      sizeof(remote_action));
+      } else if (SDL_MOUSEWHEEL == event.type) {
+        int scroll_x = event.wheel.x;
+        int scroll_y = event.wheel.y;
+        if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
+          scroll_x = -scroll_x;
+          scroll_y = -scroll_y;
+        }
+
+        remote_action.type = ControlType::mouse;
+        if (scroll_x == 0) {
+          remote_action.m.flag = MouseFlag::wheel_vertical;
+          remote_action.m.s = scroll_y;
+        } else if (scroll_y == 0) {
+          remote_action.m.flag = MouseFlag::wheel_horizontal;
+          remote_action.m.s = scroll_x;
+        }
+
         SendDataFrame(props->peer_, (const char *)&remote_action,
                       sizeof(remote_action));
       }

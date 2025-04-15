@@ -15,11 +15,22 @@ typedef enum {
   audio_capture,
   host_infomation
 } ControlType;
-typedef enum { move = 0, left_down, left_up, right_down, right_up } MouseFlag;
+typedef enum {
+  move = 0,
+  left_down,
+  left_up,
+  right_down,
+  right_up,
+  middle_down,
+  middle_up,
+  wheel_vertical,
+  wheel_horizontal
+} MouseFlag;
 typedef enum { key_down = 0, key_up } KeyFlag;
 typedef struct {
   size_t x;
   size_t y;
+  size_t s;
   MouseFlag flag;
 } Mouse;
 
