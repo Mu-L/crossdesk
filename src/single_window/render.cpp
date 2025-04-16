@@ -194,25 +194,6 @@ int Render::StartScreenCapturer() {
 
   int screen_capturer_init_ret = screen_capturer_->Init(
       60, [this](unsigned char* data, int size, int width, int height) -> void {
-        if (!hostname_sent_ && width > 0 && height > 0 &&
-            start_screen_capturer_) {
-          original_display_width_ = width;
-          original_display_height_ = height;
-          std::string host_name = GetHostName();
-          RemoteAction remote_action;
-          remote_action.type = ControlType::host_infomation;
-          memcpy(&remote_action.i.host_name, host_name.data(),
-                 host_name.size());
-          remote_action.i.host_name_size = host_name.size();
-          remote_action.i.origin_display_height = original_display_height_;
-          remote_action.i.origin_display_width = original_display_width_;
-          int ret = SendDataFrame(peer_, (const char*)&remote_action,
-                                  sizeof(remote_action));
-          if (0 == ret) {
-            hostname_sent_ = true;
-          }
-        }
-
         auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
@@ -841,6 +822,21 @@ void Render::MainLoop() {
       LOG_INFO("Connected with signal server, create p2p connection");
       is_create_connection_ =
           CreateConnection(peer_, client_id_, password_saved_) ? false : true;
+    }
+
+    if (!host_info_sent_ && screen_width_ > 0 && screen_height_ > 0) {
+      std::string host_name = GetHostName();
+      RemoteAction remote_action;
+      remote_action.type = ControlType::host_infomation;
+      memcpy(&remote_action.i.host_name, host_name.data(), host_name.size());
+      remote_action.i.host_name_size = host_name.size();
+      remote_action.i.origin_display_width = screen_width_;
+      remote_action.i.origin_display_height = screen_height_;
+      int ret = SendDataFrame(peer_, (const char*)&remote_action,
+                              sizeof(remote_action));
+      if (0 == ret) {
+        host_info_sent_ = true;
+      }
     }
   }
 }

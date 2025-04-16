@@ -305,9 +305,7 @@ class Render {
   bool need_to_rejoin_ = false;
   bool just_created_ = false;
   std::string controlled_remote_id_ = "";
-  int original_display_width_ = 0;
-  int original_display_height_ = 0;
-  bool hostname_sent_ = false;
+  bool host_info_sent_ = false;
   SDL_Event last_mouse_event;
 
   // stream window render

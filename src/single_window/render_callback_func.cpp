@@ -375,7 +375,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
         render->start_mouse_controller_ = false;
         render->start_keyboard_capturer_ = false;
         render->control_mouse_ = false;
-        render->hostname_sent_ = false;
+        render->host_info_sent_ = false;
         props->connection_established_ = false;
         props->mouse_control_button_pressed_ = false;
         if (props->dst_buffer_) {
@@ -410,6 +410,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
 
     switch (status) {
       case ConnectionStatus::Connected:
+        render->host_info_sent_ = false;
         render->start_screen_capturer_ = true;
         render->start_mouse_controller_ = true;
         break;
@@ -417,9 +418,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
         render->start_screen_capturer_ = false;
         render->start_mouse_controller_ = false;
         render->start_keyboard_capturer_ = false;
-        render->hostname_sent_ = false;
-        render->original_display_width_ = 0;
-        render->original_display_height_ = 0;
+        render->host_info_sent_ = false;
         if (props) props->connection_established_ = false;
         if (render->audio_capture_) {
           render->StopSpeakerCapturer();
