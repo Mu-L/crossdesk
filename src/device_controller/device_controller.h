@@ -28,8 +28,8 @@ typedef enum {
 } MouseFlag;
 typedef enum { key_down = 0, key_up } KeyFlag;
 typedef struct {
-  int x;
-  int y;
+  float x;
+  float y;
   int s;
   MouseFlag flag;
 } Mouse;
