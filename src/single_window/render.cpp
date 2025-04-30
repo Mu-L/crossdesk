@@ -938,27 +938,19 @@ void Render::CleanupFactories() {
   }
 }
 
-void Render::CleanupPeer(std::string host_name,
-                         std::shared_ptr<SubStreamWindowProperties> props) {
+void Render::CleanupPeer(std::shared_ptr<SubStreamWindowProperties> props) {
   if (props->dst_buffer_) {
     thumbnail_->SaveToThumbnail(
         (char*)props->dst_buffer_, props->video_width_, props->video_height_,
-        host_name, props->remote_host_name_,
+        props->remote_id_, props->remote_host_name_,
         props->remember_password_ ? props->remote_password_ : "");
   }
 
-  PeerPtr* peer_client = props->peer_;
-  if (peer_client) {
-    std::string client_id;
-    if (host_name == client_id_) {
-      client_id = "C-" + std::string(client_id_);
-    } else {
-      client_id = client_id_;
-    }
-    LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
-    LeaveConnection(peer_client, host_name.c_str());
-    LOG_INFO("Destroy peer [{}]", client_id);
-    DestroyPeer(&peer_client);
+  if (props->peer_) {
+    LOG_INFO("[{}] Leave connection [{}]", props->local_id_, props->remote_id_);
+    LeaveConnection(props->peer_, props->remote_id_.c_str());
+    LOG_INFO("Destroy peer [{}]", props->local_id_);
+    DestroyPeer(&props->peer_);
   }
 }
 
@@ -973,7 +965,7 @@ void Render::CleanupPeers() {
 
   for (auto& it : client_properties_) {
     auto props = it.second;
-    CleanupPeer(it.first, props);
+    CleanupPeer(props);
   }
 
   client_properties_.clear();

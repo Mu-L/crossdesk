@@ -164,6 +164,13 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
     }
 
     ImGui::SameLine();
+    // close button
+    std::string close_button = ICON_FA_XMARK;
+    if (ImGui::Button(close_button.c_str(), ImVec2(25, 25))) {
+      CleanupPeer(props);
+    }
+
+    ImGui::SameLine();
 
     if (!props->is_control_bar_in_left_) {
       draw_list->AddLine(ImVec2(ImGui::GetCursorScreenPos().x - 3.0f,

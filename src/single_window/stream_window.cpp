@@ -46,7 +46,6 @@ int Render::StreamWindow() {
     for (auto it = client_properties_.begin();
          it != client_properties_.end();) {
       auto& props = it->second;
-
       if (props->tab_opened_) {
         ImGui::SetWindowFontScale(0.6f);
         if (ImGui::BeginTabItem(props->remote_id_.c_str(), &props->tab_opened_,
@@ -58,7 +57,7 @@ int Render::StreamWindow() {
               ImGuiCond_Always);
           ImGui::SetNextWindowPos(
               ImVec2(0, fullscreen_button_pressed_ ? 0 : title_bar_height_),
-              ImGuiCond_Appearing);
+              ImGuiCond_Always);
           ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
           ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
           ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.0f));
@@ -75,16 +74,26 @@ int Render::StreamWindow() {
           props->render_window_height_ = stream_window_size.y;
 
           ControlWindow(props);
+          if (!props->peer_) {
+            it = client_properties_.erase(it);
+            if (client_properties_.empty()) {
+              SDL_Event event;
+              event.type = SDL_QUIT;
+              SDL_PushEvent(&event);
+            }
+          } else {
+            ++it;
+          }
 
           ImGui::End();
           ImGui::EndTabItem();
         } else {
           props->tab_selected_ = false;
           ImGui::SetWindowFontScale(1.0f);
+          ++it;
         }
-        ++it;
       } else {
-        CleanupPeer(it->first, props);
+        CleanupPeer(props);
         it = client_properties_.erase(it);
         if (client_properties_.empty()) {
           SDL_Event event;
@@ -93,7 +102,6 @@ int Render::StreamWindow() {
         }
       }
     }
-
     ImGui::EndTabBar();
   }
   ImGui::End();

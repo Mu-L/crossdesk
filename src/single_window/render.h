@@ -57,10 +57,10 @@ class Render {
     float sub_stream_window_width_ = 1280;
     float sub_stream_window_height_ = 720;
     float control_window_min_width_ = 20;
-    float control_window_max_width_ = 170;
+    float control_window_max_width_ = 200;
     float control_window_min_height_ = 40;
     float control_window_max_height_ = 150;
-    float control_window_width_ = 170;
+    float control_window_width_ = 200;
     float control_window_height_ = 40;
     float control_bar_pos_x_ = 0;
     float control_bar_pos_y_ = 30;
@@ -95,7 +95,7 @@ class Render {
     SDL_Texture *stream_texture_ = nullptr;
     SDL_Rect stream_render_rect_;
     SDL_Rect stream_render_rect_last_;
-    ImVec2 control_winodw_pos_;
+    ImVec2 control_window_pos_;
     ConnectionStatus connection_status_ = ConnectionStatus::Closed;
     TraversalMode traversal_mode_ = TraversalMode::UnknownMode;
     XNetTrafficStats net_traffic_stats_;
@@ -120,8 +120,7 @@ class Render {
   void HandleStreamWindow();
   void Cleanup();
   void CleanupFactories();
-  void CleanupPeer(std::string host_name,
-                   std::shared_ptr<SubStreamWindowProperties> props);
+  void CleanupPeer(std::shared_ptr<SubStreamWindowProperties> props);
   void CleanupPeers();
   void UpdateRenderRect();
   void ProcessSdlEvent();
