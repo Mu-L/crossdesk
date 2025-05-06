@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "log.h"
+#include "rd_log.h"
 
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 unsigned char nv12_buffer_[NV12_BUFFER_SIZE];
@@ -16,8 +16,7 @@ ScreenCapturerX11::~ScreenCapturerX11() {
   }
 }
 
-int ScreenCapturerX11::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
-                            cb_desktop_data cb) {
+int ScreenCapturerX11::Init(const int fps, cb_desktop_data cb) {
   if (cb) {
     _on_data = cb;
   }
@@ -44,14 +43,22 @@ int ScreenCapturerX11::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
     LOG_ERROR("Couldn't find_input_format [{}]", capture_method.c_str());
   }
 
+  const char *display = std::getenv("DISPLAY");
   // Grab at position 10,20
-  if (avformat_open_input(&pFormatCtx_, ":0.0", ifmt_, &options_) != 0) {
-    printf("Couldn't open input stream.\n");
+  if (display) {
+    if (avformat_open_input(&pFormatCtx_, display, ifmt_, &options_) != 0) {
+      LOG_ERROR("Couldn't open input stream {}", display);
+      return -1;
+    } else {
+      LOG_INFO("Open input stream [{}]", display);
+    }
+  } else {
+    LOG_ERROR("DISPLAY environment variable not set");
     return -1;
   }
 
   if (avformat_find_stream_info(pFormatCtx_, NULL) < 0) {
-    printf("Couldn't find stream information.\n");
+    LOG_ERROR("Couldn't find stream information");
     return -1;
   }
 
@@ -62,7 +69,7 @@ int ScreenCapturerX11::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
       break;
     }
   if (videoindex_ == -1) {
-    printf("Didn't find a video stream.\n");
+    LOG_ERROR("Didn't find a video stream");
     return -1;
   }
 
@@ -73,11 +80,11 @@ int ScreenCapturerX11::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
 
   pCodec_ = const_cast<AVCodec *>(avcodec_find_decoder(pCodecCtx_->codec_id));
   if (pCodec_ == NULL) {
-    printf("Codec not found.\n");
+    LOG_ERROR("Codec not found");
     return -1;
   }
   if (avcodec_open2(pCodecCtx_, pCodec_, NULL) < 0) {
-    printf("Could not open codec.\n");
+    LOG_ERROR("Could not open codec");
     return -1;
   }
 
@@ -109,6 +116,7 @@ int ScreenCapturerX11::Destroy() {
 }
 
 int ScreenCapturerX11::Start() {
+  running_ = true;
   capture_thread_ = std::thread([this]() {
     while (running_) {
       if (av_read_frame(pFormatCtx_, packet_) >= 0) {

@@ -1,6 +1,6 @@
 #include "mouse_controller.h"
 
-#include "log.h"
+#include "rd_log.h"
 
 MouseController::MouseController() {}
 
@@ -80,13 +80,13 @@ int MouseController::SendMouseCommand(RemoteAction remote_action) {
         event.type = EV_REL;
         event.code = REL_WHEEL;
         event.value = remote_action.m.s;
-        write(uinput_fd_, &event, sizeof(event));
+        (void)write(uinput_fd_, &event, sizeof(event));
         break;
       case MouseFlag::wheel_horizontal:
         event.type = EV_REL;
         event.code = REL_HWHEEL;
         event.value = remote_action.m.s;
-        write(uinput_fd_, &event, sizeof(event));
+        (void)write(uinput_fd_, &event, sizeof(event));
         break;
       default:
         SetMousePosition(uinput_fd_, mouse_pos_x, mouse_pos_y);

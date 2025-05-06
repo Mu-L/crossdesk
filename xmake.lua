@@ -18,7 +18,6 @@ end
 
 add_requires("spdlog 1.14.1", {system = false})
 add_requires("imgui v1.91.5-docking", {configs = {sdl2 = true, sdl2_renderer = true}})
-add_requires("miniaudio 0.11.21")
 add_requires("openssl3 3.3.2", {system = false})
 
 if is_os("windows") then
@@ -30,7 +29,7 @@ if is_os("windows") then
 elseif is_os("linux") then
     add_requires("ffmpeg 5.1.2", {system = false})
     add_syslinks("pthread", "dl")
-    add_linkdirs("thirdparty/projectx/thirdparty/nvcodec/Lib/x64")
+    add_linkdirs("thirdparty/projectx/thirdparty/nvcodec/lib/x64")
     add_links("SDL2", "cuda", "nvidia-encode", "nvcuvid")
     add_ldflags("-lavformat", "-lavdevice", "-lavfilter", "-lavcodec",
         "-lswscale", "-lavutil", "-lswresample",

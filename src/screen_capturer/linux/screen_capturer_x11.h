@@ -25,8 +25,7 @@ class ScreenCapturerX11 : public ScreenCapturer {
   ~ScreenCapturerX11();
 
  public:
-  virtual int Init(const RECORD_DESKTOP_RECT &rect, const int fps,
-                   cb_desktop_data cb) override;
+  virtual int Init(const int fps, cb_desktop_data cb) override;
   virtual int Destroy() override;
   virtual int Start() override;
   virtual int Stop() override;
@@ -47,8 +46,6 @@ class ScreenCapturerX11 : public ScreenCapturer {
   std::thread _thread;
 
   std::string _device_name;
-
-  RECORD_DESKTOP_RECT _rect;
 
   int _fps;
 

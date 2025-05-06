@@ -11,6 +11,7 @@
 
 #include <filesystem>
 #include <map>
+#include <vector>
 
 class Thumbnail {
  public:

@@ -12,6 +12,7 @@
 #include <atomic>
 #include <chrono>
 #include <fstream>
+#include <mutex>
 #include <optional>
 #include <string>
 
