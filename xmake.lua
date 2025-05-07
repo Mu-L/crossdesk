@@ -27,6 +27,7 @@ if is_os("windows") then
         "Imm32", "iphlpapi")
     add_cxflags("/WX")
 elseif is_os("linux") then
+    add_requires("libyuv") 
     add_requires("ffmpeg 5.1.2", {system = false})
     add_syslinks("pthread", "dl")
     add_linkdirs("thirdparty/projectx/thirdparty/nvcodec/lib/x64")
@@ -34,7 +35,7 @@ elseif is_os("linux") then
     add_ldflags("-lavformat", "-lavdevice", "-lavfilter", "-lavcodec",
         "-lswscale", "-lavutil", "-lswresample",
         "-lasound", "-lxcb-shape", "-lxcb-xfixes", "-lsndio", "-lxcb", 
-        "-lxcb-shm", "-lXext", "-lX11", "-lXv", "-ldl", "-lpthread",
+        "-lxcb-shm", "-lXext", "-lX11", "-lXv", "-lXtst", "-ldl", "-lpthread",
         {force = true})
     add_cxflags("-Wno-unused-variable")   
 elseif is_os("macosx") then
@@ -79,7 +80,7 @@ target("screen_capturer")
         add_includedirs("src/screen_capturer/macosx/avfoundation",
         "src/screen_capturer/macosx/screen_capturer_kit", {public = true})
     elseif is_os("linux") then
-        add_packages("ffmpeg")
+        add_packages("libyuv", "ffmpeg")
         add_files("src/screen_capturer/linux/*.cpp")
         add_includedirs("src/screen_capturer/linux", {public = true})
     end

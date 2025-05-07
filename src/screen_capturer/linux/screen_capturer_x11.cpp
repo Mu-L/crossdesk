@@ -1,160 +1,118 @@
 #include "screen_capturer_x11.h"
 
-#include <iostream>
+#include <chrono>
+#include <thread>
 
+#include "libyuv.h"
 #include "rd_log.h"
-
-#define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
-unsigned char nv12_buffer_[NV12_BUFFER_SIZE];
 
 ScreenCapturerX11::ScreenCapturerX11() {}
 
-ScreenCapturerX11::~ScreenCapturerX11() {
-  if (inited_ && capture_thread_.joinable()) {
-    capture_thread_.join();
-    inited_ = false;
-  }
-}
+ScreenCapturerX11::~ScreenCapturerX11() { Destroy(); }
 
 int ScreenCapturerX11::Init(const int fps, cb_desktop_data cb) {
-  if (cb) {
-    _on_data = cb;
+  display_ = XOpenDisplay(nullptr);
+  if (!display_) {
+    LOG_ERROR("Cannot connect to X server");
+    return -1;
+  }
+
+  root_ = DefaultRootWindow(display_);
+  XWindowAttributes attr;
+  XGetWindowAttributes(display_, root_, &attr);
+
+  width_ = attr.width;
+  height_ = attr.height;
+
+  if (width_ % 2 != 0 || height_ % 2 != 0) {
+    LOG_ERROR("Width and height must be even numbers");
+    return -2;
   }
 
   fps_ = fps;
+  callback_ = cb;
 
-  av_log_set_level(AV_LOG_QUIET);
-
-  pFormatCtx_ = avformat_alloc_context();
-
-  avdevice_register_all();
-
-  // grabbing frame rate
-  av_dict_set(&options_, "framerate", "30", 0);
-  // show remote cursor
-  av_dict_set(&options_, "capture_cursor", "0", 0);
-  // Make the grabbed area follow the mouse
-  // av_dict_set(&options_, "follow_mouse", "centered", 0);
-  // Video frame size. The default is to capture the full screen
-  // av_dict_set(&options_, "video_size", "1280x720", 0);
-  std::string capture_method = "x11grab";
-  ifmt_ = (AVInputFormat *)av_find_input_format(capture_method.c_str());
-  if (!ifmt_) {
-    LOG_ERROR("Couldn't find_input_format [{}]", capture_method.c_str());
-  }
-
-  const char *display = std::getenv("DISPLAY");
-  // Grab at position 10,20
-  if (display) {
-    if (avformat_open_input(&pFormatCtx_, display, ifmt_, &options_) != 0) {
-      LOG_ERROR("Couldn't open input stream {}", display);
-      return -1;
-    } else {
-      LOG_INFO("Open input stream [{}]", display);
-    }
-  } else {
-    LOG_ERROR("DISPLAY environment variable not set");
-    return -1;
-  }
-
-  if (avformat_find_stream_info(pFormatCtx_, NULL) < 0) {
-    LOG_ERROR("Couldn't find stream information");
-    return -1;
-  }
-
-  videoindex_ = -1;
-  for (i_ = 0; i_ < pFormatCtx_->nb_streams; i_++)
-    if (pFormatCtx_->streams[i_]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-      videoindex_ = i_;
-      break;
-    }
-  if (videoindex_ == -1) {
-    LOG_ERROR("Didn't find a video stream");
-    return -1;
-  }
-
-  pCodecParam_ = pFormatCtx_->streams[videoindex_]->codecpar;
-
-  pCodecCtx_ = avcodec_alloc_context3(NULL);
-  avcodec_parameters_to_context(pCodecCtx_, pCodecParam_);
-
-  pCodec_ = const_cast<AVCodec *>(avcodec_find_decoder(pCodecCtx_->codec_id));
-  if (pCodec_ == NULL) {
-    LOG_ERROR("Codec not found");
-    return -1;
-  }
-  if (avcodec_open2(pCodecCtx_, pCodec_, NULL) < 0) {
-    LOG_ERROR("Could not open codec");
-    return -1;
-  }
-
-  const int screen_w = pFormatCtx_->streams[videoindex_]->codecpar->width;
-  const int screen_h = pFormatCtx_->streams[videoindex_]->codecpar->height;
-
-  pFrame_ = av_frame_alloc();
-  pFrameNv12_ = av_frame_alloc();
-
-  pFrame_->width = screen_w;
-  pFrame_->height = screen_h;
-  pFrameNv12_->width = 1280;
-  pFrameNv12_->height = 720;
-
-  packet_ = (AVPacket *)av_malloc(sizeof(AVPacket));
-
-  img_convert_ctx_ = sws_getContext(
-      pFrame_->width, pFrame_->height, pCodecCtx_->pix_fmt, pFrameNv12_->width,
-      pFrameNv12_->height, AV_PIX_FMT_NV12, SWS_BICUBIC, NULL, NULL, NULL);
-
-  inited_ = true;
+  y_plane_.resize(width_ * height_);
+  uv_plane_.resize((width_ / 2) * (height_ / 2) * 2);
 
   return 0;
 }
 
 int ScreenCapturerX11::Destroy() {
-  running_ = false;
+  Stop();
+  CleanUp();
   return 0;
 }
 
 int ScreenCapturerX11::Start() {
+  if (running_) return 0;
   running_ = true;
-  capture_thread_ = std::thread([this]() {
+  paused_ = false;
+  thread_ = std::thread([this]() {
     while (running_) {
-      if (av_read_frame(pFormatCtx_, packet_) >= 0) {
-        if (packet_->stream_index == videoindex_) {
-          avcodec_send_packet(pCodecCtx_, packet_);
-          av_packet_unref(packet_);
-          got_picture_ = avcodec_receive_frame(pCodecCtx_, pFrame_);
-
-          if (!got_picture_) {
-            av_image_fill_arrays(pFrameNv12_->data, pFrameNv12_->linesize,
-                                 nv12_buffer_, AV_PIX_FMT_NV12,
-                                 pFrameNv12_->width, pFrameNv12_->height, 1);
-
-            sws_scale(img_convert_ctx_, pFrame_->data, pFrame_->linesize, 0,
-                      pFrame_->height, pFrameNv12_->data,
-                      pFrameNv12_->linesize);
-
-            _on_data((unsigned char *)nv12_buffer_,
-                     pFrameNv12_->width * pFrameNv12_->height * 3 / 2,
-                     pFrameNv12_->width, pFrameNv12_->height);
-          }
-        }
-      }
+      if (!paused_) OnFrame();
     }
   });
-
   return 0;
 }
 
 int ScreenCapturerX11::Stop() {
+  if (!running_) return 0;
   running_ = false;
+  if (thread_.joinable()) thread_.join();
   return 0;
 }
 
-int ScreenCapturerX11::Pause() { return 0; }
+int ScreenCapturerX11::Pause() {
+  paused_ = true;
+  return 0;
+}
 
-int ScreenCapturerX11::Resume() { return 0; }
+int ScreenCapturerX11::Resume() {
+  paused_ = false;
+  return 0;
+}
 
-void ScreenCapturerX11::OnFrame() {}
+void ScreenCapturerX11::OnFrame() {
+  if (!display_) return;
 
-void ScreenCapturerX11::CleanUp() {}
+  XImage* image =
+      XGetImage(display_, root_, 0, 0, width_, height_, AllPlanes, ZPixmap);
+  if (!image) return;
+
+  bool needs_copy = image->bytes_per_line != width_ * 4;
+  std::vector<uint8_t> argb_buf;
+  uint8_t* src_argb = nullptr;
+
+  if (needs_copy) {
+    argb_buf.resize(width_ * height_ * 4);
+    for (int y = 0; y < height_; ++y) {
+      memcpy(&argb_buf[y * width_ * 4], image->data + y * image->bytes_per_line,
+             width_ * 4);
+    }
+    src_argb = argb_buf.data();
+  } else {
+    src_argb = reinterpret_cast<uint8_t*>(image->data);
+  }
+
+  libyuv::ARGBToNV12(src_argb, width_ * 4, y_plane_.data(), width_,
+                     uv_plane_.data(), width_, width_, height_);
+
+  std::vector<uint8_t> nv12;
+  nv12.reserve(y_plane_.size() + uv_plane_.size());
+  nv12.insert(nv12.end(), y_plane_.begin(), y_plane_.end());
+  nv12.insert(nv12.end(), uv_plane_.begin(), uv_plane_.end());
+
+  if (callback_) {
+    callback_(nv12.data(), width_ * height_ * 3 / 2, width_, height_);
+  }
+
+  XDestroyImage(image);
+}
+
+void ScreenCapturerX11::CleanUp() {
+  if (display_) {
+    XCloseDisplay(display_);
+    display_ = nullptr;
+  }
+}

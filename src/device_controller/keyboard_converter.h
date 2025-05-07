@@ -245,4 +245,68 @@ std::map<int, int> CGKeyCodeToVkCode = {
     {0x36, 0x5C},  // Right Command
 };
 
+// Windows vkCode to X11 KeySym
+std::map<int, int> vkCodeToX11KeySym = {
+    {0x41, XK_A},         {0x42, XK_B},      {0x43, XK_C},
+    {0x44, XK_D},         {0x45, XK_E},      {0x46, XK_F},
+    {0x47, XK_G},         {0x48, XK_H},      {0x49, XK_I},
+    {0x4A, XK_J},         {0x4B, XK_K},      {0x4C, XK_L},
+    {0x4D, XK_M},         {0x4E, XK_N},      {0x4F, XK_O},
+    {0x50, XK_P},         {0x51, XK_Q},      {0x52, XK_R},
+    {0x53, XK_S},         {0x54, XK_T},      {0x55, XK_U},
+    {0x56, XK_V},         {0x57, XK_W},      {0x58, XK_X},
+    {0x59, XK_Y},         {0x5A, XK_Z},      {0x30, XK_0},
+    {0x31, XK_1},         {0x32, XK_2},      {0x33, XK_3},
+    {0x34, XK_4},         {0x35, XK_5},      {0x36, XK_6},
+    {0x37, XK_7},         {0x38, XK_8},      {0x39, XK_9},
+    {0x1B, XK_Escape},    {0x0D, XK_Return}, {0x20, XK_space},
+    {0x08, XK_BackSpace}, {0x09, XK_Tab},    {0x25, XK_Left},
+    {0x27, XK_Right},     {0x26, XK_Up},     {0x28, XK_Down},
+    {0x70, XK_F1},        {0x71, XK_F2},     {0x72, XK_F3},
+    {0x73, XK_F4},        {0x74, XK_F5},     {0x75, XK_F6},
+    {0x76, XK_F7},        {0x77, XK_F8},     {0x78, XK_F9},
+    {0x79, XK_F10},       {0x7A, XK_F11},    {0x7B, XK_F12},
+};
+
+// X11 KeySym to Windows vkCode
+std::map<int, int> x11KeySymToVkCode = []() {
+  std::map<int, int> result;
+  for (const auto& pair : vkCodeToX11KeySym) {
+    result[pair.second] = pair.first;
+  }
+  return result;
+}();
+
+// macOS CGKeyCode to X11 KeySym
+std::map<int, int> cgKeyCodeToX11KeySym = {
+    {0x00, XK_A},         {0x0B, XK_B},      {0x08, XK_C},
+    {0x02, XK_D},         {0x0E, XK_E},      {0x03, XK_F},
+    {0x05, XK_G},         {0x04, XK_H},      {0x22, XK_I},
+    {0x26, XK_J},         {0x28, XK_K},      {0x25, XK_L},
+    {0x2E, XK_M},         {0x2D, XK_N},      {0x1F, XK_O},
+    {0x23, XK_P},         {0x0C, XK_Q},      {0x0F, XK_R},
+    {0x01, XK_S},         {0x11, XK_T},      {0x20, XK_U},
+    {0x09, XK_V},         {0x0D, XK_W},      {0x07, XK_X},
+    {0x10, XK_Y},         {0x06, XK_Z},      {0x12, XK_1},
+    {0x13, XK_2},         {0x14, XK_3},      {0x15, XK_4},
+    {0x17, XK_5},         {0x16, XK_6},      {0x1A, XK_7},
+    {0x1C, XK_8},         {0x19, XK_9},      {0x1D, XK_0},
+    {0x35, XK_Escape},    {0x24, XK_Return}, {0x31, XK_space},
+    {0x33, XK_BackSpace}, {0x30, XK_Tab},    {0x7B, XK_Left},
+    {0x7C, XK_Right},     {0x7E, XK_Up},     {0x7D, XK_Down},
+    {0x7A, XK_F1},        {0x78, XK_F2},     {0x63, XK_F3},
+    {0x76, XK_F4},        {0x60, XK_F5},     {0x61, XK_F6},
+    {0x62, XK_F7},        {0x64, XK_F8},     {0x65, XK_F9},
+    {0x6D, XK_F10},       {0x67, XK_F11},    {0x6F, XK_F12},
+};
+
+// X11 KeySym to macOS CGKeyCode
+std::map<int, int> x11KeySymToCgKeyCode = []() {
+  std::map<int, int> result;
+  for (const auto& pair : cgKeyCodeToX11KeySym) {
+    result[pair.second] = pair.first;
+  }
+  return result;
+}();
+
 #endif

@@ -1,17 +1,14 @@
 /*
  * @Author: DI JUNKUN
- * @Date: 2023-12-14
- * Copyright (c) 2023 by DI JUNKUN, All Rights Reserved.
+ * @Date: 2025-05-07
+ * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
  */
 
 #ifndef _MOUSE_CONTROLLER_H_
 #define _MOUSE_CONTROLLER_H_
 
-#include <fcntl.h>
-#include <linux/uinput.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <unistd.h>
 
 #include "device_controller.h"
@@ -27,13 +24,13 @@ class MouseController : public DeviceController {
   virtual int SendMouseCommand(RemoteAction remote_action);
 
  private:
-  void SimulateKeyDown(int fd, int kval);
-  void SimulateKeyUp(int fd, int kval);
-  void SetMousePosition(int fd, int x, int y);
+  void SimulateKeyDown(int kval);
+  void SimulateKeyUp(int kval);
+  void SetMousePosition(int x, int y);
+  void SimulateMouseWheel(int direction_button, int count);
 
- private:
-  int uinput_fd_;
-  struct uinput_user_dev uinput_dev_;
+  Display* display_ = nullptr;
+  Window root_ = 0;
   int screen_width_ = 0;
   int screen_height_ = 0;
 };

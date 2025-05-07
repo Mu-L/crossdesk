@@ -1,23 +1,33 @@
+/*
+ * @Author: DI JUNKUN
+ * @Date: 2025-05-07
+ * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
+ */
+
 #ifndef _SCREEN_CAPTURER_X11_H_
 #define _SCREEN_CAPTURER_X11_H_
 
-#include <atomic>
-#include <functional>
-#include <string>
-#include <thread>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
-#include "screen_capturer.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <libavcodec/avcodec.h>
-#include <libavdevice/avdevice.h>
-#include <libavformat/avformat.h>
-#include <libavutil/imgutils.h>
-#include <libswscale/swscale.h>
-#ifdef __cplusplus
+#include <atomic>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <thread>
+#include <vector>
+
+class ScreenCapturer {
+ public:
+  typedef std::function<void(unsigned char*, int width, int height, int stride)>
+      cb_desktop_data;
+
+  virtual ~ScreenCapturer() {}
+  virtual int Init(const int fps, cb_desktop_data cb) = 0;
+  virtual int Destroy() = 0;
+  virtual int Start() = 0;
+  virtual int Stop() = 0;
 };
-#endif
 
 class ScreenCapturerX11 : public ScreenCapturer {
  public:
@@ -25,10 +35,10 @@ class ScreenCapturerX11 : public ScreenCapturer {
   ~ScreenCapturerX11();
 
  public:
-  virtual int Init(const int fps, cb_desktop_data cb) override;
-  virtual int Destroy() override;
-  virtual int Start() override;
-  virtual int Stop() override;
+  int Init(const int fps, cb_desktop_data cb) override;
+  int Destroy() override;
+  int Start() override;
+  int Stop() override;
 
   int Pause();
   int Resume();
@@ -39,40 +49,19 @@ class ScreenCapturerX11 : public ScreenCapturer {
   void CleanUp();
 
  private:
-  std::atomic_bool _running;
-  std::atomic_bool _paused;
-  std::atomic_bool _inited;
+  Display* display_ = nullptr;
+  Window root_ = 0;
+  int width_ = 0;
+  int height_ = 0;
+  std::thread thread_;
+  std::atomic<bool> running_{false};
+  std::atomic<bool> paused_{false};
+  int fps_ = 30;
+  cb_desktop_data callback_;
 
-  std::thread _thread;
-
-  std::string _device_name;
-
-  int _fps;
-
-  cb_desktop_data _on_data;
-
- private:
-  int i_ = 0;
-  int videoindex_ = 0;
-  int got_picture_ = 0;
-  int fps_ = 0;
-  bool inited_ = false;
-
-  // ffmpeg
-  AVFormatContext *pFormatCtx_ = nullptr;
-  AVCodecContext *pCodecCtx_ = nullptr;
-  AVCodec *pCodec_ = nullptr;
-  AVCodecParameters *pCodecParam_ = nullptr;
-  AVDictionary *options_ = nullptr;
-  AVInputFormat *ifmt_ = nullptr;
-  AVFrame *pFrame_ = nullptr;
-  AVFrame *pFrameNv12_ = nullptr;
-  AVPacket *packet_ = nullptr;
-  struct SwsContext *img_convert_ctx_ = nullptr;
-
-  // thread
-  std::thread capture_thread_;
-  std::atomic_bool running_;
+  // 缓冲区
+  std::vector<uint8_t> y_plane_;
+  std::vector<uint8_t> uv_plane_;
 };
 
 #endif
