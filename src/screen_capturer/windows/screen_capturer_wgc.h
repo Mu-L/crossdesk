@@ -28,7 +28,7 @@ class ScreenCapturerWgc : public ScreenCapturer,
   virtual int Pause(int monitor_index) override;
   virtual int Resume(int monitor_index) override;
 
-  std::vector<DisplayInfo> GetDisplayList() { return display_list_; }
+  std::vector<DisplayInfo> GetDisplayInfoList() { return display_info_list_; }
 
   int SwitchTo(int monitor_index);
 
@@ -40,7 +40,7 @@ class ScreenCapturerWgc : public ScreenCapturer,
  private:
   HMONITOR monitor_;
   MONITORINFOEX monitor_info_;
-  std::vector<DisplayInfo> display_list_;
+  std::vector<DisplayInfo> display_info_list_;
   int monitor_index_ = 0;
 
  private:

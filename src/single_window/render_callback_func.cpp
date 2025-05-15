@@ -251,6 +251,24 @@ void Render::OnReceiveAudioBufferCb(const char *data, size_t size,
   SDL_QueueAudio(render->output_dev_, data, (uint32_t)size);
 }
 
+std::vector<std::string> restore_display_list(char **display_list,
+                                              size_t display_num) {
+  std::vector<std::string> result;
+  result.reserve(display_num);  // 预分配空间，提升效率
+
+  for (size_t i = 0; i < display_num; i++) {
+    if (display_list[i] != nullptr) {
+      // 直接用std::string构造函数复制C字符串
+      result.emplace_back(display_list[i]);
+    } else {
+      // 如果遇到nullptr指针，放空字符串或者处理错误
+      result.emplace_back("");
+    }
+  }
+
+  return result;
+}
+
 void Render::OnReceiveDataBufferCb(const char *data, size_t size,
                                    const char *user_id, size_t user_id_size,
                                    void *user_data) {
@@ -271,6 +289,13 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
       props->remote_host_name_ = std::string(remote_action.i.host_name,
                                              remote_action.i.host_name_size);
       LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
+
+      props->display_names_ = restore_display_list(remote_action.i.display_list,
+                                                   remote_action.i.display_num);
+
+      for (int i = 0; i < props->display_names_.size(); i++) {
+        LOG_INFO("Remote display [{}:{}]", i + 1, props->display_names_[i]);
+      }
     }
   } else {
     // remote

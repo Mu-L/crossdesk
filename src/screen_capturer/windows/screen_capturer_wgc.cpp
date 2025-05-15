@@ -107,15 +107,15 @@ int ScreenCapturerWgc::Init(const int fps, cb_desktop_data cb) {
 
   monitor_ = GetPrimaryMonitor();
 
-  display_list_ = gs_display_list;
+  display_info_list_ = gs_display_list;
 
-  if (display_list_.empty()) {
+  if (display_info_list_.empty()) {
     LOG_ERROR("No display found");
     return -1;
   }
 
-  for (int i = 0; i < display_list_.size(); i++) {
-    const auto &display = display_list_[i];
+  for (int i = 0; i < display_info_list_.size(); i++) {
+    const auto &display = display_info_list_[i];
     LOG_INFO(
         "index: {}, display name: {}, is primary: {}, bounds: ({}, {}) - "
         "({}, {})",
@@ -134,7 +134,7 @@ int ScreenCapturerWgc::Init(const int fps, cb_desktop_data cb) {
   }
 
   LOG_INFO("Default on monitor {}:{}", monitor_index_,
-           display_list_[monitor_index_].name);
+           display_info_list_[monitor_index_].name);
 
   return 0;
 }
@@ -217,11 +217,11 @@ int ScreenCapturerWgc::Stop() {
 int ScreenCapturerWgc::SwitchTo(int monitor_index) {
   if (monitor_index_ == monitor_index) {
     LOG_INFO("Already on monitor {}:{}", monitor_index_,
-             display_list_[monitor_index_].name);
+             display_info_list_[monitor_index_].name);
     return 0;
   }
 
-  if (monitor_index >= display_list_.size()) {
+  if (monitor_index >= display_info_list_.size()) {
     LOG_ERROR("Invalid monitor index: {}", monitor_index);
     return -1;
   }
@@ -235,7 +235,7 @@ int ScreenCapturerWgc::SwitchTo(int monitor_index) {
 
   monitor_index_ = monitor_index;
   LOG_INFO("Switching to monitor {}:{}", monitor_index_,
-           display_list_[monitor_index_].name);
+           display_info_list_[monitor_index_].name);
 
   Resume(monitor_index);
 

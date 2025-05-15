@@ -842,8 +842,26 @@ void Render::MainLoop() {
     }
 
     if (!host_info_sent_ && screen_width_ > 0 && screen_height_ > 0) {
-      std::string host_name = GetHostName();
       RemoteAction remote_action;
+      if (screen_capturer_) {
+        display_info_list_ = screen_capturer_->GetDisplayInfoList();
+      }
+
+      remote_action.i.display_num = display_info_list_.size();
+      remote_action.i.display_list =
+          (char**)malloc(remote_action.i.display_num * sizeof(char*));
+      for (int i = 0; i < remote_action.i.display_num; i++) {
+        LOG_INFO("Local display [{}:{}]", i + 1, display_info_list_[i].name);
+        remote_action.i.display_list[i] =
+            (char*)malloc(display_info_list_[i].name.length() + 1);
+        strncpy(remote_action.i.display_list[i],
+                display_info_list_[i].name.c_str(),
+                display_info_list_[i].name.length());
+        remote_action.i.display_list[i][display_info_list_[i].name.length()] =
+            '\0';
+      }
+
+      std::string host_name = GetHostName();
       remote_action.type = ControlType::host_infomation;
       memcpy(&remote_action.i.host_name, host_name.data(), host_name.size());
       remote_action.i.host_name_size = host_name.size();
@@ -1136,9 +1154,9 @@ void Render::ProcessSdlEvent() {
         if (props->stream_texture_) {
           if (props->video_width_ != props->texture_width_ ||
               props->video_height_ != props->texture_height_) {
-            LOG_WARN("Resolution changed, old: [{}x{}], new: [{}x{}]",
-                     props->texture_width_, props->texture_height_,
-                     props->video_width_, props->video_height_);
+            // LOG_WARN("Resolution changed, old: [{}x{}], new: [{}x{}]",
+            //          props->texture_width_, props->texture_height_,
+            //          props->video_width_, props->video_height_);
             props->texture_width_ = props->video_width_;
             props->texture_height_ = props->video_height_;
 

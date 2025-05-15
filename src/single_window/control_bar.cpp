@@ -57,13 +57,9 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
     ImVec2 btn_size_actual = ImGui::GetItemRectSize();
 
     if (ImGui::BeginPopup("display")) {
-      std::vector<ScreenCapturer::DisplayInfo> display_list;
-      if (screen_capturer_) {
-        display_list = screen_capturer_->GetDisplayList();
-      }
       ImGui::SetWindowFontScale(0.5f);
-      for (int i = 0; i < display_list.size(); i++) {
-        if (ImGui::Selectable(display_list[i].name.c_str())) {
+      for (int i = 0; i < props->display_names_.size(); i++) {
+        if (ImGui::Selectable(props->display_names_[i].c_str())) {
           selected_display_ = i + 1;
 
           RemoteAction remote_action;

@@ -97,6 +97,7 @@ class Render {
     std::string mouse_control_button_label_ = "Mouse Control";
     std::string audio_capture_button_label_ = "Audio Capture";
     std::string remote_host_name_ = "";
+    std::vector<std::string> display_names_;
     SDL_Texture *stream_texture_ = nullptr;
     SDL_Rect stream_render_rect_;
     SDL_Rect stream_render_rect_last_;
@@ -389,6 +390,7 @@ class Render {
   DeviceControllerFactory *device_controller_factory_ = nullptr;
   MouseController *mouse_controller_ = nullptr;
   KeyboardCapturer *keyboard_capturer_ = nullptr;
+  std::vector<ScreenCapturer::DisplayInfo> display_info_list_;
   uint64_t last_frame_time_;
   char client_id_[10] = "";
   char client_id_display_[12] = "";
