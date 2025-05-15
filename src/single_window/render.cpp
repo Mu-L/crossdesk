@@ -24,60 +24,78 @@
 std::vector<char> Render::SerializeRemoteAction(const RemoteAction& action) {
   std::vector<char> buffer;
   buffer.push_back(static_cast<char>(action.type));
+
+  auto insert_bytes = [&](const void* ptr, size_t len) {
+    buffer.insert(buffer.end(), (const char*)ptr, (const char*)ptr + len);
+  };
+
   if (action.type == ControlType::host_infomation) {
-    size_t name_len = action.i.host_name_size;
-    buffer.insert(buffer.end(), reinterpret_cast<char*>(&name_len),
-                  reinterpret_cast<char*>(&name_len) + sizeof(size_t));
-    buffer.insert(buffer.end(), action.i.host_name,
-                  action.i.host_name + name_len);
-    size_t display_num = action.i.display_num;
-    buffer.insert(buffer.end(), reinterpret_cast<char*>(&display_num),
-                  reinterpret_cast<char*>(&display_num) + sizeof(size_t));
-    for (size_t i = 0; i < display_num; ++i) {
-      const char* name = action.i.display_list[i];
-      size_t len = strlen(name);
-      buffer.insert(buffer.end(), reinterpret_cast<char*>(&len),
-                    reinterpret_cast<char*>(&len) + sizeof(size_t));
-      buffer.insert(buffer.end(), reinterpret_cast<const char*>(name),
-                    reinterpret_cast<const char*>(name) + len);
+    insert_bytes(&action.i.host_name_size, sizeof(size_t));
+    insert_bytes(action.i.host_name, action.i.host_name_size);
+
+    size_t num = action.i.display_num;
+    insert_bytes(&num, sizeof(size_t));
+
+    for (size_t i = 0; i < num; ++i) {
+      size_t len = strlen(action.i.display_list[i]);
+      insert_bytes(&len, sizeof(size_t));
+      insert_bytes(action.i.display_list[i], len);
     }
+
+    insert_bytes(action.i.left, sizeof(int) * num);
+    insert_bytes(action.i.top, sizeof(int) * num);
+    insert_bytes(action.i.right, sizeof(int) * num);
+    insert_bytes(action.i.bottom, sizeof(int) * num);
   }
+
   return buffer;
 }
 
 bool Render::DeserializeRemoteAction(const char* data, size_t size,
                                      RemoteAction& out) {
   size_t offset = 0;
+  auto read = [&](void* dst, size_t len) -> bool {
+    if (offset + len > size) return false;
+    memcpy(dst, data + offset, len);
+    offset += len;
+    return true;
+  };
+
   if (size < 1) return false;
-  out.type = static_cast<ControlType>(data[offset]);
-  offset += 1;
+  out.type = static_cast<ControlType>(data[offset++]);
+
   if (out.type == ControlType::host_infomation) {
-    if (offset + sizeof(size_t) > size) return false;
-    size_t host_name_len = *reinterpret_cast<const size_t*>(data + offset);
-    offset += sizeof(size_t);
-    if (offset + host_name_len > size ||
-        host_name_len >= sizeof(out.i.host_name))
+    size_t name_len;
+    if (!read(&name_len, sizeof(size_t)) || name_len >= sizeof(out.i.host_name))
       return false;
-    memcpy(out.i.host_name, data + offset, host_name_len);
-    out.i.host_name[host_name_len] = '\0';
-    out.i.host_name_size = host_name_len;
-    offset += host_name_len;
-    if (offset + sizeof(size_t) > size) return false;
-    size_t display_num = *reinterpret_cast<const size_t*>(data + offset);
-    out.i.display_num = display_num;
-    offset += sizeof(size_t);
-    out.i.display_list = (char**)malloc(display_num * sizeof(char*));
-    for (size_t i = 0; i < display_num; ++i) {
-      if (offset + sizeof(size_t) > size) return false;
-      size_t len = *reinterpret_cast<const size_t*>(data + offset);
-      offset += sizeof(size_t);
+    if (!read(out.i.host_name, name_len)) return false;
+    out.i.host_name[name_len] = '\0';
+    out.i.host_name_size = name_len;
+
+    size_t num;
+    if (!read(&num, sizeof(size_t))) return false;
+    out.i.display_num = num;
+
+    out.i.display_list = (char**)malloc(num * sizeof(char*));
+    for (size_t i = 0; i < num; ++i) {
+      size_t len;
+      if (!read(&len, sizeof(size_t))) return false;
       if (offset + len > size) return false;
       out.i.display_list[i] = (char*)malloc(len + 1);
       memcpy(out.i.display_list[i], data + offset, len);
       out.i.display_list[i][len] = '\0';
       offset += len;
     }
+
+    auto alloc_int_array = [&](int*& arr) {
+      arr = (int*)malloc(num * sizeof(int));
+      return read(arr, num * sizeof(int));
+    };
+
+    return alloc_int_array(out.i.left) && alloc_int_array(out.i.top) &&
+           alloc_int_array(out.i.right) && alloc_int_array(out.i.bottom);
   }
+
   return true;
 }
 
@@ -87,7 +105,13 @@ void Render::FreeRemoteAction(RemoteAction& action) {
       free(action.i.display_list[i]);
     }
     free(action.i.display_list);
+    free(action.i.left);
+    free(action.i.top);
+    free(action.i.right);
+    free(action.i.bottom);
+
     action.i.display_list = nullptr;
+    action.i.left = action.i.top = action.i.right = action.i.bottom = nullptr;
     action.i.display_num = 0;
   }
 }
@@ -921,6 +945,14 @@ void Render::MainLoop() {
       remote_action.i.display_num = display_info_list_.size();
       remote_action.i.display_list =
           (char**)malloc(remote_action.i.display_num * sizeof(char*));
+      remote_action.i.left =
+          (int*)malloc(remote_action.i.display_num * sizeof(int));
+      remote_action.i.top =
+          (int*)malloc(remote_action.i.display_num * sizeof(int));
+      remote_action.i.right =
+          (int*)malloc(remote_action.i.display_num * sizeof(int));
+      remote_action.i.bottom =
+          (int*)malloc(remote_action.i.display_num * sizeof(int));
       for (int i = 0; i < remote_action.i.display_num; i++) {
         LOG_INFO("Local display [{}:{}]", i + 1, display_info_list_[i].name);
         remote_action.i.display_list[i] =
@@ -930,6 +962,10 @@ void Render::MainLoop() {
                 display_info_list_[i].name.length());
         remote_action.i.display_list[i][display_info_list_[i].name.length()] =
             '\0';
+        remote_action.i.left[i] = display_info_list_[i].left;
+        remote_action.i.top[i] = display_info_list_[i].top;
+        remote_action.i.right[i] = display_info_list_[i].right;
+        remote_action.i.bottom[i] = display_info_list_[i].bottom;
       }
 
       std::string host_name = GetHostName();

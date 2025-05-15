@@ -63,9 +63,13 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
       last_mouse_event.button.y = event.button.y;
 
       remote_action.m.x =
-          (float)(event.button.x - props->stream_render_rect_.x) / render_width;
+          (float)(event.button.x - props->stream_render_rect_.x +
+                  props->display_info_list_[props->selected_display_ - 1]
+                      .left) /
+          render_width;
       remote_action.m.y =
-          (float)(event.button.y - props->stream_render_rect_.y) /
+          (float)(event.button.y - props->stream_render_rect_.y +
+                  props->display_info_list_[props->selected_display_ - 1].top) /
           render_height;
 
       if (SDL_MOUSEBUTTONDOWN == event.type) {
@@ -293,9 +297,16 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
         LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
 
         for (int i = 0; i < host_info.i.display_num; i++) {
-          props->display_names_.push_back(
-              std::string(host_info.i.display_list[i]));
-          LOG_INFO("Remote display [{}:{}]", i + 1, props->display_names_[i]);
+          props->display_info_list_.push_back(
+              {std::string(host_info.i.display_list[i]), host_info.i.left[i],
+               host_info.i.top[i], host_info.i.right[i],
+               host_info.i.bottom[i]});
+          LOG_INFO("Remote display [{}:{}], bound [({}, {}) ({}, {})]", i + 1,
+                   props->display_info_list_[i].name,
+                   props->display_info_list_[i].left,
+                   props->display_info_list_[i].top,
+                   props->display_info_list_[i].right,
+                   props->display_info_list_[i].bottom);
         }
       }
     } else {

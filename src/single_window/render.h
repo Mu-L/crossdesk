@@ -83,6 +83,7 @@ class Render {
     int video_height_ = 0;
     int video_width_last_ = 0;
     int video_height_last_ = 0;
+    int selected_display_ = 1;
     size_t video_size_ = 0;
     bool tab_selected_ = false;
     bool tab_opened_ = true;
@@ -97,7 +98,7 @@ class Render {
     std::string mouse_control_button_label_ = "Mouse Control";
     std::string audio_capture_button_label_ = "Audio Capture";
     std::string remote_host_name_ = "";
-    std::vector<std::string> display_names_;
+    std::vector<ScreenCapturer::DisplayInfo> display_info_list_;
     SDL_Texture *stream_texture_ = nullptr;
     SDL_Rect stream_render_rect_;
     SDL_Rect stream_render_rect_last_;
@@ -413,7 +414,6 @@ class Render {
   bool enable_hardware_video_codec_last_ = false;
   bool enable_turn_last_ = false;
   bool settings_window_pos_reset_ = true;
-  int selected_display_ = 1;
   /* ------ main window property end ------ */
 
   /* ------ sub stream window property start ------ */

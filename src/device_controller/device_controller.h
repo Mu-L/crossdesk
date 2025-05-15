@@ -43,8 +43,12 @@ typedef struct {
 typedef struct {
   char host_name[64];
   size_t host_name_size;
-  char **display_list;
+  char** display_list;
   size_t display_num;
+  int* left;
+  int* top;
+  int* right;
+  int* bottom;
 } HostInfo;
 
 typedef struct {
@@ -59,7 +63,7 @@ typedef struct {
 } RemoteAction;
 
 // int key_code, bool is_down
-typedef void (*OnKeyAction)(int, bool, void *);
+typedef void (*OnKeyAction)(int, bool, void*);
 
 class DeviceController {
  public:

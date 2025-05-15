@@ -16,6 +16,19 @@ class ScreenCapturer {
 
   class DisplayInfo {
    public:
+    DisplayInfo(std::string name, int left, int top, int right, int bottom)
+        : name(name), left(left), top(top), right(right), bottom(bottom) {}
+    DisplayInfo(void* handle, std::string name, bool is_primary, int left,
+                int top, int right, int bottom)
+        : handle(handle),
+          name(name),
+          is_primary(is_primary),
+          left(left),
+          top(top),
+          right(right),
+          bottom(bottom) {}
+    ~DisplayInfo() {}
+
     void* handle = nullptr;
     std::string name = "";
     bool is_primary = false;
