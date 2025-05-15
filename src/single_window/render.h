@@ -192,6 +192,13 @@ class Render {
   static SDL_HitTestResult HitTestCallback(SDL_Window *window,
                                            const SDL_Point *area, void *data);
 
+  static std::vector<char> SerializeRemoteAction(const RemoteAction &action);
+
+  static bool DeserializeRemoteAction(const char *data, size_t size,
+                                      RemoteAction &out);
+
+  static void FreeRemoteAction(RemoteAction &action);
+
  private:
   int SendKeyCommand(int key_code, bool is_down);
   int ProcessMouseEvent(SDL_Event &event);
@@ -320,7 +327,7 @@ class Render {
   bool need_to_rejoin_ = false;
   bool just_created_ = false;
   std::string controlled_remote_id_ = "";
-  bool host_info_sent_ = false;
+  bool need_to_send_host_info_ = false;
   SDL_Event last_mouse_event;
 
   // stream window render

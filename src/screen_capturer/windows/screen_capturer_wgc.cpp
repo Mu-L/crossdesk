@@ -216,7 +216,7 @@ int ScreenCapturerWgc::Stop() {
 
 int ScreenCapturerWgc::SwitchTo(int monitor_index) {
   if (monitor_index_ == monitor_index) {
-    LOG_INFO("Already on monitor {}:{}", monitor_index_,
+    LOG_INFO("Already on monitor {}:{}", monitor_index_ + 1,
              display_info_list_[monitor_index_].name);
     return 0;
   }

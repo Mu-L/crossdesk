@@ -21,6 +21,77 @@
 
 #define STREAM_FRASH (SDL_USEREVENT + 1)
 
+std::vector<char> Render::SerializeRemoteAction(const RemoteAction& action) {
+  std::vector<char> buffer;
+  buffer.push_back(static_cast<char>(action.type));
+  if (action.type == ControlType::host_infomation) {
+    size_t name_len = action.i.host_name_size;
+    buffer.insert(buffer.end(), reinterpret_cast<char*>(&name_len),
+                  reinterpret_cast<char*>(&name_len) + sizeof(size_t));
+    buffer.insert(buffer.end(), action.i.host_name,
+                  action.i.host_name + name_len);
+    size_t display_num = action.i.display_num;
+    buffer.insert(buffer.end(), reinterpret_cast<char*>(&display_num),
+                  reinterpret_cast<char*>(&display_num) + sizeof(size_t));
+    for (size_t i = 0; i < display_num; ++i) {
+      const char* name = action.i.display_list[i];
+      size_t len = strlen(name);
+      buffer.insert(buffer.end(), reinterpret_cast<char*>(&len),
+                    reinterpret_cast<char*>(&len) + sizeof(size_t));
+      buffer.insert(buffer.end(), reinterpret_cast<const char*>(name),
+                    reinterpret_cast<const char*>(name) + len);
+    }
+  }
+  return buffer;
+}
+
+bool Render::DeserializeRemoteAction(const char* data, size_t size,
+                                     RemoteAction& out) {
+  size_t offset = 0;
+  if (size < 1) return false;
+  out.type = static_cast<ControlType>(data[offset]);
+  offset += 1;
+  if (out.type == ControlType::host_infomation) {
+    if (offset + sizeof(size_t) > size) return false;
+    size_t host_name_len = *reinterpret_cast<const size_t*>(data + offset);
+    offset += sizeof(size_t);
+    if (offset + host_name_len > size ||
+        host_name_len >= sizeof(out.i.host_name))
+      return false;
+    memcpy(out.i.host_name, data + offset, host_name_len);
+    out.i.host_name[host_name_len] = '\0';
+    out.i.host_name_size = host_name_len;
+    offset += host_name_len;
+    if (offset + sizeof(size_t) > size) return false;
+    size_t display_num = *reinterpret_cast<const size_t*>(data + offset);
+    out.i.display_num = display_num;
+    offset += sizeof(size_t);
+    out.i.display_list = (char**)malloc(display_num * sizeof(char*));
+    for (size_t i = 0; i < display_num; ++i) {
+      if (offset + sizeof(size_t) > size) return false;
+      size_t len = *reinterpret_cast<const size_t*>(data + offset);
+      offset += sizeof(size_t);
+      if (offset + len > size) return false;
+      out.i.display_list[i] = (char*)malloc(len + 1);
+      memcpy(out.i.display_list[i], data + offset, len);
+      out.i.display_list[i][len] = '\0';
+      offset += len;
+    }
+  }
+  return true;
+}
+
+void Render::FreeRemoteAction(RemoteAction& action) {
+  if (action.type == ControlType::host_infomation) {
+    for (size_t i = 0; i < action.i.display_num; ++i) {
+      free(action.i.display_list[i]);
+    }
+    free(action.i.display_list);
+    action.i.display_list = nullptr;
+    action.i.display_num = 0;
+  }
+}
+
 SDL_HitTestResult Render::HitTestCallback(SDL_Window* window,
                                           const SDL_Point* area, void* data) {
   Render* render = (Render*)data;
@@ -841,7 +912,7 @@ void Render::MainLoop() {
           CreateConnection(peer_, client_id_, password_saved_) ? false : true;
     }
 
-    if (!host_info_sent_ && screen_width_ > 0 && screen_height_ > 0) {
+    if (need_to_send_host_info_) {
       RemoteAction remote_action;
       if (screen_capturer_) {
         display_info_list_ = screen_capturer_->GetDisplayInfoList();
@@ -864,11 +935,15 @@ void Render::MainLoop() {
       std::string host_name = GetHostName();
       remote_action.type = ControlType::host_infomation;
       memcpy(&remote_action.i.host_name, host_name.data(), host_name.size());
+      remote_action.i.host_name[host_name.size()] = '\0';
       remote_action.i.host_name_size = host_name.size();
-      int ret = SendDataFrame(peer_, (const char*)&remote_action,
-                              sizeof(remote_action), data_label_.c_str());
+
+      std::vector<char> serialized = SerializeRemoteAction(remote_action);
+      int ret = SendDataFrame(peer_, serialized.data(), serialized.size(),
+                              data_label_.c_str());
+      FreeRemoteAction(remote_action);
       if (0 == ret) {
-        host_info_sent_ = true;
+        need_to_send_host_info_ = false;
       }
     }
   }

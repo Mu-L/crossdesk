@@ -285,18 +285,26 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
       render->client_properties_.end()) {
     // local
     auto props = render->client_properties_.find(remote_id)->second;
-    if (ControlType::host_infomation == remote_action.type) {
+    RemoteAction host_info;
+    if (DeserializeRemoteAction(data, size, host_info)) {
+      if (ControlType::host_infomation == host_info.type) {
+        props->remote_host_name_ =
+            std::string(host_info.i.host_name, host_info.i.host_name_size);
+        LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
+
+        for (int i = 0; i < host_info.i.display_num; i++) {
+          props->display_names_.push_back(
+              std::string(host_info.i.display_list[i]));
+          LOG_INFO("Remote display [{}:{}]", i + 1, props->display_names_[i]);
+        }
+      }
+    } else {
       props->remote_host_name_ = std::string(remote_action.i.host_name,
                                              remote_action.i.host_name_size);
       LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
-
-      props->display_names_ = restore_display_list(remote_action.i.display_list,
-                                                   remote_action.i.display_num);
-
-      for (int i = 0; i < props->display_names_.size(); i++) {
-        LOG_INFO("Remote display [{}:{}]", i + 1, props->display_names_[i]);
-      }
+      LOG_ERROR("No remote display detected");
     }
+    FreeRemoteAction(host_info);
   } else {
     // remote
     if (ControlType::mouse == remote_action.type && render->mouse_controller_) {
@@ -409,7 +417,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
         render->start_mouse_controller_ = false;
         render->start_keyboard_capturer_ = false;
         render->control_mouse_ = false;
-        render->host_info_sent_ = false;
         props->connection_established_ = false;
         props->mouse_control_button_pressed_ = false;
         if (props->dst_buffer_) {
@@ -444,7 +451,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
 
     switch (status) {
       case ConnectionStatus::Connected:
-        render->host_info_sent_ = false;
+        render->need_to_send_host_info_ = true;
         render->start_screen_capturer_ = true;
         render->start_mouse_controller_ = true;
         break;
@@ -452,7 +459,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
         render->start_screen_capturer_ = false;
         render->start_mouse_controller_ = false;
         render->start_keyboard_capturer_ = false;
-        render->host_info_sent_ = false;
+        render->need_to_send_host_info_ = false;
         if (props) props->connection_established_ = false;
         if (render->audio_capture_) {
           render->StopSpeakerCapturer();
