@@ -60,7 +60,7 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
       ImGui::SetWindowFontScale(0.5f);
       for (int i = 0; i < props->display_info_list_.size(); i++) {
         if (ImGui::Selectable(props->display_info_list_[i].name.c_str())) {
-          props->selected_display_ = i + 1;
+          props->selected_display_ = i;
 
           RemoteAction remote_action;
           remote_action.type = ControlType::display_id;
@@ -76,14 +76,14 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
     }
 
     ImGui::SetWindowFontScale(0.6f);
-    ImVec2 text_size =
-        ImGui::CalcTextSize(std::to_string(props->selected_display_).c_str());
+    ImVec2 text_size = ImGui::CalcTextSize(
+        std::to_string(props->selected_display_ + 1).c_str());
     ImVec2 text_pos =
         ImVec2(btn_min.x + (btn_size_actual.x - text_size.x) * 0.5f,
                btn_min.y + (btn_size_actual.y - text_size.y) * 0.5f - 2.0f);
     ImGui::GetWindowDrawList()->AddText(
         text_pos, IM_COL32(0, 0, 0, 255),
-        std::to_string(props->selected_display_).c_str());
+        std::to_string(props->selected_display_ + 1).c_str());
     ImGui::SetWindowFontScale(1.0f);
 
     ImGui::SameLine();
