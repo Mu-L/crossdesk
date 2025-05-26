@@ -104,7 +104,7 @@ void ScreenCapturerX11::OnFrame() {
   nv12.insert(nv12.end(), uv_plane_.begin(), uv_plane_.end());
 
   if (callback_) {
-    callback_(nv12.data(), width_ * height_ * 3 / 2, width_, height_);
+    callback_(nv12.data(), width_ * height_ * 3 / 2, width_, height_, "");
   }
 
   XDestroyImage(image);

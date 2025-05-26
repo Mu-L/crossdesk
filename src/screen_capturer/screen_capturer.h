@@ -13,7 +13,7 @@
 
 class ScreenCapturer {
  public:
-  typedef std::function<void(unsigned char*, int, int, int, int)>
+  typedef std::function<void(unsigned char*, int, int, int, const char*)>
       cb_desktop_data;
 
  public:

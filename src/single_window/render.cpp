@@ -282,7 +282,7 @@ int Render::LoadSettingsFromCacheFile() {
   return 0;
 }
 
-int Render::StartScreenCapturer() {
+int Render::ScreenCapturerInit() {
   screen_capturer_ = (ScreenCapturer*)screen_capturer_factory_->Create();
   last_frame_time_ = std::chrono::duration_cast<std::chrono::milliseconds>(
                          std::chrono::steady_clock::now().time_since_epoch())
@@ -291,7 +291,7 @@ int Render::StartScreenCapturer() {
   int screen_capturer_init_ret = screen_capturer_->Init(
       60,
       [this](unsigned char* data, int size, int width, int height,
-             int display_id) -> void {
+             const char* display_name) -> void {
         auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
@@ -303,19 +303,30 @@ int Render::StartScreenCapturer() {
           frame.width = width;
           frame.height = height;
           frame.captured_timestamp = GetSystemTimeMicros(peer_);
-          SendVideoFrame(peer_, &frame,
-                         display_id == 0 ? video_primary_label_.c_str()
-                                         : video_secondary_label_.c_str());
+          SendVideoFrame(peer_, &frame, display_name);
           last_frame_time_ = now_time;
         }
       });
 
   if (0 == screen_capturer_init_ret) {
-    screen_capturer_->Start();
+    LOG_INFO("Init screen capturer success");
+    if (display_info_list_.empty()) {
+      display_info_list_ = screen_capturer_->GetDisplayInfoList();
+    }
+    return 0;
   } else {
+    LOG_ERROR("Init screen capturer failed");
     screen_capturer_->Destroy();
     delete screen_capturer_;
     screen_capturer_ = nullptr;
+    return -1;
+  }
+}
+
+int Render::StartScreenCapturer() {
+  if (screen_capturer_) {
+    LOG_INFO("Start screen capturer")
+    screen_capturer_->Start();
   }
 
   return 0;
@@ -370,9 +381,6 @@ int Render::StartMouseController() {
   mouse_controller_ = (MouseController*)device_controller_factory_->Create(
       DeviceControllerFactory::Device::Mouse);
 
-  if (screen_capturer_ && display_info_list_.empty()) {
-    display_info_list_ = screen_capturer_->GetDisplayInfoList();
-  }
   int mouse_controller_init_ret = mouse_controller_->Init(display_info_list_);
   if (0 != mouse_controller_init_ret) {
     LOG_INFO("Destroy mouse controller")
@@ -461,12 +469,17 @@ int Render::CreateConnectionPeer() {
     LOG_INFO("Create peer [{}] instance failed", client_id_);
   }
 
-  AddVideoStream(peer_, video_primary_label_.c_str());
-  AddVideoStream(peer_, video_secondary_label_.c_str());
-  AddAudioStream(peer_, audio_label_.c_str());
-  AddDataStream(peer_, data_label_.c_str());
+  if (0 == ScreenCapturerInit()) {
+    for (auto& display_info : display_info_list_) {
+      AddVideoStream(peer_, display_info.name.c_str());
+    }
 
-  return 0;
+    AddAudioStream(peer_, audio_label_.c_str());
+    AddDataStream(peer_, data_label_.c_str());
+    return 0;
+  } else {
+    return -1;
+  }
 }
 
 int Render::AudioDeviceInit() {
@@ -940,10 +953,6 @@ void Render::MainLoop() {
     }
 
     if (need_to_send_host_info_) {
-      if (screen_capturer_ && display_info_list_.empty()) {
-        display_info_list_ = screen_capturer_->GetDisplayInfoList();
-      }
-
       RemoteAction remote_action;
       remote_action.i.display_num = display_info_list_.size();
       remote_action.i.display_list =

@@ -10,7 +10,10 @@
 
 #include "screen_capturer_sck.h"
 
+#include <ApplicationServices/ApplicationServices.h>
 #include <CoreGraphics/CoreGraphics.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/graphics/IOGraphicsLib.h>
 #include <IOSurface/IOSurface.h>
 #include <ScreenCaptureKit/ScreenCaptureKit.h>
 #include <atomic>
@@ -69,6 +72,7 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   std::vector<DisplayInfo> display_info_list_;
   std::map<int, CGDirectDisplayID> display_id_map_;
   std::map<CGDirectDisplayID, int> display_id_map_reverse_;
+  std::map<CGDirectDisplayID, std::string> display_id_name_map_;
   unsigned char *nv12_frame_ = nullptr;
   int width_ = 0;
   int height_ = 0;
@@ -107,6 +111,66 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   CGDirectDisplayID current_display_ = 0;
 };
 
+std::string GetDisplayName(CGDirectDisplayID display_id) {
+  io_iterator_t iter;
+  io_service_t serv = 0, matched_serv = 0;
+
+  CFMutableDictionaryRef matching = IOServiceMatching("IODisplayConnect");
+  if (IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iter) != KERN_SUCCESS) {
+    return "";
+  }
+
+  while ((serv = IOIteratorNext(iter)) != 0) {
+    CFDictionaryRef info = IODisplayCreateInfoDictionary(serv, kIODisplayOnlyPreferredName);
+    if (info) {
+      CFNumberRef vendorID = (CFNumberRef)CFDictionaryGetValue(info, CFSTR(kDisplayVendorID));
+      CFNumberRef productID = (CFNumberRef)CFDictionaryGetValue(info, CFSTR(kDisplayProductID));
+      uint32_t vID = 0, pID = 0;
+      if (vendorID && productID && CFNumberGetValue(vendorID, kCFNumberIntType, &vID) &&
+          CFNumberGetValue(productID, kCFNumberIntType, &pID) &&
+          vID == CGDisplayVendorNumber(display_id) && pID == CGDisplayModelNumber(display_id)) {
+        matched_serv = serv;
+        CFRelease(info);
+        break;
+      }
+      CFRelease(info);
+    }
+    IOObjectRelease(serv);
+  }
+  IOObjectRelease(iter);
+
+  if (!matched_serv) return "";
+
+  CFDictionaryRef display_info =
+      IODisplayCreateInfoDictionary(matched_serv, kIODisplayOnlyPreferredName);
+  IOObjectRelease(matched_serv);
+  if (!display_info) return "";
+
+  CFDictionaryRef product_name_dict =
+      (CFDictionaryRef)CFDictionaryGetValue(display_info, CFSTR(kDisplayProductName));
+  std::string result;
+  if (product_name_dict) {
+    CFIndex count = CFDictionaryGetCount(product_name_dict);
+    if (count > 0) {
+      std::vector<const void *> keys(count);
+      std::vector<const void *> values(count);
+      CFDictionaryGetKeysAndValues(product_name_dict, keys.data(), values.data());
+      CFStringRef name_ref = (CFStringRef)values[0];
+      if (name_ref) {
+        CFIndex maxSize =
+            CFStringGetMaximumSizeForEncoding(CFStringGetLength(name_ref), kCFStringEncodingUTF8) +
+            1;
+        std::vector<char> buffer(maxSize);
+        if (CFStringGetCString(name_ref, buffer.data(), buffer.size(), kCFStringEncodingUTF8)) {
+          result = buffer.data();
+        }
+      }
+    }
+  }
+  CFRelease(display_info);
+  return result;
+}
+
 ScreenCapturerSckImpl::ScreenCapturerSckImpl() {
   helper_ = [[SckHelper alloc] initWithCapturer:this];
 }
@@ -115,6 +179,7 @@ ScreenCapturerSckImpl::~ScreenCapturerSckImpl() {
   display_info_list_.clear();
   display_id_map_.clear();
   display_id_map_reverse_.clear();
+  display_id_name_map_.clear();
 
   if (nv12_frame_) {
     delete[] nv12_frame_;
@@ -147,6 +212,10 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
     return 0;
   }
 
+  CGDirectDisplayID displays[10];
+  uint32_t count;
+  CGGetActiveDisplayList(10, displays, &count);
+
   int unnamed_count = 1;
   for (SCDisplay *display in content.displays) {
     CGDirectDisplayID display_id = display.displayID;
@@ -154,12 +223,7 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
     bool is_primary = CGDisplayIsMain(display_id);
 
     std::string name;
-    if ([display respondsToSelector:@selector(displayName)]) {
-      NSString *display_name = [display performSelector:@selector(displayName)];
-      if (display_name && [display_name length] > 0) {
-        name = [display_name UTF8String];
-      }
-    }
+    name = GetDisplayName(display_id);
 
     if (name.empty()) {
       name = "Display " + std::to_string(unnamed_count++);
@@ -173,6 +237,7 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
     display_info_list_.push_back(info);
     display_id_map_[display_info_list_.size() - 1] = display_id;
     display_id_map_reverse_[display_id] = display_info_list_.size() - 1;
+    display_id_name_map_[display_id] = name;
   }
 
   return 0;
@@ -184,16 +249,15 @@ int ScreenCapturerSckImpl::Start() {
 }
 
 int ScreenCapturerSckImpl::SwitchTo(int monitor_index) {
-  bool stream_started = false;
-  {
-    std::lock_guard<std::mutex> lock(lock_);
+  if (stream_) {
+    [stream_ stopCaptureWithCompletionHandler:^(NSError *error) {
+      std::lock_guard<std::mutex> lock(lock_);
+      stream_ = nil;
+      current_display_ = display_id_map_[monitor_index];
+      StartOrReconfigureCapturer();
+    }];
+  } else {
     current_display_ = display_id_map_[monitor_index];
-    if (stream_) {
-      stream_started = true;
-    }
-  }
-  // If the capturer was already started, reconfigure it. Otherwise, wait until Start() gets called.
-  if (stream_started) {
     StartOrReconfigureCapturer();
   }
   return 0;
@@ -217,19 +281,15 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
     std::lock_guard<std::mutex> lock(lock_);
     for (SCDisplay *display in content.displays) {
       if (current_display_ == display.displayID) {
-        LOG_WARN("current_display_: {}", current_display_);
+        LOG_WARN("current display: {}, name: {}", current_display_,
+                 display_id_name_map_[current_display_]);
         captured_display = display;
         break;
       }
     }
     if (!captured_display) {
-      if (kFullDesktopScreenId == current_display_) {
-        LOG_ERROR("Full screen capture is not supported, falling back to first "
-                  "display");
-      } else {
-        LOG_ERROR("Display [{}] not found, falling back to first display", current_display_);
-      }
       captured_display = content.displays.firstObject;
+      current_display_ = captured_display.displayID;
     }
   }
 
@@ -240,7 +300,7 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
   config.showsCursor = false;
   config.width = filter.contentRect.size.width * filter.pointPixelScale;
   config.height = filter.contentRect.size.height * filter.pointPixelScale;
-  config.captureResolution = SCCaptureResolutionNominal;
+  config.captureResolution = SCCaptureResolutionAutomatic;
   config.minimumFrameInterval = CMTimeMake(1, fps_);
 
   std::lock_guard<std::mutex> lock(lock_);
@@ -320,7 +380,7 @@ void ScreenCapturerSckImpl::OnNewCVPixelBuffer(CVPixelBufferRef pixelBuffer,
   }
 
   _on_data(nv12_frame_, width * height * 3 / 2, width, height,
-           display_id_map_reverse_[current_display_]);
+           display_id_name_map_[current_display_].c_str());
 
   CVPixelBufferUnlockBaseAddress(pixelBuffer, kCVPixelBufferLock_ReadOnly);
 }

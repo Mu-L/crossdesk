@@ -255,7 +255,7 @@ void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame,
                        frame.width, frame.width, frame.height);
 
     on_data_(nv12_frame_, frame.width * frame.height * 3 / 2, frame.width,
-             frame.height, id);
+             frame.height, display_info_list_[id].name.c_str());
   }
 }
 

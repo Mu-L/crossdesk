@@ -212,6 +212,7 @@ class Render {
   int SaveSettingsIntoCacheFile();
   int LoadSettingsFromCacheFile();
 
+  int ScreenCapturerInit();
   int StartScreenCapturer();
   int StopScreenCapturer();
 
