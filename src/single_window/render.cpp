@@ -518,7 +518,8 @@ int Render::AudioDeviceInit() {
 }
 
 int Render::AudioDeviceDestroy() {
-  SDL_CloseAudioDevice(output_dev_);
+  SDL_PauseAudioDevice(output_dev_, 1);
+  // SDL_CloseAudioDevice(output_dev_);
   // SDL_CloseAudioDevice(input_dev_);
 
   return 0;
