@@ -9,6 +9,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xrandr.h>
 
 #include <atomic>
 #include <cstring>
@@ -17,17 +18,7 @@
 #include <thread>
 #include <vector>
 
-class ScreenCapturer {
- public:
-  typedef std::function<void(unsigned char*, int width, int height, int stride)>
-      cb_desktop_data;
-
-  virtual ~ScreenCapturer() {}
-  virtual int Init(const int fps, cb_desktop_data cb) = 0;
-  virtual int Destroy() = 0;
-  virtual int Start() = 0;
-  virtual int Stop() = 0;
-};
+#include "screen_capturer.h"
 
 class ScreenCapturerX11 : public ScreenCapturer {
  public:
@@ -40,24 +31,30 @@ class ScreenCapturerX11 : public ScreenCapturer {
   int Start() override;
   int Stop() override;
 
-  int Pause();
-  int Resume();
+  int Pause(int monitor_index) override;
+  int Resume(int monitor_index) override;
+
+  int SwitchTo(int monitor_index) override;
+
+  std::vector<DisplayInfo> GetDisplayInfoList() override;
 
   void OnFrame();
-
- protected:
-  void CleanUp();
 
  private:
   Display* display_ = nullptr;
   Window root_ = 0;
+  XRRScreenResources* screen_res_ = nullptr;
+  int left_ = 0;
+  int top_ = 0;
   int width_ = 0;
   int height_ = 0;
   std::thread thread_;
   std::atomic<bool> running_{false};
   std::atomic<bool> paused_{false};
+  std::atomic<int> monitor_index_{0};
   int fps_ = 30;
   cb_desktop_data callback_;
+  std::vector<DisplayInfo> display_info_list_;
 
   // 缓冲区
   std::vector<uint8_t> y_plane_;

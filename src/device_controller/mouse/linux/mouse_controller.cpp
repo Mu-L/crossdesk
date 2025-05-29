@@ -8,7 +8,8 @@ MouseController::MouseController() {}
 
 MouseController::~MouseController() { Destroy(); }
 
-int MouseController::Init(int screen_width, int screen_height) {
+int MouseController::Init(std::vector<DisplayInfo> display_info_list) {
+  display_info_list_ = display_info_list;
   display_ = XOpenDisplay(NULL);
   if (!display_) {
     LOG_ERROR("Cannot connect to X server");
@@ -16,8 +17,6 @@ int MouseController::Init(int screen_width, int screen_height) {
   }
 
   root_ = DefaultRootWindow(display_);
-  screen_width_ = screen_width;
-  screen_height_ = screen_height;
 
   int event_base, error_base, major_version, minor_version;
   if (!XTestQueryExtension(display_, &event_base, &error_base, &major_version,
@@ -38,14 +37,19 @@ int MouseController::Destroy() {
   return 0;
 }
 
-int MouseController::SendMouseCommand(RemoteAction remote_action) {
+int MouseController::SendMouseCommand(RemoteAction remote_action,
+                                      int display_index) {
   switch (remote_action.type) {
     case mouse:
       switch (remote_action.m.flag) {
         case MouseFlag::move:
           SetMousePosition(
-              static_cast<int>(remote_action.m.x * screen_width_),
-              static_cast<int>(remote_action.m.y * screen_height_));
+              static_cast<int>(remote_action.m.x *
+                                   display_info_list_[display_index].width +
+                               display_info_list_[display_index].left),
+              static_cast<int>(remote_action.m.y *
+                                   display_info_list_[display_index].height +
+                               display_info_list_[display_index].top));
           break;
         case MouseFlag::left_down:
           XTestFakeButtonEvent(display_, 1, True, CurrentTime);

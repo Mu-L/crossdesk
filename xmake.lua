@@ -30,7 +30,7 @@ elseif is_os("linux") then
     add_requires("libyuv") 
     add_syslinks("pthread", "dl")
     add_linkdirs("thirdparty/projectx/thirdparty/nvcodec/lib/x64")
-    add_links("SDL2", "cuda", "nvidia-encode", "nvcuvid", "X11", "Xtst")
+    add_links("SDL2", "cuda", "nvidia-encode", "nvcuvid", "X11", "Xtst", "Xrandr")
     add_cxflags("-Wno-unused-variable")   
 elseif is_os("macosx") then
     add_links("SDL2", "SDL2main")

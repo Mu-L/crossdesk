@@ -18,6 +18,34 @@ int ScreenCapturerX11::Init(const int fps, cb_desktop_data cb) {
   }
 
   root_ = DefaultRootWindow(display_);
+  screen_res_ = XRRGetScreenResources(display_, root_);
+  if (!screen_res_) {
+    LOG_ERROR("Failed to get screen resources");
+    XCloseDisplay(display_);
+    return 1;
+  }
+
+  for (int i = 0; i < screen_res_->noutput; ++i) {
+    RROutput output = screen_res_->outputs[i];
+    XRROutputInfo* output_info =
+        XRRGetOutputInfo(display_, screen_res_, output);
+
+    if (output_info->connection == RR_Connected && output_info->crtc != 0) {
+      XRRCrtcInfo* crtc_info =
+          XRRGetCrtcInfo(display_, screen_res_, output_info->crtc);
+
+      display_info_list_.push_back(
+          DisplayInfo((void*)display_, output_info->name, true, crtc_info->x,
+                      crtc_info->y, crtc_info->width, crtc_info->height));
+
+      XRRFreeCrtcInfo(crtc_info);
+    }
+
+    if (output_info) {
+      XRRFreeOutputInfo(output_info);
+    }
+  }
+
   XWindowAttributes attr;
   XGetWindowAttributes(display_, root_, &attr);
 
@@ -40,7 +68,19 @@ int ScreenCapturerX11::Init(const int fps, cb_desktop_data cb) {
 
 int ScreenCapturerX11::Destroy() {
   Stop();
-  CleanUp();
+
+  y_plane_.clear();
+  uv_plane_.clear();
+
+  if (screen_res_) {
+    XRRFreeScreenResources(screen_res_);
+    screen_res_ = nullptr;
+  }
+
+  if (display_) {
+    XCloseDisplay(display_);
+    display_ = nullptr;
+  }
   return 0;
 }
 
@@ -63,21 +103,43 @@ int ScreenCapturerX11::Stop() {
   return 0;
 }
 
-int ScreenCapturerX11::Pause() {
+int ScreenCapturerX11::Pause(int monitor_index) {
   paused_ = true;
   return 0;
 }
 
-int ScreenCapturerX11::Resume() {
+int ScreenCapturerX11::Resume(int monitor_index) {
   paused_ = false;
   return 0;
 }
 
-void ScreenCapturerX11::OnFrame() {
-  if (!display_) return;
+int ScreenCapturerX11::SwitchTo(int monitor_index) {
+  monitor_index_ = monitor_index;
+  return 0;
+}
 
-  XImage* image =
-      XGetImage(display_, root_, 0, 0, width_, height_, AllPlanes, ZPixmap);
+std::vector<DisplayInfo> ScreenCapturerX11::GetDisplayInfoList() {
+  return display_info_list_;
+}
+
+void ScreenCapturerX11::OnFrame() {
+  if (!display_) {
+    LOG_ERROR("Display is not initialized");
+    return;
+  }
+
+  if (monitor_index_ < 0 || monitor_index_ >= display_info_list_.size()) {
+    LOG_ERROR("Invalid monitor index: {}", monitor_index_.load());
+    return;
+  }
+
+  left_ = display_info_list_[monitor_index_].left;
+  top_ = display_info_list_[monitor_index_].top;
+  width_ = display_info_list_[monitor_index_].width;
+  height_ = display_info_list_[monitor_index_].height;
+
+  XImage* image = XGetImage(display_, root_, left_, top_, width_, height_,
+                            AllPlanes, ZPixmap);
   if (!image) return;
 
   bool needs_copy = image->bytes_per_line != width_ * 4;
@@ -104,15 +166,9 @@ void ScreenCapturerX11::OnFrame() {
   nv12.insert(nv12.end(), uv_plane_.begin(), uv_plane_.end());
 
   if (callback_) {
-    callback_(nv12.data(), width_ * height_ * 3 / 2, width_, height_, "");
+    callback_(nv12.data(), width_ * height_ * 3 / 2, width_, height_,
+              display_info_list_[monitor_index_].name.c_str());
   }
 
   XDestroyImage(image);
-}
-
-void ScreenCapturerX11::CleanUp() {
-  if (display_) {
-    XCloseDisplay(display_);
-    display_ = nullptr;
-  }
 }

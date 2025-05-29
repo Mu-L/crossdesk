@@ -22,13 +22,12 @@ class ScreenCapturerSck : public ScreenCapturer {
   ~ScreenCapturerSck();
 
  public:
-  virtual int Init(const int fps, cb_desktop_data cb) override;
-  virtual int Destroy() override;
-  virtual int Start() override;
-  virtual int Stop() override;
+  int Init(const int fps, cb_desktop_data cb) override;
+  int Destroy() override;
+  int Start() override;
+  int Stop() override;
 
   int Pause(int monitor_index) override;
-
   int Resume(int monitor_index) override;
 
   int SwitchTo(int monitor_index) override;

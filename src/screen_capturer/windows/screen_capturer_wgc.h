@@ -20,13 +20,13 @@ class ScreenCapturerWgc : public ScreenCapturer,
  public:
   bool IsWgcSupported();
 
-  virtual int Init(const int fps, cb_desktop_data cb) override;
-  virtual int Destroy() override;
-  virtual int Start() override;
-  virtual int Stop() override;
+  int Init(const int fps, cb_desktop_data cb) override;
+  int Destroy() override;
+  int Start() override;
+  int Stop() override;
 
-  virtual int Pause(int monitor_index) override;
-  virtual int Resume(int monitor_index) override;
+  int Pause(int monitor_index) override;
+  int Resume(int monitor_index) override;
 
   std::vector<DisplayInfo> GetDisplayInfoList() { return display_info_list_; }
 

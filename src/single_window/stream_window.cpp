@@ -25,7 +25,7 @@ void Render::DrawConnectionStatusText(
     ImGui::SetCursorPos(
         ImVec2((size.x - text_size.x) * 0.5f,
                (size.y - text_size.y - title_bar_height_) * 0.5f));
-    ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), text.c_str());
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "%s", text.c_str());
   }
 }
 
