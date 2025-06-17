@@ -29,7 +29,7 @@ if is_os("windows") then
 elseif is_os("linux") then
     add_requires("libyuv") 
     add_syslinks("pthread", "dl")
-    add_linkdirs("thirdparty/projectx/thirdparty/nvcodec/lib/x64")
+    add_linkdirs("thirdparty/minirtc/thirdparty/nvcodec/lib/x64")
     add_links("SDL2", "cuda", "nvidia-encode", "nvcuvid", "X11", "Xtst", "Xrandr")
     add_cxflags("-Wno-unused-variable")   
 elseif is_os("macosx") then
@@ -124,7 +124,7 @@ target("localization")
 target("single_window")
     set_kind("object")
     add_packages("libyuv", "openssl3")
-    add_deps("rd_log", "common", "localization", "config_center", "projectx", 
+    add_deps("rd_log", "common", "localization", "config_center", "minirtc", 
         "screen_capturer", "speaker_capturer", "device_controller")
     add_files("src/single_window/*.cpp")
     add_includedirs("src/single_window", {public = true})

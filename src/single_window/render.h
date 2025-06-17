@@ -16,7 +16,6 @@
 #include <optional>
 #include <string>
 
-#include "../../thirdparty/projectx/src/interface/x.h"
 #include "IconsFontAwesome6.h"
 #include "config_center.h"
 #include "device_controller_factory.h"
@@ -24,6 +23,7 @@
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
 #include "imgui_internal.h"
+#include "minirtc.h"
 #include "screen_capturer_factory.h"
 #include "speaker_capturer_factory.h"
 #include "thumbnail.h"
