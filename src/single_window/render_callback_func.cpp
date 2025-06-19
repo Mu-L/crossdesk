@@ -474,12 +474,32 @@ void Render::NetStatusReport(const char *client_id, size_t client_id_size,
     return;
   }
 
-  if (0 == strcmp(render->client_id_, "")) {
+  if (strchr(client_id, '@') != nullptr) {
+    std::string id, password;
+    const char *at_pos = strchr(client_id, '@');
+    if (at_pos == nullptr) {
+      id = client_id;
+      password.clear();
+    } else {
+      id.assign(client_id, at_pos - client_id);
+      password = at_pos + 1;
+    }
+
+    LOG_ERROR("{}:{}", id, password);
+
     memset(&render->client_id_, 0, sizeof(render->client_id_));
-    memcpy(render->client_id_, client_id, client_id_size);
+    strncpy(render->client_id_, id.c_str(), sizeof(render->client_id_) - 1);
+    render->client_id_[sizeof(render->client_id_) - 1] = '\0';
+
+    memset(&render->password_saved_, 0, sizeof(render->password_saved_));
+    strncpy(render->password_saved_, password.c_str(),
+            sizeof(render->password_saved_) - 1);
+    render->password_saved_[sizeof(render->password_saved_) - 1] = '\0';
     LOG_INFO("Use client id [{}] and save id into cache file", client_id);
     render->SaveSettingsIntoCacheFile();
   }
+
+  LOG_ERROR("{}", user_id);
 
   std::string remote_id(user_id, user_id_size);
   if (render->client_properties_.find(remote_id) ==

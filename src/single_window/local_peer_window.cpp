@@ -135,28 +135,6 @@ int Render::LocalWindow() {
       ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
       ImGui::Spacing();
 
-      if (!password_inited_) {
-        char a[] = {
-            "123456789QWERTYUPASDFGHJKLZXCVBNMqwertyupasdfghijkzxcvbnm"};
-        std::mt19937 generator((unsigned int)std::chrono::system_clock::now()
-                                   .time_since_epoch()
-                                   .count());
-        std::uniform_int_distribution<int> distribution(0,
-                                                        (int)(strlen(a) - 1));
-
-        random_password_.clear();
-        for (int i = 0; i < 6; i++) {
-          random_password_ += a[distribution(generator)];
-        }
-        password_inited_ = true;
-        if (0 != strcmp(random_password_.c_str(), password_saved_)) {
-          memcpy(password_saved_, random_password_.c_str(),
-                 sizeof(password_saved_));
-          LOG_INFO("Generate new password and save into cache file");
-          SaveSettingsIntoCacheFile();
-        }
-      }
-
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       ImGui::InputTextWithHint(
           "##server_pwd",
@@ -281,10 +259,6 @@ int Render::LocalWindow() {
             focus_on_input_widget_ = true;
           } else {
             show_reset_password_window_ = false;
-            LOG_INFO("Generate new password and save into cache file");
-            memcpy(password_saved_, new_password_, sizeof(password_saved_));
-            memset(new_password_, 0, sizeof(new_password_));
-            SaveSettingsIntoCacheFile();
             LeaveConnection(peer_, client_id_);
             is_create_connection_ = false;
             focus_on_input_widget_ = true;
