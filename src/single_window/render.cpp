@@ -370,8 +370,9 @@ int Render::StopScreenCapturer() {
 int Render::StartSpeakerCapturer() {
   if (!speaker_capturer_) {
     speaker_capturer_ = (SpeakerCapturer*)speaker_capturer_factory_->Create();
-    int speaker_capturer_init_ret = speaker_capturer_->Init(
-        [this](unsigned char* data, size_t size) -> void {
+    int speaker_capturer_init_ret =
+        speaker_capturer_->Init([this](unsigned char* data, size_t size,
+                                       const char* audio_name) -> void {
           SendAudioFrame(peer_, (const char*)data, size, audio_label_.c_str());
         });
 

@@ -24,7 +24,8 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput,
     }
 
     ptr->GetCallback()((unsigned char*)pInput,
-                       frameCount * ma_get_bytes_per_frame(format_, channels_));
+                       frameCount * ma_get_bytes_per_frame(format_, channels_),
+                       "audio");
   }
 
   (void)pOutput;

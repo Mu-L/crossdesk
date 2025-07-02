@@ -26,13 +26,12 @@ class SpeakerCapturerMacosx : public SpeakerCapturer {
   int Pause();
   int Resume();
 
- private:
+ public:
   speaker_data_cb cb_ = nullptr;
-
- private:
   bool inited_ = false;
-  // thread
-  std::thread capture_thread_;
+
+  class Impl;
+  Impl* impl_ = nullptr;
 };
 
 #endif

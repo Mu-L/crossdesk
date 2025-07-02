@@ -37,7 +37,7 @@ elseif is_os("macosx") then
     add_ldflags("-Wl,-ld_classic")
     add_cxflags("-Wno-unused-variable")
     add_frameworks("OpenGL", "IOSurface", "ScreenCaptureKit", "AVFoundation", 
-        "CoreMedia", "CoreVideo")
+        "CoreMedia", "CoreVideo", "CoreAudio", "AudioToolbox")
 end
 
 add_packages("spdlog", "imgui")
@@ -83,7 +83,8 @@ target("speaker_capturer")
         add_files("src/speaker_capturer/windows/*.cpp")
         add_includedirs("src/speaker_capturer/windows", {public = true})
     elseif is_os("macosx") then
-        add_files("src/speaker_capturer/macosx/*.cpp")
+        add_files("src/speaker_capturer/macosx/*.cpp",
+        "src/speaker_capturer/macosx/*.mm")
         add_includedirs("src/speaker_capturer/macosx", {public = true})
     elseif is_os("linux") then
         add_files("src/speaker_capturer/linux/*.cpp")

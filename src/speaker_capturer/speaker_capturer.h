@@ -11,7 +11,8 @@
 
 class SpeakerCapturer {
  public:
-  typedef std::function<void(unsigned char *, size_t)> speaker_data_cb;
+  typedef std::function<void(unsigned char *, size_t, const char *)>
+      speaker_data_cb;
 
  public:
   virtual ~SpeakerCapturer() {}
