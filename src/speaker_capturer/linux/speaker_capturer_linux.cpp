@@ -14,7 +14,8 @@ constexpr pa_sample_format_t kFormat = PA_SAMPLE_S16LE;
 constexpr int kChannels = 1;
 constexpr size_t kFrameSizeBytes = 480 * sizeof(int16_t);
 
-SpeakerCapturerLinux::SpeakerCapturerLinux() {}
+SpeakerCapturerLinux::SpeakerCapturerLinux()
+    : inited_(false), paused_(false), stop_flag_(false) {}
 SpeakerCapturerLinux::~SpeakerCapturerLinux() {
   Stop();
   Destroy();
@@ -42,36 +43,39 @@ std::string SpeakerCapturerLinux::GetDefaultMonitorSourceName() {
   pa_mainloop_api* api = pa_mainloop_get_api(mainloop);
   pa_context* context = pa_context_new(api, "GetMonitor");
 
+  struct CallbackState {
+    std::string* name;
+    std::mutex* mtx;
+    std::condition_variable* cv;
+    bool* ready;
+  } state{&monitor_name, &mtx, &cv, &ready};
+
   pa_context_set_state_callback(
       context,
       [](pa_context* c, void* userdata) {
-        auto* state =
-            static_cast<std::tuple<std::string*, std::mutex*,
-                                   std::condition_variable*, bool*>*>(userdata);
+        auto* state = static_cast<CallbackState*>(userdata);
         if (pa_context_get_state(c) == PA_CONTEXT_READY) {
-          pa_operation* o = pa_context_get_server_info(
+          pa_operation* operation = pa_context_get_server_info(
               c,
               [](pa_context*, const pa_server_info* info, void* userdata) {
-                auto* state =
-                    static_cast<std::tuple<std::string*, std::mutex*,
-                                           std::condition_variable*, bool*>*>(
-                        userdata);
+                auto* state = static_cast<CallbackState*>(userdata);
                 if (info && info->default_sink_name) {
-                  *(std::get<0>(*state)) =
+                  *(state->name) =
                       std::string(info->default_sink_name) + ".monitor";
                 }
                 {
-                  std::lock_guard<std::mutex> lock(*std::get<1>(*state));
-                  *std::get<3>(*state) = true;
+                  std::lock_guard<std::mutex> lock(*(state->mtx));
+                  *(state->ready) = true;
                 }
-                std::get<2>(*state)->notify_one();
+                state->cv->notify_one();
               },
               userdata);
-          if (o) pa_operation_unref(o);
+          if (operation) {
+            pa_operation_unref(operation);
+          }
         }
       },
-      new std::tuple<std::string*, std::mutex*, std::condition_variable*,
-                     bool*>(&monitor_name, &mtx, &cv, &ready));
+      &state);
 
   pa_context_connect(context, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
 

@@ -548,7 +548,7 @@ int Render::AudioDeviceInit() {
 
 int Render::AudioDeviceDestroy() {
   SDL_PauseAudioDevice(output_dev_, 1);
-  // SDL_CloseAudioDevice(output_dev_);
+  SDL_CloseAudioDevice(output_dev_);
   // SDL_CloseAudioDevice(input_dev_);
 
   return 0;
@@ -1084,11 +1084,16 @@ void Render::Cleanup() {
     mouse_controller_ = nullptr;
   }
 
+  if (keyboard_capturer_) {
+    delete keyboard_capturer_;
+    keyboard_capturer_ = nullptr;
+  }
+
   CleanupFactories();
   CleanupPeers();
   AudioDeviceDestroy();
-  DestroyMainWindow();
   DestroyMainWindowContext();
+  DestroyMainWindow();
   SDL_Quit();
 }
 
