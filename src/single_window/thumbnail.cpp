@@ -134,7 +134,7 @@ Thumbnail::Thumbnail(std::string save_path) {
 
   RAND_bytes(aes128_key_, sizeof(aes128_key_));
   RAND_bytes(aes128_iv_, sizeof(aes128_iv_));
-  std::filesystem::create_directory(save_path_);
+  std::filesystem::create_directories(save_path_);
 }
 
 Thumbnail::Thumbnail(std::string save_path, unsigned char* aes128_key,
@@ -145,7 +145,7 @@ Thumbnail::Thumbnail(std::string save_path, unsigned char* aes128_key,
 
   memcpy(aes128_key_, aes128_key, sizeof(aes128_key_));
   memcpy(aes128_iv_, aes128_iv, sizeof(aes128_iv_));
-  std::filesystem::create_directory(save_path_);
+  std::filesystem::create_directories(save_path_);
 }
 
 Thumbnail::~Thumbnail() {
