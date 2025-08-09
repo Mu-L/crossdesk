@@ -1,0 +1,132 @@
+name: Build and Release CrossDesk
+
+on:
+  push:
+    branches: [release]
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  # Linux
+  build-linux:
+    name: Build on Ubuntu
+    runs-on: ubuntu-22.04
+    container:
+      image: crossdesk/ubuntu22.04:latest
+      options: --user root
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build CrossDesk
+        env:
+          CUDA_PATH: /usr/local/cuda
+          XMAKE_GLOBALDIR: /data
+        run: |
+          ls -la $XMAKE_GLOBALDIR
+          xmake b -vy --root crossdesk
+
+  # macOS
+  build-macos:
+    name: Build on macOS
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            runner: macos-13
+            cache-key: intel
+            out-dir: ./build/macosx/x86_64/release/crossdesk
+            artifact-name: crossdesk-macos-x86_64
+            package_script: ./scripts/macosx/pkg_x86_64.sh
+          - arch: arm64
+            runner: macos-14
+            cache-key: arm
+            out-dir: ./build/macosx/arm64/release/crossdesk
+            artifact-name: crossdesk-macos-arm64
+            package_script: ./scripts/macosx/pkg_arm64.sh
+    steps:
+      - name: Cache xmake dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.xmake/packages
+          key: ${{ runner.os }}-xmake-deps-${{ matrix.cache-key }}-${{ hashFiles('**/xmake.lua') }}
+          restore-keys: |
+            ${{ runner.os }}-xmake-deps-${{ matrix.cache-key }}-
+
+      - name: Install xmake
+        run: brew install xmake
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize submodules
+        run: git submodule update --init --recursive
+
+      - name: Build CrossDesk
+        run: xmake b -vy crossdesk
+
+  # Windows
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-2022
+    env:
+      XMAKE_GLOBALDIR: D:\xmake_global
+    steps:
+      - name: Cache xmake dependencies
+        uses: actions/cache@v4
+        with:
+          path: D:\xmake_global\.xmake\packages
+          key: ${{ runner.os }}-xmake-deps-intel-${{ hashFiles('**/xmake.lua') }}
+          restore-keys: |
+            ${{ runner.os }}-xmake-deps-intel-
+
+      - name: Install xmake
+        run: |
+          Invoke-Expression (Invoke-Webrequest 'https://raw.githubusercontent.com/tboox/xmake/master/scripts/get.ps1' -UseBasicParsing).Content
+          echo "C:\Users\runneradmin\xmake" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          xmake create cuda
+          Set-Location cuda
+          xmake g --theme=plain
+          $cudaPath = ""
+          $packagesPath = "D:\xmake_global\.xmake\packages"
+
+          if (Test-Path $packagesPath) {
+              Write-Host "Packages directory exists: $packagesPath"
+              try {
+                  $info = xmake require --info "cuda 12.6.3" 2>$null
+                  if ($null -ne $info -and $info -ne "") {
+                      $cudaPath = (($info | Select-String installdir).ToString() -replace '.*installdir:\s*','').Trim()
+                      Write-Host "Resolved CUDA_PATH = $cudaPath"
+                  }
+              } catch {}
+          } else {
+              Write-Host "Packages directory not found: $packagesPath"
+              Write-Host "Installing CUDA package..."
+              xmake require -vy "cuda 12.6.3"
+              $info = xmake require --info "cuda 12.6.3"
+              $cudaPath = (($info | Select-String installdir).ToString() -replace '.*installdir:\s*','').Trim()
+              Write-Host "Resolved CUDA_PATH = $cudaPath"
+          }
+
+          echo "CUDA_PATH=$cudaPath" >> $env:GITHUB_ENV
+          Write-Host "Resolved CUDA_PATH = $cudaPath"
+          Pop-Location
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize submodules
+        run: git submodule update --init --recursive
+
+      - name: Build CrossDesk
+        run: xmake b -vy crossdesk

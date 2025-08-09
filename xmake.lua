@@ -30,11 +30,10 @@ if is_os("windows") then
         "Imm32", "iphlpapi")
     add_cxflags("/WX")
 elseif is_os("linux") then
-    add_requires("libpulse")
     add_links("pulse-simple", "pulse")
     add_requires("libyuv") 
     add_syslinks("pthread", "dl")
-    add_links("SDL2", "cuda", "nvidia-encode", "nvcuvid", "asound", "X11", "Xtst", "Xrandr")
+    add_links("SDL2", "asound", "X11", "Xtst", "Xrandr")
     add_cxflags("-Wno-unused-variable")   
 elseif is_os("macosx") then
     add_links("SDL2", "SDL2main")
@@ -146,7 +145,7 @@ target("crossdesk")
     set_kind("binary")
     add_deps("rd_log", "common", "single_window")
     if is_os("windows") then
-        add_files("icon/app.rc")
+        add_files("icons/app.rc")
     elseif is_os("macosx") then
         -- add_rules("xcode.application")
         -- add_files("Info.plist")
