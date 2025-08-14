@@ -1,4 +1,5 @@
-; 该脚本使用 HM VNISEdit 脚本编辑器向导产生
+; 设置搜索路径
+!addincludedir "${__FILEDIR__}"
 
 ; 安装程序初始定义常量
 !define PRODUCT_NAME "CrossDesk"
@@ -8,14 +9,16 @@
 !define APP_NAME "CrossDesk"
 !define UNINSTALL_REG_KEY "CrossDesk"
 
-;★安装包图标
-Icon "icons\crossdesk.ico"
-!define MUI_ICON "icons\crossdesk.ico"
+; 设置安装包图标路径
+!define MUI_ICON "${__FILEDIR__}\..\..\icons\crossdesk.ico"
 
-;★压缩设置
+; 设置证书路径
+!define CERT_FILE "${__FILEDIR__}\..\..\certs\crossdesk.cn_root.crt"
+
+; 压缩设置
 SetCompressor /FINAL lzma
 
-;★请求管理员权限（写入HKLM需要）
+; 请求管理员权限（写入HKLM需要）
 RequestExecutionLevel admin
 
 ; ------ MUI 现代界面定义 ------
@@ -38,13 +41,13 @@ Section "MainSection"
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
 
-    ;★程序主文件
-    File /oname=crossdesk.exe "build\windows\x64\release\crossdesk\crossdesk.exe"
+    ; 设置程序主文件路径
+    File /oname=crossdesk.exe "..\..\build\windows\x64\release\crossdesk.exe"
 	
 	; ? 复制图标文件到安装目录
-    File "icons\crossdesk.ico"
+    File "${MUI_ICON}"
 
-    ;★写入卸载信息
+    ; 写入卸载信息
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "DisplayName" "${PRODUCT_NAME}"
@@ -59,17 +62,17 @@ SectionEnd
 
 Section "Cert"
     SetOutPath "$APPDATA\CrossDesk\certs"
-    File /r "certs\crossdesk.cn_root.crt"
+    File /r "${CERT_FILE}"
 SectionEnd
 
 Section -AdditionalIcons
-    ;★桌面快捷方式
+    ; 桌面快捷方式
     CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\crossdesk.exe" "" "$INSTDIR\crossdesk.ico"
 
-    ;★开始菜单快捷方式
+    ; 开始菜单快捷方式
     CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}.lnk" "$INSTDIR\crossdesk.exe" "" "$INSTDIR\crossdesk.ico"
 
-    ;★网页快捷方式（桌面）
+    ; 网页快捷方式（桌面）
     WriteIniStr "$DESKTOP\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
 SectionEnd
 

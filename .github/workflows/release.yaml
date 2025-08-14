@@ -35,6 +35,23 @@ jobs:
           ls -la $XMAKE_GLOBALDIR
           xmake b -vy --root crossdesk
 
+      - name: Decode and save certificate
+        shell: bash
+        run: |
+          mkdir -p certs
+          echo "${{ secrets.CROSSDESK_CERT_BASE64 }}" | base64 --decode > certs/crossdesk.cn_root.crt
+
+      - name: Package
+        run: |
+          chmod +x ./scripts/linux/pkg_x86_64.sh
+          ./scripts/linux/pkg_x86_64.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crossdesk-linux-x86_64
+          path: ${{ github.workspace }}/CrossDesk-0.0.1.deb
+
   # macOS
   build-macos:
     name: Build on macOS
@@ -75,6 +92,28 @@ jobs:
       - name: Build CrossDesk
         run: xmake b -vy crossdesk
 
+      - name: Decode and save certificate
+        shell: bash
+        run: |
+          mkdir -p certs
+          echo "${{ secrets.CROSSDESK_CERT_BASE64 }}" | base64 --decode > certs/crossdesk.cn_root.crt
+
+      - name: Package CrossDesk app
+        run: |
+          chmod +x ${{ matrix.package_script }}
+          ${{ matrix.package_script }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: crossdesk-macos-${{ matrix.arch }}-v0.0.1.pkg
+
+      - name: Move files to release dir
+        run: |
+          mkdir -p release
+          cp crossdesk-macos-${{ matrix.arch }}-v0.0.1.pkg release/
+
   # Windows
   build-windows:
     name: Build on Windows
@@ -106,7 +145,6 @@ jobs:
                   $info = xmake require --info "cuda 12.6.3" 2>$null
                   if ($null -ne $info -and $info -ne "") {
                       $cudaPath = (($info | Select-String installdir).ToString() -replace '.*installdir:\s*','').Trim()
-                      Write-Host "Resolved CUDA_PATH = $cudaPath"
                   }
               } catch {}
           } else {
@@ -115,7 +153,6 @@ jobs:
               xmake require -vy "cuda 12.6.3"
               $info = xmake require --info "cuda 12.6.3"
               $cudaPath = (($info | Select-String installdir).ToString() -replace '.*installdir:\s*','').Trim()
-              Write-Host "Resolved CUDA_PATH = $cudaPath"
           }
 
           echo "CUDA_PATH=$cudaPath" >> $env:GITHUB_ENV
@@ -130,3 +167,20 @@ jobs:
 
       - name: Build CrossDesk
         run: xmake b -vy crossdesk
+
+      - name: Decode and save certificate
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path certs
+          [System.IO.File]::WriteAllBytes('certs\crossdesk.cn_root.crt', [Convert]::FromBase64String('${{ secrets.CROSSDESK_CERT_BASE64 }}'))
+
+      - name: Package
+        run: |
+          cd ./scripts/windows
+          makensis nsis_script.nsi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crossdesk-win-x86_64
+          path: ${{ github.workspace }}/scripts/windows/CrossDesk-0.0.1.exe
