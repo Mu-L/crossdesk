@@ -152,6 +152,7 @@ jobs:
         run: |
           $ref = $env:GITHUB_REF
           $version = $ref -replace '^refs/(tags|heads)/', ''
+          $version = $version -replace '^v', ''
           $version = $version -replace '/', '-'
           echo "VERSION_NUM=$version" >> $env:GITHUB_ENV
 
