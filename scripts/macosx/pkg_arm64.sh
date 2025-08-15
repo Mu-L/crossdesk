@@ -135,18 +135,18 @@ productbuild \
 echo "✅ 生成安装包完成：${PKG_NAME}"
 
 # === 可选：打包成 DMG ===
-echo "📦 可选打包成 DMG..."
-mkdir -p CrossDesk_dmg_temp
-cp "${PKG_NAME}" CrossDesk_dmg_temp/
-ln -s /Applications CrossDesk_dmg_temp/Applications
+# echo "📦 可选打包成 DMG..."
+# mkdir -p CrossDesk_dmg_temp
+# cp "${PKG_NAME}" CrossDesk_dmg_temp/
+# ln -s /Applications CrossDesk_dmg_temp/Applications
 
-hdiutil create -volname "${VOL_NAME}" \
-  -srcfolder CrossDesk_dmg_temp \
-  -ov -format UDZO "${DMG_NAME}"
+# hdiutil create -volname "${VOL_NAME}" \
+#   -srcfolder CrossDesk_dmg_temp \
+#   -ov -format UDZO "${DMG_NAME}"
 
-rm -rf CrossDesk_dmg_temp build_pkg_temp scripts ${APP_BUNDLE} ${DMG_NAME}
+rm -rf build_pkg_temp scripts ${APP_BUNDLE}
 
 echo "🎉 所有打包完成："
 echo "   ✔️ 应用：${APP_BUNDLE}"
 echo "   ✔️ 安装包：${PKG_NAME}"
-echo "   ✔️ 镜像包（可选）：${DMG_NAME}"
+# echo "   ✔️ 镜像包（可选）：${DMG_NAME}"
