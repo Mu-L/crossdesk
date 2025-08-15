@@ -245,10 +245,10 @@ jobs:
       - name: Rename artifacts
         run: |
           mkdir -p release
-          cp artifacts/crossdesk-macos-x86_64/* release/crossdesk-macos-x86_64-${{ steps.version.outputs.VERSION_NUM }}.pkg
-          cp artifacts/crossdesk-macos-arm64/* release/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}.pkg
-          cp artifacts/crossdesk-linux-x86_64/* release/crossdesk-linux-x86_64-${{ steps.version.outputs.VERSION_NUM }}.deb
-          cp artifacts/crossdesk-win-x86_64/* release/crossdesk-win-x86_64-${{ steps.version.outputs.VERSION_NUM }}.exe
+          cp artifacts/crossdesk-macos-x86_64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-macos-x86_64-${{ steps.version.outputs.VERSION_NUM }}.pkg
+          cp artifacts/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}.pkg
+          cp artifacts/crossdesk-linux-x86_64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-linux-x86_64-${{ steps.version.outputs.VERSION_NUM }}.deb
+          cp artifacts/crossdesk-win-x86_64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-win-x86_64-${{ steps.version.outputs.VERSION_NUM }}.exe
 
       - name: Upload to Versioned GitHub Release
         uses: softprops/action-gh-release@v2
