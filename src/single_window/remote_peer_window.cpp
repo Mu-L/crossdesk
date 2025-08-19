@@ -132,6 +132,7 @@ static int InputTextCallback(ImGuiInputTextCallbackData *data) {
 int Render::ConnectTo(const std::string &remote_id, const char *password,
                       bool remember_password) {
   LOG_INFO("Connect to [{}]", remote_id);
+  focused_remote_id_ = remote_id;
 
   if (client_properties_.find(remote_id) == client_properties_.end()) {
     client_properties_[remote_id] =

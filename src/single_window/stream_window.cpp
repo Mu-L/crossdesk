@@ -114,6 +114,8 @@ int Render::StreamWindow() {
 
           ControlWindow(props);
 
+          focused_remote_id_ = props->remote_id_;
+
           if (!props->peer_) {
             it = client_properties_.erase(it);
             if (client_properties_.empty()) {

@@ -29,12 +29,19 @@ int Render::MainWindow() {
   RecentConnectionsWindow();
   StatusBar();
 
-  for (auto it = client_properties_.begin(); it != client_properties_.end();) {
-    auto& props = it->second;
-    if (ConnectionStatusWindow(props)) {
-      it = client_properties_.erase(it);
-    } else {
-      ++it;
+  if (show_connection_status_window_) {
+    for (auto it = client_properties_.begin();
+         it != client_properties_.end();) {
+      auto& props = it->second;
+      if (focused_remote_id_ == props->remote_id_) {
+        if (ConnectionStatusWindow(props)) {
+          it = client_properties_.erase(it);
+        } else {
+          ++it;
+        }
+      } else {
+        ++it;
+      }
     }
   }
 

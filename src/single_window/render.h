@@ -343,6 +343,7 @@ class Render {
   bool need_to_rejoin_ = false;
   bool just_created_ = false;
   std::string controlled_remote_id_ = "";
+  std::string focused_remote_id_ = "";
   bool need_to_send_host_info_ = false;
   SDL_Event last_mouse_event;
 
