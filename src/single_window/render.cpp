@@ -1331,7 +1331,12 @@ void Render::ProcessSdlEvent() {
       case STREAM_FRASH: {
         auto* props = static_cast<SubStreamWindowProperties*>(event.user.data1);
         if (!props) {
-          LOG_ERROR("Invalid stream window properties");
+          continue;
+        }
+        if (props->video_width_ <= 0 || props->video_height_ <= 0) {
+          continue;
+        }
+        if (!props->dst_buffer_) {
           continue;
         }
 
