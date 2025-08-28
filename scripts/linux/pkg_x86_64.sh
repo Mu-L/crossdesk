@@ -118,4 +118,4 @@ mv "$OUTPUT_FILE" "$INSTALL_PATH"
 
 rm -rf "$DEB_DIR"
 
-echo "✅ Deb package for $APP_NAME created successfully."
+echo "✅ Deb package for $OUTPUT_FILE created successfully."

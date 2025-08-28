@@ -72,7 +72,6 @@ fi
 
 exit 0
 EOF
-EOF
 
 chmod +x "$DEBIAN_DIR/postrm"
 
@@ -119,4 +118,4 @@ mv "$OUTPUT_FILE" "$INSTALL_PATH"
 
 rm -rf "$DEB_DIR"
 
-echo "✅ Deb package for $APP_NAME (ARM64) created successfully."
+echo "✅ Deb package for $OUTPUT_FILE created successfully."
