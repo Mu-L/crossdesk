@@ -313,6 +313,9 @@ jobs:
           cp artifacts/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_NUM }}.deb
           cp artifacts/crossdesk-win-x86_64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-win-x86_64-${{ steps.version.outputs.VERSION_NUM }}.exe
 
+      - name: List release files
+        run: ls -lh release/
+
       - name: Upload to Versioned GitHub Release
         uses: softprops/action-gh-release@v2
         with:
