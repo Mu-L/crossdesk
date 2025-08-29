@@ -15,6 +15,10 @@
 ; 设置证书路径
 !define CERT_FILE "${__FILEDIR__}\..\..\certs\crossdesk.cn_root.crt"
 
+; 安装后是否立即运行的选项
+!define MUI_FINISHPAGE_RUN "crossdesk.exe"  ; 默认运行程序
+!define MUI_FINISHPAGE_TEXT "安装完成！是否立即运行 CrossDesk?"
+
 ; 压缩设置
 SetCompressor /FINAL lzma
 
@@ -43,8 +47,8 @@ Section "MainSection"
 
     ; 设置程序主文件路径
     File /oname=crossdesk.exe "..\..\build\windows\x64\release\crossdesk.exe"
-	
-	; ? 复制图标文件到安装目录
+    
+    ; ? 复制图标文件到安装目录
     File "${MUI_ICON}"
 
     ; 写入卸载信息
@@ -55,9 +59,17 @@ Section "MainSection"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "DisplayIcon" "$INSTDIR\crossdesk.ico"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "DisplayIcon" "$INSTDIR\crossdesk.ico"
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "NoModify" 1
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "NoRepair" 1
+SectionEnd
+
+; 安装完成后
+Section -Post
+    ExecWait '"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\mt.exe" -manifest "$INSTDIR\crossdesk.manifest" -outputresource:"$INSTDIR\crossdesk.exe";1'
+    ; 如果用户选择立即运行
+    StrCmp $INSTDIR\crossdesk.exe "" 0 +2
+    Exec "$INSTDIR\crossdesk.exe"
 SectionEnd
 
 Section "Cert"
