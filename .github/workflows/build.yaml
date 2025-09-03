@@ -20,7 +20,7 @@ jobs:
     name: Build on Ubuntu 22.04 amd64
     runs-on: ubuntu-22.04
     container:
-      image: crossdesk/ubuntu22.04:latest
+      image: crossdesk/ubuntu20.04:latest
       options: --user root
     steps:
       - name: Extract version number
