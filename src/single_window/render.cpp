@@ -1332,8 +1332,6 @@ void Render::ProcessSdlEvent(const SDL_Event& event) {
           break;
         }
 
-        // use libyuv to convert NV12 to ARGB in order to fix SDL3 NV12 texture
-        // display issue
         if (props->stream_texture_) {
           if (props->video_width_ != props->texture_width_ ||
               props->video_height_ != props->texture_height_) {
@@ -1341,41 +1339,52 @@ void Render::ProcessSdlEvent(const SDL_Event& event) {
             props->texture_height_ = props->video_height_;
 
             SDL_DestroyTexture(props->stream_texture_);
-            props->stream_texture_ = SDL_CreateTexture(
-                stream_renderer_, SDL_PIXELFORMAT_ARGB8888,
-                SDL_TEXTUREACCESS_STREAMING, props->texture_width_,
-                props->texture_height_);
+            // props->stream_texture_ = SDL_CreateTexture(
+            //     stream_renderer_, stream_pixformat_,
+            //     SDL_TEXTUREACCESS_STREAMING, props->texture_width_,
+            //     props->texture_height_);
+
+            SDL_PropertiesID nvProps = SDL_CreateProperties();
+            SDL_SetNumberProperty(nvProps, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER,
+                                  props->texture_width_);
+            SDL_SetNumberProperty(nvProps,
+                                  SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER,
+                                  props->texture_height_);
+            SDL_SetNumberProperty(nvProps,
+                                  SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER,
+                                  SDL_PIXELFORMAT_NV12);
+            SDL_SetNumberProperty(nvProps,
+                                  SDL_PROP_TEXTURE_CREATE_COLORSPACE_NUMBER,
+                                  SDL_COLORSPACE_BT601_LIMITED);
+            props->stream_texture_ =
+                SDL_CreateTextureWithProperties(stream_renderer_, nvProps);
+            SDL_DestroyProperties(nvProps);
           }
         } else {
           props->texture_width_ = props->video_width_;
           props->texture_height_ = props->video_height_;
+          // props->stream_texture_ = SDL_CreateTexture(
+          //     stream_renderer_, stream_pixformat_,
+          //     SDL_TEXTUREACCESS_STREAMING, props->texture_width_,
+          //     props->texture_height_);
+
+          SDL_PropertiesID nvProps = SDL_CreateProperties();
+          SDL_SetNumberProperty(nvProps, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER,
+                                props->texture_width_);
+          SDL_SetNumberProperty(nvProps, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER,
+                                props->texture_height_);
+          SDL_SetNumberProperty(nvProps, SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER,
+                                SDL_PIXELFORMAT_NV12);
+          SDL_SetNumberProperty(nvProps,
+                                SDL_PROP_TEXTURE_CREATE_COLORSPACE_NUMBER,
+                                SDL_COLORSPACE_BT601_LIMITED);
           props->stream_texture_ =
-              SDL_CreateTexture(stream_renderer_, SDL_PIXELFORMAT_ARGB8888,
-                                SDL_TEXTUREACCESS_STREAMING,
-                                props->texture_width_, props->texture_height_);
+              SDL_CreateTextureWithProperties(stream_renderer_, nvProps);
+          SDL_DestroyProperties(nvProps);
         }
 
-        size_t argb_stride = props->texture_width_ * 4;
-        size_t argb_size = argb_stride * props->texture_height_;
-        if (!props->argb_buffer_ || props->argb_buffer_size_ != argb_size) {
-          if (props->argb_buffer_) {
-            delete[] props->argb_buffer_;
-          }
-          props->argb_buffer_ = new uint8_t[argb_size];
-          props->argb_buffer_size_ = argb_size;
-        }
-
-        uint8_t* src_y = reinterpret_cast<uint8_t*>(props->dst_buffer_);
-        int src_stride_y = props->texture_width_;
-        uint8_t* src_uv = src_y + src_stride_y * props->texture_height_;
-        int src_stride_uv = props->texture_width_;
-
-        libyuv::NV12ToARGB(src_y, src_stride_y, src_uv, src_stride_uv,
-                           props->argb_buffer_, static_cast<int>(argb_stride),
-                           props->texture_width_, props->texture_height_);
-
-        SDL_UpdateTexture(props->stream_texture_, NULL, props->argb_buffer_,
-                          static_cast<int>(argb_stride));
+        SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,
+                          props->texture_width_);
       }
       break;
   }
