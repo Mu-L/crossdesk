@@ -275,6 +275,11 @@ jobs:
       - name: Initialize submodules
         run: git submodule update --init --recursive
 
+      - name: Copy nsProcess plugin to NSIS folder
+        run: |
+          $nsisPluginDir = "C:\Program Files (x86)\NSIS\Plugins\x86-unicode"
+          copy "${{ github.workspace }}\scripts\windows\nsProcess.dll" $nsisPluginDir
+
       - name: Build CrossDesk
         run: xmake b -vy crossdesk
 

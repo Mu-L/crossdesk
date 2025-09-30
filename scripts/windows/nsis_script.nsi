@@ -38,6 +38,9 @@ RequestExecutionLevel admin
 !insertmacro MUI_RESERVEFILE_INSTALLOPTIONS
 ; ------ End of MUI Definition ------
 
+; Include LogicLib for process handling
+!include "LogicLib.nsh"
+
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "crossdesk-win-x64-${PRODUCT_VERSION}.exe"
 InstallDir "$PROGRAMFILES\CrossDesk"
@@ -66,6 +69,29 @@ Section "VC++ Runtime"
 SectionEnd
 
 Section "MainSection"
+    ; Check if CrossDesk is running
+    StrCpy $1 "crossdesk.exe"
+    
+    nsProcess::_FindProcess "$1"
+    Pop $R0
+    ${If} $R0 = 0  ;
+        MessageBox MB_ICONQUESTION|MB_YESNO "CrossDesk is running. Do you want to close it and continue the installation?" IDYES closeApp IDNO cancelInstall
+    ${Else}
+        Goto installApp
+    ${EndIf}
+
+closeApp:
+    nsProcess::_KillProcess "$1"
+    Pop $R0
+    Sleep 500
+    Goto installApp
+
+cancelInstall:
+    SetDetailsPrint both
+    MessageBox MB_ICONEXCLAMATION|MB_OK "Installation has been aborted."
+    Abort
+
+installApp:
     SetOutPath "$INSTDIR"
     SetOverwrite ifnewer
 
@@ -108,6 +134,29 @@ Section -AdditionalIcons
 SectionEnd
 
 Section "Uninstall"
+    ; Check if CrossDesk is running
+    StrCpy $1 "crossdesk.exe"
+    
+    nsProcess::_FindProcess "$1"
+    Pop $R0
+    ${If} $R0 = 0
+        MessageBox MB_ICONQUESTION|MB_YESNO "CrossDesk is running. Do you want to close it and uninstall?" IDYES closeApp IDNO cancelUninstall
+    ${Else}
+        Goto uninstallApp
+    ${EndIf}
+
+closeApp:
+    nsProcess::_KillProcess "$1"
+    Pop $R0
+    Sleep 500
+    Goto uninstallApp
+
+cancelUninstall:
+    SetDetailsPrint both
+    MessageBox MB_ICONEXCLAMATION|MB_OK "Uninstallation has been aborted."
+    Abort
+
+uninstallApp:
     ; Delete main executable and uninstaller
     Delete "$INSTDIR\crossdesk.exe"
     Delete "$INSTDIR\uninstall.exe"
