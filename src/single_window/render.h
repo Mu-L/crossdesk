@@ -34,7 +34,7 @@ class Render {
  public:
   struct SubStreamWindowProperties {
     Params params_;
-    PeerPtr *peer_ = nullptr;
+    PeerPtr* peer_ = nullptr;
     std::string audio_label_ = "control_audio";
     std::string data_label_ = "control_data";
     std::string local_id_ = "";
@@ -74,7 +74,7 @@ class Render {
     float mouse_diff_control_bar_pos_y_ = 0;
     double control_bar_button_pressed_time_ = 0;
     double net_traffic_stats_button_pressed_time_ = 0;
-    unsigned char *dst_buffer_ = nullptr;
+    unsigned char* dst_buffer_ = nullptr;
     size_t dst_buffer_capacity_ = 0;
     float mouse_pos_x_ = 0;
     float mouse_pos_y_ = 0;
@@ -102,8 +102,8 @@ class Render {
     std::string audio_capture_button_label_ = "Audio Capture";
     std::string remote_host_name_ = "";
     std::vector<DisplayInfo> display_info_list_;
-    SDL_Texture *stream_texture_ = nullptr;
-    uint8_t *argb_buffer_ = nullptr;
+    SDL_Texture* stream_texture_ = nullptr;
+    uint8_t* argb_buffer_ = nullptr;
     int argb_buffer_size_ = 0;
     SDL_Rect stream_render_rect_;
     SDL_Rect stream_render_rect_last_;
@@ -138,7 +138,7 @@ class Render {
   void CleanSubStreamWindowProperties(
       std::shared_ptr<SubStreamWindowProperties> props);
   void UpdateRenderRect();
-  void ProcessSdlEvent(const SDL_Event &event);
+  void ProcessSdlEvent(const SDL_Event& event);
 
  private:
   int CreateStreamRenderWindow();
@@ -149,16 +149,16 @@ class Render {
   int RemoteWindow();
   int RecentConnectionsWindow();
   int SettingWindow();
-  int ControlWindow(std::shared_ptr<SubStreamWindowProperties> &props);
-  int ControlBar(std::shared_ptr<SubStreamWindowProperties> &props);
+  int ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props);
+  int ControlBar(std::shared_ptr<SubStreamWindowProperties>& props);
   int AboutWindow();
   int StatusBar();
   bool ConnectionStatusWindow(
-      std::shared_ptr<SubStreamWindowProperties> &props);
+      std::shared_ptr<SubStreamWindowProperties>& props);
   int ShowRecentConnections();
 
  private:
-  int ConnectTo(const std::string &remote_id, const char *password,
+  int ConnectTo(const std::string& remote_id, const char* password,
                 bool remember_password);
   int CreateMainWindow();
   int DestroyMainWindow();
@@ -172,51 +172,51 @@ class Render {
   int DrawMainWindow();
   int DrawStreamWindow();
   int ConfirmDeleteConnection();
-  int NetTrafficStats(std::shared_ptr<SubStreamWindowProperties> &props);
+  int NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props);
   void DrawConnectionStatusText(
-      std::shared_ptr<SubStreamWindowProperties> &props);
+      std::shared_ptr<SubStreamWindowProperties>& props);
 
  public:
-  static void OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
-                                     const char *user_id, size_t user_id_size,
-                                     void *user_data);
+  static void OnReceiveVideoBufferCb(const XVideoFrame* video_frame,
+                                     const char* user_id, size_t user_id_size,
+                                     void* user_data);
 
-  static void OnReceiveAudioBufferCb(const char *data, size_t size,
-                                     const char *user_id, size_t user_id_size,
-                                     void *user_data);
+  static void OnReceiveAudioBufferCb(const char* data, size_t size,
+                                     const char* user_id, size_t user_id_size,
+                                     void* user_data);
 
-  static void OnReceiveDataBufferCb(const char *data, size_t size,
-                                    const char *user_id, size_t user_id_size,
-                                    void *user_data);
+  static void OnReceiveDataBufferCb(const char* data, size_t size,
+                                    const char* user_id, size_t user_id_size,
+                                    void* user_data);
 
-  static void OnSignalStatusCb(SignalStatus status, const char *user_id,
-                               size_t user_id_size, void *user_data);
+  static void OnSignalStatusCb(SignalStatus status, const char* user_id,
+                               size_t user_id_size, void* user_data);
 
-  static void OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
-                                   size_t user_id_size, void *user_data);
+  static void OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
+                                   size_t user_id_size, void* user_data);
 
-  static void NetStatusReport(const char *client_id, size_t client_id_size,
+  static void NetStatusReport(const char* client_id, size_t client_id_size,
                               TraversalMode mode,
-                              const XNetTrafficStats *net_traffic_stats,
-                              const char *user_id, const size_t user_id_size,
-                              void *user_data);
+                              const XNetTrafficStats* net_traffic_stats,
+                              const char* user_id, const size_t user_id_size,
+                              void* user_data);
 
-  static SDL_HitTestResult HitTestCallback(SDL_Window *window,
-                                           const SDL_Point *area, void *data);
+  static SDL_HitTestResult HitTestCallback(SDL_Window* window,
+                                           const SDL_Point* area, void* data);
 
-  static std::vector<char> SerializeRemoteAction(const RemoteAction &action);
+  static std::vector<char> SerializeRemoteAction(const RemoteAction& action);
 
-  static bool DeserializeRemoteAction(const char *data, size_t size,
-                                      RemoteAction &out);
+  static bool DeserializeRemoteAction(const char* data, size_t size,
+                                      RemoteAction& out);
 
-  static void FreeRemoteAction(RemoteAction &action);
+  static void FreeRemoteAction(RemoteAction& action);
 
  private:
   int SendKeyCommand(int key_code, bool is_down);
-  int ProcessMouseEvent(const SDL_Event &event);
+  int ProcessMouseEvent(const SDL_Event& event);
 
-  static void SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len);
-  static void SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len);
+  static void SdlCaptureAudioIn(void* userdata, Uint8* stream, int len);
+  static void SdlCaptureAudioOut(void* userdata, Uint8* stream, int len);
 
  private:
   int SaveSettingsIntoCacheFile();
@@ -287,9 +287,9 @@ class Render {
   uint32_t recent_connection_image_save_time_ = 0;
 
   // main window render
-  SDL_Window *main_window_ = nullptr;
-  SDL_Renderer *main_renderer_ = nullptr;
-  ImGuiContext *main_ctx_ = nullptr;
+  SDL_Window* main_window_ = nullptr;
+  SDL_Renderer* main_renderer_ = nullptr;
+  ImGuiContext* main_ctx_ = nullptr;
   bool exit_ = false;
   const int sdl_refresh_ms_ = 16;  // ~60 FPS
 
@@ -349,13 +349,13 @@ class Render {
   std::string focused_remote_id_ = "";
   bool need_to_send_host_info_ = false;
   SDL_Event last_mouse_event;
-  SDL_AudioStream *output_stream_;
+  SDL_AudioStream* output_stream_;
   uint32_t STREAM_REFRESH_EVENT = 0;
 
   // stream window render
-  SDL_Window *stream_window_ = nullptr;
-  SDL_Renderer *stream_renderer_ = nullptr;
-  ImGuiContext *stream_ctx_ = nullptr;
+  SDL_Window* stream_window_ = nullptr;
+  SDL_Renderer* stream_renderer_ = nullptr;
+  ImGuiContext* stream_ctx_ = nullptr;
 
   // stream window properties
   bool need_to_create_stream_window_ = false;
@@ -400,8 +400,8 @@ class Render {
   SignalStatus signal_status_ = SignalStatus::SignalClosed;
   std::string signal_status_str_ = "";
   bool signal_connected_ = false;
-  PeerPtr *peer_ = nullptr;
-  PeerPtr *peer_reserved_ = nullptr;
+  PeerPtr* peer_ = nullptr;
+  PeerPtr* peer_reserved_ = nullptr;
   std::string video_primary_label_ = "primary_display";
   std::string video_secondary_label_ = "secondary_display";
   std::string audio_label_ = "audio";
@@ -409,13 +409,13 @@ class Render {
   Params params_;
   SDL_AudioDeviceID input_dev_;
   SDL_AudioDeviceID output_dev_;
-  ScreenCapturerFactory *screen_capturer_factory_ = nullptr;
-  ScreenCapturer *screen_capturer_ = nullptr;
-  SpeakerCapturerFactory *speaker_capturer_factory_ = nullptr;
-  SpeakerCapturer *speaker_capturer_ = nullptr;
-  DeviceControllerFactory *device_controller_factory_ = nullptr;
-  MouseController *mouse_controller_ = nullptr;
-  KeyboardCapturer *keyboard_capturer_ = nullptr;
+  ScreenCapturerFactory* screen_capturer_factory_ = nullptr;
+  ScreenCapturer* screen_capturer_ = nullptr;
+  SpeakerCapturerFactory* speaker_capturer_factory_ = nullptr;
+  SpeakerCapturer* speaker_capturer_ = nullptr;
+  DeviceControllerFactory* device_controller_factory_ = nullptr;
+  MouseController* mouse_controller_ = nullptr;
+  KeyboardCapturer* keyboard_capturer_ = nullptr;
   std::vector<DisplayInfo> display_info_list_;
   uint64_t last_frame_time_;
   char client_id_[10] = "";
@@ -440,7 +440,7 @@ class Render {
   /* ------ sub stream window property start ------ */
   std::unordered_map<std::string, std::shared_ptr<SubStreamWindowProperties>>
       client_properties_;
-  void CloseTab(decltype(client_properties_)::iterator &it);
+  void CloseTab(decltype(client_properties_)::iterator& it);
   /* ------ stream window property end ------ */
 };
 

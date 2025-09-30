@@ -259,7 +259,7 @@ int Render::NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props) {
 
   if (ImGui::BeginTable("NetTrafficStats", 4, ImGuiTableFlags_BordersH,
                         ImVec2(props->control_window_max_width_ - 10.0f,
-                               props->control_window_max_height_ - 40.0f))) {
+                               props->control_window_max_height_ - 60.0f))) {
     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
@@ -275,7 +275,6 @@ int Render::NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props) {
     ImGui::Text("%s",
                 localization::loss_rate[localization_language_index_].c_str());
 
-    ImGui::TableNextRow();
     ImGui::TableNextColumn();
     ImGui::Text("%s",
                 localization::video[localization_language_index_].c_str());
@@ -286,7 +285,6 @@ int Render::NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props) {
     ImGui::TableNextColumn();
     LossRateDisplay(props->net_traffic_stats_.video_inbound_stats.loss_rate);
 
-    ImGui::TableNextRow();
     ImGui::TableNextColumn();
     ImGui::Text("%s",
                 localization::audio[localization_language_index_].c_str());
@@ -297,7 +295,6 @@ int Render::NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props) {
     ImGui::TableNextColumn();
     LossRateDisplay(props->net_traffic_stats_.audio_inbound_stats.loss_rate);
 
-    ImGui::TableNextRow();
     ImGui::TableNextColumn();
     ImGui::Text("%s", localization::data[localization_language_index_].c_str());
     ImGui::TableNextColumn();
@@ -307,7 +304,6 @@ int Render::NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props) {
     ImGui::TableNextColumn();
     LossRateDisplay(props->net_traffic_stats_.data_inbound_stats.loss_rate);
 
-    ImGui::TableNextRow();
     ImGui::TableNextColumn();
     ImGui::Text("%s",
                 localization::total[localization_language_index_].c_str());
