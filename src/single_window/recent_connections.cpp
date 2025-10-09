@@ -209,8 +209,8 @@ int Render::ShowRecentConnections() {
       ImVec2 line_end = ImVec2(
           image_screen_pos.x + recent_connection_image_width_ + 20.0f,
           image_screen_pos.y + recent_connection_image_height_ + button_height);
-      ImGui::GetForegroundDrawList()->AddLine(line_start, line_end,
-                                              IM_COL32(0, 0, 0, 122), 1.0f);
+      ImGui::GetWindowDrawList()->AddLine(line_start, line_end,
+                                          IM_COL32(0, 0, 0, 122), 1.0f);
     }
 
     count++;
