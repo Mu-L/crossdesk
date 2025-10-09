@@ -55,8 +55,3 @@ Run:
 ```
 xmake r crossdesk
 ```
-
-## LICENSE
-
-CrossDesk is licenced under MIT, and some third-party libraries are distributed under their licenses.
-

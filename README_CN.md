@@ -55,7 +55,3 @@ xmake b crossdesk
 ```
 xmake r crossdesk
 ```
-
-## 许可证
-
-CrossDesk 使用 MIT 许可证，其中使用到的第三方库根据自身许可证进行分发。
