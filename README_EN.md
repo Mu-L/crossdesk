@@ -73,6 +73,8 @@ xmake r crossdesk
 #### Notice
 If the client status bar shows **Disconnected** during runtime, please first install the client from the [CrossDesk official website](https://www.crossdesk.cn/) to ensure the required certificate files are available in the environment.
 
+<img width="108" height="57" alt="image" src="https://github.com/user-attachments/assets/26e8b9f3-b326-410e-9466-dd073eaf675a" />
+
 ## About Xmake
 #### Installing Xmake
 
