@@ -106,4 +106,11 @@ xmake f -m debug/release
 # Example
 xmake b -vy crossdesk
 ```
+
+#### Run Options
+```
+# Run in debug mode
+xmake r -d crossdesk
+```
+
 For more information, please refer to the [official Xmake documentation](https://xmake.io/guide/quick-start.html) .
