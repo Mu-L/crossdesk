@@ -108,5 +108,5 @@ xmake b -vy crossdesk
 ```
 # 使用调试模式运行
 xmake r -d crossdesk
-
+```
 更多使用方法可参考 [Xmake官方文档](https://xmake.io/guide/quick-start.html) 。
