@@ -91,14 +91,22 @@ static std::vector<std::string> enable_hardware_video_codec = {
     "Enable Hardware Video Codec:"};
 static std::vector<std::string> enable_turn = {
     reinterpret_cast<const char*>(u8"启用中继服务:"), "Enable TURN Service:"};
-
 static std::vector<std::string> enable_srtp = {
     reinterpret_cast<const char*>(u8"启用SRTP:"), "Enable SRTP:"};
-
 static std::vector<std::string> self_hosted_server_config = {
     reinterpret_cast<const char*>(u8"自托管服务器配置"),
     "Self-Hosted Server Config"};
-
+static std::vector<std::string> self_hosted_server_settings = {
+    reinterpret_cast<const char*>(u8"自托管服务器设置"),
+    "Self-Hosted Server Settings"};
+static std::vector<std::string> self_hosted_server_address = {
+    reinterpret_cast<const char*>(u8"服务器地址:"), "Server Address:"};
+static std::vector<std::string> self_hosted_server_port = {
+    reinterpret_cast<const char*>(u8"服务器端口:"), "Server Port:"};
+static std::vector<std::string> self_hosted_server_certificate_path = {
+    reinterpret_cast<const char*>(u8"证书文件路径:"), "Certificate File Path:"};
+static std::vector<std::string> select_a_file = {
+    reinterpret_cast<const char*>(u8"请选择文件"), "Please select a file"};
 static std::vector<std::string> ok = {reinterpret_cast<const char*>(u8"确认"),
                                       "OK"};
 static std::vector<std::string> cancel = {

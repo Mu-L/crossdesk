@@ -152,6 +152,8 @@ class Render {
   int RemoteWindow();
   int RecentConnectionsWindow();
   int SettingWindow();
+  int SelfHostedServerWindow();
+  int ShowSimpleFileBrowser();
   int ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props);
   int ControlBar(std::shared_ptr<SubStreamWindowProperties>& props);
   int AboutWindow();
@@ -355,6 +357,9 @@ class Render {
   SDL_Event last_mouse_event;
   SDL_AudioStream* output_stream_;
   uint32_t STREAM_REFRESH_EVENT = 0;
+  char self_hosted_server_host_[256] = "";
+  char self_hosted_server_port_[6] = "";
+  char self_hosted_server_cert_path_[256] = "";
 
   // stream window render
   SDL_Window* stream_window_ = nullptr;
@@ -383,6 +388,7 @@ class Render {
   bool password_validating_ = false;
   uint32_t password_validating_time_ = 0;
   bool show_settings_window_ = false;
+  bool show_self_hosted_server_config_window_ = false;
   bool rejoin_ = false;
   bool local_id_copied_ = false;
   bool show_password_ = true;
@@ -439,6 +445,9 @@ class Render {
   bool enable_turn_last_ = false;
   bool enable_srtp_last_ = true;
   bool settings_window_pos_reset_ = true;
+  bool self_hosted_server_config_window_pos_reset_ = true;
+  std::string selected_current_file_path_ = "";
+  std::string selected_file_ = "";
   /* ------ main window property end ------ */
 
   /* ------ sub stream window property start ------ */

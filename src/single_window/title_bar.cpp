@@ -57,6 +57,7 @@ int Render::TitleBar(bool main_window) {
 
       {
         SettingWindow();
+        SelfHostedServerWindow();
         AboutWindow();
       }
     }
