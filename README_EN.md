@@ -114,3 +114,154 @@ xmake r -d crossdesk
 ```
 
 For more information, please refer to the [official Xmake documentation](https://xmake.io/guide/quick-start.html) .
+
+## Self-Hosted Server
+It is recommended to deploy CrossDesk Server using Docker.
+```
+sudo docker run -d \
+  --name crossdesk_server \
+  --network host \
+  -e EXTERNAL_IP=150.158.81.30 \
+  -e INTERNAL_IP=10.0.4.3 \
+  -e CROSSDESK_SERVER_PORT=9099 \
+  -v /path/to/your/certs:/crossdesk-server/certs \
+  -v /path/to/your/db:/crossdesk-server/db \
+  -v /path/to/your/logs:/crossdesk-server/logs \
+  crossdesk/crossdesk-server:latest
+```
+
+The parameters you need to pay attention to are as follows:
+
+- **EXTERNAL_IP**: The server's public IP, corresponding to the **Server Address** in the CrossDesk client **Self-Hosted Server Configuration**.
+
+- **INTERNAL_IP**: The server's internal IP.
+
+- **CROSSDESK_SERVER_PORT**: The port used by the self-hosted server, corresponding to the **Server Port** in the CrossDesk client **Self-Hosted Server Configuration**.
+
+- **/path/to/your/certs**: Directory for certificate files.
+
+- **/path/to/your/db**: CrossDesk Server device management database.
+
+- **/path/to/your/logs**: Log directory.
+
+**Note**:  
+- **/path/to/your/ is an example path; please replace it with your actual path. The mounted directories must be created in advance, otherwise the container will fail.**
+- **The server must open the following ports: 3478/udp, 3478/tcp, 30000-60000/udp, CROSSDESK_SERVER_PORT/tcp, 443/tcp.**
+
+## Certificate Files
+The client needs to load the root certificate, and the server needs to load the server private key and server certificate.
+
+If you already have an SSL certificate, you can skip the following certificate generation steps.
+
+For users without a certificate, you can use the script below to generate the certificate files:
+```
+# Create certificate generation script
+vim generate_certs.sh
+```
+Copy the following into the script:
+```
+#!/bin/bash
+set -e
+
+# Check arguments
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <SERVER_IP>"
+    exit 1
+fi
+
+SERVER_IP="$1"
+
+# Filenames
+ROOT_KEY="crossdesk.cn_root.key"
+ROOT_CERT="crossdesk.cn_root.crt"
+SERVER_KEY="crossdesk.cn.key"
+SERVER_CSR="crossdesk.cn.csr"
+SERVER_CERT="crossdesk.cn_bundle.crt"
+FULLCHAIN_CERT="crossdesk.cn_fullchain.crt"
+
+# Certificate subject
+SUBJ="/C=CN/ST=Zhejiang/L=Hangzhou/O=CrossDesk/OU=CrossDesk/CN=$SERVER_IP"
+
+# 1. Generate root certificate
+echo "Generating root private key..."
+openssl genrsa -out "$ROOT_KEY" 4096
+
+echo "Generating self-signed root certificate..."
+openssl req -x509 -new -nodes -key "$ROOT_KEY" -sha256 -days 3650 -out "$ROOT_CERT" -subj "$SUBJ"
+
+# 2. Generate server private key
+echo "Generating server private key..."
+openssl genrsa -out "$SERVER_KEY" 2048
+
+# 3. Generate server CSR
+echo "Generating server CSR..."
+openssl req -new -key "$SERVER_KEY" -out "$SERVER_CSR" -subj "$SUBJ"
+
+# 4. Create temporary OpenSSL config file with SAN
+SAN_CONF="san.cnf"
+cat > $SAN_CONF <<EOL
+[ req ]
+default_bits = 2048
+distinguished_name = req_distinguished_name
+req_extensions = req_ext
+prompt = no
+
+[ req_distinguished_name ]
+C = CN
+ST = Zhejiang
+L = Hangzhou
+O = CrossDesk
+OU = CrossDesk
+CN = $SERVER_IP
+
+[ req_ext ]
+subjectAltName = IP:$SERVER_IP
+EOL
+
+# 5. Sign server certificate with root certificate (including SAN)
+echo "Signing server certificate with root certificate..."
+openssl x509 -req -in "$SERVER_CSR" -CA "$ROOT_CERT" -CAkey "$ROOT_KEY" -CAcreateserial \
+  -out "$SERVER_CERT" -days 3650 -sha256 -extfile "$SAN_CONF" -extensions req_ext
+
+# 6. Generate full chain certificate
+cat "$SERVER_CERT" "$ROOT_CERT" > "$FULLCHAIN_CERT"
+
+# 7. Clean up intermediate files
+rm -f "$ROOT_CERT.srl" "$SAN_CONF" "$ROOT_KEY" "$SERVER_CSR" "FULLCHAIN_CERT"
+
+echo "Generation complete. Deployment files:"
+echo "  Client root certificate: $ROOT_CERT"
+echo "  Server private key: $SERVER_KEY"
+echo "  Server certificate: $SERVER_CERT"
+```
+Execute:
+```
+chmod +x generate_certs.sh
+./generate_certs.sh EXTERNAL_IP
+
+# example ./generate_certs.sh 111.111.111.111
+```
+Expected output:
+```
+Generating root private key...
+Generating self-signed root certificate...
+Generating server private key...
+Generating server CSR...
+Signing server certificate with root certificate...
+Certificate request self-signature ok
+subject=C = CN, ST = Zhejiang, L = Hangzhou, O = CrossDesk, OU = CrossDesk, CN = xxx.xxx.xxx.xxx
+cleaning up intermediate files...
+Generation complete. Deployment files::
+  Client root certificate:: crossdesk.cn_root.crt
+  Server private key: crossdesk.cn.key
+  Server certificate: crossdesk.cn_bundle.crt
+```
+
+#### Server Side
+Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/your/certs** directory.
+
+#### Client Side
+1. Click the settings icon in the top-right corner to enter the settings page.  
+2. Click **Self-Hosted Server Configuration**.  
+3. In the **Certificate File Path** selection, locate and select the **crossdesk.cn_root.crt** file.  
+4. Check the option to use **Self-Hosted Server Configuration**.

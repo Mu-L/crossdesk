@@ -110,3 +110,154 @@ xmake b -vy crossdesk
 xmake r -d crossdesk
 ```
 更多使用方法可参考 [Xmake官方文档](https://xmake.io/guide/quick-start.html) 。
+
+## 自托管服务器
+推荐使用Docker部署CrossDesk Server。
+```
+sudo docker run -d \
+  --name crossdesk_server \
+  --network host \
+  -e EXTERNAL_IP=xxx.xxx.xxx.xxx \
+  -e INTERNAL_IP=xxx.xxx.xxx.xxx \
+  -e CROSSDESK_SERVER_PORT=9099 \
+  -v /path/to/your/certs:/crossdesk-server/certs \
+  -v /path/to/your/db:/crossdesk-server/db \
+  -v /path/to/your/logs:/crossdesk-server/logs \
+  crossdesk/crossdesk-server:latest
+```
+
+上述命令中，用户需注意的参数如下：
+
+- EXTERNAL_IP：服务器公网 IP , 对应 CrossDesk 客户端**自托管服务器配置**中填写的**服务器地址**
+
+- INTERNAL_IP：服务器内网 IP
+
+- CROSSDESK_SERVER_PORT：自托管服务使用的端口，对应 CrossDesk 客户端**自托管服务器配置**中填写的**服务器端口**
+
+- /path/to/your/certs：证书文件目录
+
+- /path/to/your/db：CrossDesk Server 设备管理数据库
+
+- /path/to/your/logs：日志目录
+
+**注意**：
+- **/path/to/your/ 是示例路径，请替换为你自己的实际路径。挂载的目录必须事先创建好，否则容器会报错。**
+- **服务器需开放端口：3478/udp，3478/tcp，30000-60000/udp，CROSSDESK_SERVER_PORT/tcp，443/tcp。**
+
+## 证书文件
+客户端需加载根证书文件，服务端需加载服务器私钥和服务器证书文件。
+
+如果已有SSL证书的用户，可以忽略下面的证书生成步骤。
+
+对于无证书的用户，可使用下面的脚本自行生成证书文件：
+```
+# 创建证书生成脚本
+vim generate_certs.sh
+```
+拷贝到脚本中
+```
+#!/bin/bash
+set -e
+
+# 检查参数
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <SERVER_IP>"
+    exit 1
+fi
+
+SERVER_IP="$1"
+
+# 文件名
+ROOT_KEY="crossdesk.cn_root.key"
+ROOT_CERT="crossdesk.cn_root.crt"
+SERVER_KEY="crossdesk.cn.key"
+SERVER_CSR="crossdesk.cn.csr"
+SERVER_CERT="crossdesk.cn_bundle.crt"
+FULLCHAIN_CERT="crossdesk.cn_fullchain.crt"
+
+# 证书主题
+SUBJ="/C=CN/ST=Zhejiang/L=Hangzhou/O=CrossDesk/OU=CrossDesk/CN=$SERVER_IP"
+
+# 1. 生成根证书
+echo "Generating root private key..."
+openssl genrsa -out "$ROOT_KEY" 4096
+
+echo "Generating self-signed root certificate..."
+openssl req -x509 -new -nodes -key "$ROOT_KEY" -sha256 -days 3650 -out "$ROOT_CERT" -subj "$SUBJ"
+
+# 2. 生成服务器私钥
+echo "Generating server private key..."
+openssl genrsa -out "$SERVER_KEY" 2048
+
+# 3. 生成服务器 CSR
+echo "Generating server CSR..."
+openssl req -new -key "$SERVER_KEY" -out "$SERVER_CSR" -subj "$SUBJ"
+
+# 4. 生成临时 OpenSSL 配置文件，加入 SAN
+SAN_CONF="san.cnf"
+cat > $SAN_CONF <<EOL
+[ req ]
+default_bits = 2048
+distinguished_name = req_distinguished_name
+req_extensions = req_ext
+prompt = no
+
+[ req_distinguished_name ]
+C = CN
+ST = Zhejiang
+L = Hangzhou
+O = CrossDesk
+OU = CrossDesk
+CN = $SERVER_IP
+
+[ req_ext ]
+subjectAltName = IP:$SERVER_IP
+EOL
+
+# 5. 用根证书签发服务器证书（包含 SAN）
+echo "Signing server certificate with root certificate..."
+openssl x509 -req -in "$SERVER_CSR" -CA "$ROOT_CERT" -CAkey "$ROOT_KEY" -CAcreateserial \
+  -out "$SERVER_CERT" -days 3650 -sha256 -extfile "$SAN_CONF" -extensions req_ext
+
+# 6. 生成完整链证书
+cat "$SERVER_CERT" "$ROOT_CERT" > "$FULLCHAIN_CERT"
+
+# 7. 清理中间文件
+rm -f "$ROOT_CERT.srl" "$SAN_CONF" "$ROOT_KEY" "$SERVER_CSR" "FULLCHAIN_CERT"
+
+echo "Generation complete. Deployment files:"
+echo "  Client root certificate: $ROOT_CERT"
+echo "  Server private key: $SERVER_KEY"
+echo "  Server certificate: $SERVER_CERT"
+```
+执行
+```
+chmod +x generate_certs.sh
+./generate_certs.sh 服务器外网IP
+
+# 例如 ./generate_certs.sh 111.111.111.111
+```
+输出如下：
+```
+生成根证书私钥...
+生成自签根证书...
+生成服务器私钥...
+生成服务器证书签名请求（CSR）...
+用根证书签发服务器证书...
+Certificate request self-signature ok
+subject=C = CN, ST = Zhejiang, L = Hangzhou, O = CrossDesk, OU = CrossDesk, CN = CrossDesk
+清理中间文件...
+生成完成,部署时需要：
+  根证书: crossdesk.cn_root.crt
+  服务器私钥: crossdesk.cn.key
+  服务器证书: crossdesk.cn_bundle.crt
+```
+
+#### 服务端
+将 **crossdesk.cn.key** 和 **crossdesk.cn_bundle.crt** 放置到 **/path/to/your/certs** 目录下。
+
+#### 客户端
+1. 点击右上角设置进入设置页面。
+2. 点击点击**自托管服务器配置**。
+3. 在**证书文件路径**选择框中找到 **crossdesk.cn_root.crt** 的存放路径，选中 **crossdesk.cn_root.crt**。
+4. 勾选使用**自托管服务器配置**。
