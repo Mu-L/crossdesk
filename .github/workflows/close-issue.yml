@@ -1,0 +1,38 @@
+name: Close Inactive Issues
+
+on:
+  schedule:
+    # run every day at midnight
+    - cron: "0 0 * * *"
+
+jobs:
+  close_inactive_issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check inactive issues and close them
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+            });
+
+            const now = new Date().getTime();
+            const inactivePeriod = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+            for (const issue of issues) {
+              const lastUpdated = new Date(issue.updated_at).getTime();
+              
+              // if the issue hasn't been updated in the past week, close it
+              if (now - lastUpdated > inactivePeriod) {
+                console.log(`Closing inactive issue: ${issue.number}`);
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                });
+              }
+            }
