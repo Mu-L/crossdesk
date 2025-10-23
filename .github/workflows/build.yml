@@ -37,7 +37,7 @@ jobs:
           if [[ ! "${VERSION_NUM}" =~ ^[0-9] ]]; then
             LEGAL_VERSION="0.0.0-${VERSION_NUM}"
           else
-            LEGAL_VERSION="${VERSION_NUM}"
+            LEGAL_VERSION="${VERSION_NUM}-${VERSION_NUM}"
           fi
           echo "LEGAL_VERSION=${LEGAL_VERSION}" >> $GITHUB_ENV
 
@@ -98,9 +98,9 @@ jobs:
         id: set_deb_version
         run: |
           if [[ ! "${VERSION_NUM}" =~ ^[0-9] ]]; then
-            LEGAL_VERSION="0.0.0-${VERSION_NUM}"
+            LEGAL_VERSION="0.0.0-${VERSION_NUM}-${VERSION_NUM}"
           else
-            LEGAL_VERSION="${VERSION_NUM}"
+            LEGAL_VERSION="${VERSION_NUM}-${VERSION_NUM}"
           fi
           echo "LEGAL_VERSION=${LEGAL_VERSION}" >> $GITHUB_ENV
 
@@ -157,7 +157,7 @@ jobs:
         id: version
         run: |
           VERSION="${GITHUB_REF##*/}"
-          VERSION_NUM="${VERSION#v}"
+          VERSION_NUM="${VERSION#v}-${VERSION_NUM}"
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_ENV
           echo "VERSION_NUM=${VERSION_NUM}"
 
@@ -180,7 +180,7 @@ jobs:
 
       - name: Build CrossDesk
         run: |
-          xmake f --CROSSDESK_VERSION=${LEGAL_VERSION}
+          xmake f --CROSSDESK_VERSION=${VERSION_NUM}
           xmake b -vy crossdesk
 
       - name: Decode and save certificate
@@ -219,7 +219,7 @@ jobs:
           $version = $ref -replace '^refs/(tags|heads)/', ''
           $version = $version -replace '^v', ''
           $version = $version -replace '/', '-'
-          echo "VERSION_NUM=$version" >> $env:GITHUB_ENV
+          echo "VERSION_NUM=$version-${VERSION_NUM}" >> $env:GITHUB_ENV
 
       - name: Cache xmake dependencies
         uses: actions/cache@v4
@@ -286,9 +286,9 @@ jobs:
 
       - name: Build CrossDesk
         run: |
-          xmake f --CROSSDESK_VERSION=${LEGAL_VERSION}
+          xmake f --CROSSDESK_VERSION=${VERSION_NUM}
           xmake b -vy crossdesk
-
+ 
       - name: Decode and save certificate
         shell: powershell
         run: |
@@ -327,7 +327,7 @@ jobs:
         id: version
         run: |
           VERSION="${GITHUB_REF##*/}"
-          VERSION_NUM="${VERSION#v}"
+          VERSION_NUM="${VERSION#v}-${VERSION_NUM}"
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
 
       - name: Rename artifacts
