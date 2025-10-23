@@ -295,3 +295,6 @@ Generation complete. Deployment files::
 
 7. 勾选使用**自托管服务器配置**，点击确认配置生效。<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/1e455dc3-4087-4f37-a544-1ff9f8789383" /><br><br>
+
+# 常见问题
+见 [常见问题](https://github.com/kunkundi/crossdesk/blob/self-hosted-server/docs/FAQ.md) 。

@@ -300,3 +300,6 @@ Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/y
 
 4. Check the option to use **Self-Hosted Server Configuration**.<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/1e455dc3-4087-4f37-a544-1ff9f8789383" /><br><br>
+
+# FAQ
+See [FAQ](https://github.com/kunkundi/crosssesk/blob/self-hosted-server/docs/FAQ.md) .
