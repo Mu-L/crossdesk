@@ -427,39 +427,57 @@ int Render::StopKeyboardCapturer() {
 int Render::CreateConnectionPeer() {
   params_.use_cfg_file = false;
 
-  std::string server_ip;
-  int server_port;
-  std::string server_cert_path;
+  std::string signal_server_ip;
+  int signal_server_port;
+  int coturn_server_port;
+  std::string tls_cert_path;
 
   if (config_center_->IsSelfHosted()) {
-    server_ip = config_center_->GetServerHost();
-    server_port = config_center_->GetServerPort();
-    server_cert_path = config_center_->GetCertFilePath();
+    signal_server_ip = config_center_->GetSignalServerHost();
+    signal_server_port = config_center_->GetSignalServerPort();
+    coturn_server_port = config_center_->GetCoturnServerPort();
+    tls_cert_path = config_center_->GetCertFilePath();
   } else {
-    server_ip = config_center_->GetDefaultServerHost();
-    server_port = config_center_->GetDefaultServerPort();
-    server_cert_path = config_center_->GetDefaultCertFilePath();
+    signal_server_ip = config_center_->GetDefaultServerHost();
+    signal_server_port = config_center_->GetDefaultSignalServerPort();
+    coturn_server_port = config_center_->GetDefaultCoturnServerPort();
+    tls_cert_path = config_center_->GetDefaultCertFilePath();
   }
 
-  strncpy((char*)params_.signal_server_ip, server_ip.c_str(),
+  // self hosted server config
+  strncpy(signal_server_ip_self_, config_center_->GetSignalServerHost().c_str(),
+          sizeof(signal_server_ip_self_) - 1);
+  signal_server_ip_self_[sizeof(signal_server_ip_self_) - 1] = '\0';
+  strncpy(signal_server_port_self_,
+          std::to_string(config_center_->GetSignalServerPort()).c_str(),
+          sizeof(signal_server_port_self_) - 1);
+  signal_server_port_self_[sizeof(signal_server_port_self_) - 1] = '\0';
+  strncpy(coturn_server_port_self_,
+          std::to_string(config_center_->GetCoturnServerPort()).c_str(),
+          sizeof(coturn_server_port_self_) - 1);
+  coturn_server_port_self_[sizeof(coturn_server_port_self_) - 1] = '\0';
+  tls_cert_path_self_ = config_center_->GetCertFilePath();
+
+  // peer config
+  strncpy((char*)params_.signal_server_ip, signal_server_ip.c_str(),
           sizeof(params_.signal_server_ip) - 1);
   params_.signal_server_ip[sizeof(params_.signal_server_ip) - 1] = '\0';
-  params_.signal_server_port = server_port;
-  strncpy((char*)params_.stun_server_ip, server_ip.c_str(),
+  params_.signal_server_port = signal_server_port;
+  strncpy((char*)params_.stun_server_ip, signal_server_ip.c_str(),
           sizeof(params_.stun_server_ip) - 1);
   params_.stun_server_ip[sizeof(params_.stun_server_ip) - 1] = '\0';
-  params_.stun_server_port = 3478;
-  strncpy((char*)params_.turn_server_ip, server_ip.c_str(),
+  params_.stun_server_port = coturn_server_port;
+  strncpy((char*)params_.turn_server_ip, signal_server_ip.c_str(),
           sizeof(params_.turn_server_ip) - 1);
   params_.turn_server_ip[sizeof(params_.turn_server_ip) - 1] = '\0';
-  params_.turn_server_port = 3478;
+  params_.turn_server_port = coturn_server_port;
   strncpy((char*)params_.turn_server_username, "crossdesk",
           sizeof(params_.turn_server_username) - 1);
   params_.turn_server_username[sizeof(params_.turn_server_username) - 1] = '\0';
   strncpy((char*)params_.turn_server_password, "crossdeskpw",
           sizeof(params_.turn_server_password) - 1);
   params_.turn_server_password[sizeof(params_.turn_server_password) - 1] = '\0';
-  strncpy(params_.tls_cert_path, server_cert_path.c_str(),
+  strncpy(params_.tls_cert_path, tls_cert_path.c_str(),
           sizeof(params_.tls_cert_path) - 1);
   params_.tls_cert_path[sizeof(params_.tls_cert_path) - 1] = '\0';
 
@@ -883,13 +901,14 @@ int Render::Run() {
     cache_path_ = path_manager_->GetCachePath().string();
     config_center_ =
         std::make_unique<ConfigCenter>(cache_path_ + "/config.ini", cert_path_);
-    strncpy(signal_server_ip_tmp_, config_center_->GetServerHost().c_str(),
-            sizeof(signal_server_ip_tmp_) - 1);
-    signal_server_ip_tmp_[sizeof(signal_server_ip_tmp_) - 1] = '\0';
-    strncpy(signal_server_port_tmp_,
-            std::to_string(config_center_->GetServerPort()).c_str(),
-            sizeof(signal_server_port_tmp_) - 1);
-    signal_server_port_tmp_[sizeof(signal_server_port_tmp_) - 1] = '\0';
+    strncpy(signal_server_ip_self_,
+            config_center_->GetSignalServerHost().c_str(),
+            sizeof(signal_server_ip_self_) - 1);
+    signal_server_ip_self_[sizeof(signal_server_ip_self_) - 1] = '\0';
+    strncpy(signal_server_port_self_,
+            std::to_string(config_center_->GetSignalServerPort()).c_str(),
+            sizeof(signal_server_port_self_) - 1);
+    signal_server_port_self_[sizeof(signal_server_port_self_) - 1] = '\0';
     strncpy(cert_file_path_, cert_path_.c_str(), sizeof(cert_file_path_) - 1);
     cert_file_path_[sizeof(cert_file_path_) - 1] = '\0';
   } else {

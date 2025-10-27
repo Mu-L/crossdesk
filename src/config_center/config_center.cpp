@@ -36,9 +36,12 @@ int ConfigCenter::Load() {
 
   enable_turn_ = ini_.GetBoolValue(section_, "enable_turn", enable_turn_);
   enable_srtp_ = ini_.GetBoolValue(section_, "enable_srtp", enable_srtp_);
-  server_host_ = ini_.GetValue(section_, "server_host", server_host_.c_str());
-  server_port_ = static_cast<int>(
-      ini_.GetLongValue(section_, "server_port", server_port_));
+  signal_server_host_ = ini_.GetValue(section_, "signal_server_host",
+                                      signal_server_host_.c_str());
+  signal_server_port_ = static_cast<int>(
+      ini_.GetLongValue(section_, "signal_server_port", signal_server_port_));
+  coturn_server_port_ = static_cast<int>(
+      ini_.GetLongValue(section_, "coturn_server_port", coturn_server_port_));
   cert_file_path_ =
       ini_.GetValue(section_, "cert_file_path", cert_file_path_.c_str());
   enable_self_hosted_ =
@@ -61,8 +64,9 @@ int ConfigCenter::Save() {
   ini_.SetBoolValue(section_, "hardware_video_codec", hardware_video_codec_);
   ini_.SetBoolValue(section_, "enable_turn", enable_turn_);
   ini_.SetBoolValue(section_, "enable_srtp", enable_srtp_);
-  ini_.SetValue(section_, "server_host", server_host_.c_str());
-  ini_.SetLongValue(section_, "server_port", static_cast<long>(server_port_));
+  ini_.SetValue(section_, "signal_server_host", signal_server_host_.c_str());
+  ini_.SetLongValue(section_, "signal_server_port",
+                    static_cast<long>(signal_server_port_));
   ini_.SetValue(section_, "cert_file_path", cert_file_path_.c_str());
   ini_.SetBoolValue(section_, "enable_self_hosted", enable_self_hosted_);
   ini_.SetBoolValue(section_, "enable_minimize_to_tray",
@@ -152,9 +156,9 @@ int ConfigCenter::SetSrtp(bool enable_srtp) {
   return 0;
 }
 
-int ConfigCenter::SetServerHost(const std::string& server_host) {
-  server_host_ = server_host;
-  ini_.SetValue(section_, "server_host", server_host_.c_str());
+int ConfigCenter::SetServerHost(const std::string& signal_server_host) {
+  signal_server_host_ = signal_server_host;
+  ini_.SetValue(section_, "signal_server_host", signal_server_host_.c_str());
   SI_Error rc = ini_.SaveFile(config_path_.c_str());
   if (rc < 0) {
     return -1;
@@ -162,10 +166,21 @@ int ConfigCenter::SetServerHost(const std::string& server_host) {
   return 0;
 }
 
-int ConfigCenter::SetServerPort(int server_port) {
-  server_port_ = server_port;
-  ini_.SetLongValue(section_, "server_port", static_cast<long>(server_port_));
+int ConfigCenter::SetServerPort(int signal_server_port) {
+  signal_server_port_ = signal_server_port;
+  ini_.SetLongValue(section_, "signal_server_port",
+                    static_cast<long>(signal_server_port_));
   SI_Error rc = ini_.SaveFile(config_path_.c_str());
+  if (rc < 0) {
+    return -1;
+  }
+  return 0;
+}
+
+int ConfigCenter::SetCoturnServerPort(int coturn_server_port) {
+  coturn_server_port_ = coturn_server_port;
+  SI_Error rc = ini_.SetLongValue(section_, "coturn_server_port",
+                                  static_cast<long>(coturn_server_port_));
   if (rc < 0) {
     return -1;
   }
@@ -220,17 +235,27 @@ bool ConfigCenter::IsEnableTurn() const { return enable_turn_; }
 
 bool ConfigCenter::IsEnableSrtp() const { return enable_srtp_; }
 
-std::string ConfigCenter::GetServerHost() const { return server_host_; }
+std::string ConfigCenter::GetSignalServerHost() const {
+  return signal_server_host_;
+}
 
-int ConfigCenter::GetServerPort() const { return server_port_; }
+int ConfigCenter::GetSignalServerPort() const { return signal_server_port_; }
+
+int ConfigCenter::GetCoturnServerPort() const { return coturn_server_port_; }
 
 std::string ConfigCenter::GetCertFilePath() const { return cert_file_path_; }
 
 std::string ConfigCenter::GetDefaultServerHost() const {
-  return server_host_default_;
+  return signal_server_host_default_;
 }
 
-int ConfigCenter::GetDefaultServerPort() const { return server_port_default_; }
+int ConfigCenter::GetDefaultSignalServerPort() const {
+  return server_port_default_;
+}
+
+int ConfigCenter::GetDefaultCoturnServerPort() const {
+  return coturn_server_port_default_;
+}
 
 std::string ConfigCenter::GetDefaultCertFilePath() const {
   return cert_file_path_default_;

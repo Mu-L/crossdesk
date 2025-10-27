@@ -107,6 +107,8 @@ static std::vector<std::string> self_hosted_server_address = {
     reinterpret_cast<const char*>(u8"服务器地址:"), "Server Address:"};
 static std::vector<std::string> self_hosted_server_port = {
     reinterpret_cast<const char*>(u8"服务器端口:"), "Server Port:"};
+static std::vector<std::string> self_hosted_server_coturn_server_port = {
+    reinterpret_cast<const char*>(u8"中继服务器端口:"), "Relay Server Port:"};
 static std::vector<std::string> self_hosted_server_certificate_path = {
     reinterpret_cast<const char*>(u8"证书文件路径:"), "Certificate File Path:"};
 static std::vector<std::string> select_a_file = {

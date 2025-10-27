@@ -442,6 +442,7 @@ class Render {
   bool enable_srtp_ = false;
   char signal_server_ip_[256] = "api.crossdesk.cn";
   char signal_server_port_[6] = "9099";
+  char coturn_server_port_[6] = "3478";
   char cert_file_path_[256] = "";
   bool enable_self_hosted_server_ = false;
   int language_button_value_last_ = 0;
@@ -452,12 +453,13 @@ class Render {
   bool enable_srtp_last_ = false;
   bool enable_minimize_to_tray_ = false;
   bool enable_minimize_to_tray_last_ = false;
-  char signal_server_ip_tmp_[256] = "api.crossdesk.cn";
-  char signal_server_port_tmp_[6] = "9099";
+  char signal_server_ip_self_[256] = "";
+  char signal_server_port_self_[6] = "";
+  char coturn_server_port_self_[6] = "";
+  std::string tls_cert_path_self_ = "";
   bool settings_window_pos_reset_ = true;
   bool self_hosted_server_config_window_pos_reset_ = true;
   std::string selected_current_file_path_ = "";
-  std::string selected_file_ = "";
   bool show_file_browser_ = true;
   /* ------ main window property end ------ */
 

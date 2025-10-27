@@ -169,9 +169,9 @@ The parameters you need to pay attention to are as follows:
 
 - **CROSSDESK_SERVER_PORT**: The port used by the self-hosted server, corresponding to the **Server Port** in the CrossDesk client **Self-Hosted Server Configuration**.
 
-- **COTURN_PORT**: The port used by Coturn, corresponding to the **Coturn Port** in the CrossDesk client **Self-Hosted Server Configuration**.
+- **COTURN_PORT**: The port used by Coturn, corresponding to the **Relay Server Port** in the CrossDesk client **Self-Hosted Server Configuration**.
 
-- **MIN_PORT** and **MAX_PORT**: The range of ports used by the self-hosted server, corresponding to the **Minimum Port** and **Maximum Port** in the CrossDesk client **Self-Hosted Server Configuration**.
+- **MIN_PORT** and **MAX_PORT**: The range of ports used by the self-hosted server, corresponding to the **Minimum Port** and **Maximum Port** in the CrossDesk client **Self-Hosted Server Configuration**. Example: 50000-60000. It depends on the number of devices connected to the server.
 
 - **/path/to/your/certs**: Directory for certificate files.
 
@@ -181,7 +181,7 @@ The parameters you need to pay attention to are as follows:
 
 **Note**:  
 - **/path/to/your/ is an example path; please replace it with your actual path. The mounted directories must be created in advance, otherwise the container will fail.**
-- **The server must open the following ports: 3478/udp, 3478/tcp, 30000-60000/udp, CROSSDESK_SERVER_PORT/tcp, 443/tcp.**
+- **The server must open the following ports: 3478/udp, 3478/tcp, 30000-60000/udp, CROSSDESK_SERVER_PORT/tcp.**
 
 ## Certificate Files
 The client needs to load the root certificate, and the server needs to load the server private key and server certificate.

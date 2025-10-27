@@ -33,8 +33,9 @@ int Render::ShowSimpleFileBrowser() {
     selected_current_file_path_ = std::filesystem::current_path().string();
   }
 
-  if (!selected_file_.empty()) {
-    display_text = std::filesystem::path(selected_file_).filename().string();
+  if (!tls_cert_path_self_.empty()) {
+    display_text =
+        std::filesystem::path(tls_cert_path_self_).filename().string();
   } else if (selected_current_file_path_ != "Root") {
     display_text =
         std::filesystem::path(selected_current_file_path_).filename().string();
@@ -66,7 +67,7 @@ int Render::ShowSimpleFileBrowser() {
         for (const auto& root : roots) {
           if (ImGui::Selectable(root.c_str())) {
             selected_current_file_path_ = root;
-            selected_file_.clear();
+            tls_cert_path_self_.clear();
           }
         }
       } else {
@@ -81,7 +82,7 @@ int Render::ShowSimpleFileBrowser() {
           } else {
             selected_current_file_path_ = "Root";
           }
-          selected_file_.clear();
+          tls_cert_path_self_.clear();
         }
 
         try {
@@ -91,11 +92,11 @@ int Render::ShowSimpleFileBrowser() {
             if (entry.is_directory()) {
               if (ImGui::Selectable(name.c_str())) {
                 selected_current_file_path_ = entry.path().string();
-                selected_file_.clear();
+                tls_cert_path_self_.clear();
               }
             } else {
               if (ImGui::Selectable(name.c_str())) {
-                selected_file_ = entry.path().string();
+                tls_cert_path_self_ = entry.path().string();
                 file_selected = true;
                 show_file_browser_ = false;
               }
@@ -182,8 +183,8 @@ int Render::SelfHostedServerWindow() {
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SELF_HOSTED_SERVER_INPUT_WINDOW_WIDTH);
 
-        ImGui::InputText("##signal_server_ip_tmp_", signal_server_ip_tmp_,
-                         IM_ARRAYSIZE(signal_server_ip_tmp_),
+        ImGui::InputText("##signal_server_ip_self_", signal_server_ip_self_,
+                         IM_ARRAYSIZE(signal_server_ip_self_),
                          ImGuiInputTextFlags_AlwaysOverwrite);
       }
 
@@ -205,8 +206,29 @@ int Render::SelfHostedServerWindow() {
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SELF_HOSTED_SERVER_INPUT_WINDOW_WIDTH);
 
-        ImGui::InputText("##signal_server_port_tmp_", signal_server_port_tmp_,
-                         IM_ARRAYSIZE(signal_server_port_tmp_));
+        ImGui::InputText("##signal_server_port_self_", signal_server_port_self_,
+                         IM_ARRAYSIZE(signal_server_port_self_));
+      }
+
+      ImGui::Separator();
+
+      {
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::Text("%s", localization::self_hosted_server_coturn_server_port
+                              [localization_language_index_]
+                                  .c_str());
+
+        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_PORT_INPUT_BOX_PADDING_CN);
+        } else {
+          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_PORT_INPUT_BOX_PADDING_EN);
+        }
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::SetNextItemWidth(SELF_HOSTED_SERVER_INPUT_WINDOW_WIDTH);
+
+        ImGui::InputText("##coturn_server_port_self_", coturn_server_port_self_,
+                         IM_ARRAYSIZE(coturn_server_port_self_));
       }
 
       ImGui::Separator();
@@ -248,16 +270,20 @@ int Render::SelfHostedServerWindow() {
               localization::ok[localization_language_index_].c_str())) {
         show_self_hosted_server_config_window_ = false;
 
-        config_center_->SetServerHost(signal_server_ip_tmp_);
-        config_center_->SetServerPort(atoi(signal_server_port_tmp_));
-        config_center_->SetCertFilePath(selected_file_);
-        strncpy(signal_server_ip_, signal_server_ip_tmp_,
+        config_center_->SetServerHost(signal_server_ip_self_);
+        config_center_->SetServerPort(atoi(signal_server_port_self_));
+        config_center_->SetCoturnServerPort(atoi(coturn_server_port_self_));
+        config_center_->SetCertFilePath(tls_cert_path_self_);
+        strncpy(signal_server_ip_, signal_server_ip_self_,
                 sizeof(signal_server_ip_) - 1);
         signal_server_ip_[sizeof(signal_server_ip_) - 1] = '\0';
-        strncpy(signal_server_port_, signal_server_port_tmp_,
+        strncpy(signal_server_port_, signal_server_port_self_,
                 sizeof(signal_server_port_) - 1);
         signal_server_port_[sizeof(signal_server_port_) - 1] = '\0';
-        strncpy(cert_file_path_, selected_file_.c_str(),
+        strncpy(coturn_server_port_, coturn_server_port_self_,
+                sizeof(coturn_server_port_) - 1);
+        coturn_server_port_[sizeof(coturn_server_port_) - 1] = '\0';
+        strncpy(cert_file_path_, tls_cert_path_self_.c_str(),
                 sizeof(cert_file_path_) - 1);
         cert_file_path_[sizeof(cert_file_path_) - 1] = '\0';
 
@@ -271,15 +297,15 @@ int Render::SelfHostedServerWindow() {
         show_self_hosted_server_config_window_ = false;
         self_hosted_server_config_window_pos_reset_ = true;
 
-        strncpy(signal_server_ip_tmp_, signal_server_ip_,
-                sizeof(signal_server_ip_tmp_) - 1);
-        signal_server_ip_tmp_[sizeof(signal_server_ip_tmp_) - 1] = '\0';
-        strncpy(signal_server_port_tmp_, signal_server_port_,
-                sizeof(signal_server_port_tmp_) - 1);
-        signal_server_port_tmp_[sizeof(signal_server_port_tmp_) - 1] = '\0';
-        config_center_->SetServerHost(signal_server_ip_tmp_);
-        config_center_->SetServerPort(atoi(signal_server_port_tmp_));
-        selected_file_.clear();
+        strncpy(signal_server_ip_self_, signal_server_ip_,
+                sizeof(signal_server_ip_self_) - 1);
+        signal_server_ip_self_[sizeof(signal_server_ip_self_) - 1] = '\0';
+        strncpy(signal_server_port_self_, signal_server_port_,
+                sizeof(signal_server_port_self_) - 1);
+        signal_server_port_self_[sizeof(signal_server_port_self_) - 1] = '\0';
+        config_center_->SetServerHost(signal_server_ip_self_);
+        config_center_->SetServerPort(atoi(signal_server_port_self_));
+        tls_cert_path_self_.clear();
       }
 
       ImGui::SetWindowFontScale(1.0f);

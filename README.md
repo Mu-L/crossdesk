@@ -164,9 +164,9 @@ sudo docker run -d \
 
 - CROSSDESK_SERVER_PORT：自托管服务使用的端口，对应 CrossDesk 客户端**自托管服务器配置**中填写的**服务器端口**
 
-- COTURN_PORT: COTURN 服务使用的端口, 对应 CrossDesk 客户端**自托管服务器配置**中填写的**COTURN 服务端口**
+- COTURN_PORT: COTURN 服务使用的端口, 对应 CrossDesk 客户端**自托管服务器配置**中填写的**中继服务端口**
 
-- MIN_PORT/MAX_PORT：COTURN 服务使用的端口范围
+- MIN_PORT/MAX_PORT：COTURN 服务使用的端口范围，例如：MIN_PORT=50000, MAX_PORT=60000，范围可根据客户端数量调整。
 
 - /path/to/your/certs：证书文件目录
 
@@ -176,7 +176,7 @@ sudo docker run -d \
 
 **注意**：
 - **/path/to/your/ 是示例路径，请替换为你自己的实际路径。挂载的目录必须事先创建好，否则容器会报错。**
-- **服务器需开放端口：3478/udp，3478/tcp，30000-60000/udp，CROSSDESK_SERVER_PORT/tcp，443/tcp。**
+- **服务器需开放端口：3478/udp，3478/tcp，MIN_PORT-MAX_PORT/udp，CROSSDESK_SERVER_PORT/tcp。**
 
 ## 证书文件
 客户端需加载根证书文件，服务端需加载服务器私钥和服务器证书文件。
