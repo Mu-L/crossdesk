@@ -58,6 +58,14 @@ jobs:
               // check inactivity
               if (now - lastActivityTime > inactivePeriod) {
                 console.log(`Closing inactive issue: #${issue.number} (No recent replies for 7 days)`);
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: "This issue has been automatically closed due to inactivity for 7 days."
+                });
+
                 await github.rest.issues.update({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
