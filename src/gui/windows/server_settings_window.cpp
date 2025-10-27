@@ -28,6 +28,11 @@ std::vector<std::string> GetRootEntries() {
 
 int Render::ShowSimpleFileBrowser() {
   std::string display_text;
+
+  if (selected_current_file_path_.empty()) {
+    selected_current_file_path_ = std::filesystem::current_path().string();
+  }
+
   if (!selected_file_.empty()) {
     display_text = std::filesystem::path(selected_file_).filename().string();
   } else if (selected_current_file_path_ != "Root") {
@@ -43,49 +48,69 @@ int Render::ShowSimpleFileBrowser() {
         localization::select_a_file[localization_language_index_].c_str();
   }
 
-  if (ImGui::BeginCombo("##select_a_file", display_text.c_str())) {
-    if (selected_current_file_path_ == "Root" ||
-        !std::filesystem::exists(selected_current_file_path_) ||
-        !std::filesystem::is_directory(selected_current_file_path_)) {
+  if (show_file_browser_) {
+    ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
+
+    float fixed_width = 130.0f;
+    ImGui::SetNextItemWidth(fixed_width);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(fixed_width, 0),
+                                        ImVec2(fixed_width, 100.0f));
+
+    if (ImGui::BeginCombo("##select_a_file", display_text.c_str(), 0)) {
+      bool file_selected = false;
+
       auto roots = GetRootEntries();
-      for (const auto& root : roots) {
-        if (ImGui::Selectable(root.c_str())) {
-          selected_current_file_path_ = root;
-          selected_file_.clear();
-        }
-      }
-    } else {
-      std::filesystem::path p(selected_current_file_path_);
-
-      if (ImGui::Selectable("..")) {
-        if (p.has_parent_path() && p != p.root_path())
-          selected_current_file_path_ = p.parent_path().string();
-        else
-          selected_current_file_path_ = "Root";
-        selected_file_.clear();
-      }
-
-      try {
-        for (const auto& entry :
-             std::filesystem::directory_iterator(selected_current_file_path_)) {
-          std::string name = entry.path().filename().string();
-          if (entry.is_directory()) {
-            if (ImGui::Selectable(name.c_str())) {
-              selected_current_file_path_ = entry.path().string();
-              selected_file_.clear();
-            }
-          } else {
-            if (ImGui::Selectable(name.c_str())) {
-              selected_file_ = entry.path().string();
-            }
+      if (selected_current_file_path_ == "Root" ||
+          !std::filesystem::exists(selected_current_file_path_) ||
+          !std::filesystem::is_directory(selected_current_file_path_)) {
+        for (const auto& root : roots) {
+          if (ImGui::Selectable(root.c_str())) {
+            selected_current_file_path_ = root;
+            selected_file_.clear();
           }
         }
-      } catch (const std::exception& e) {
-        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: %s", e.what());
-      }
-    }
+      } else {
+        std::filesystem::path p(selected_current_file_path_);
 
-    ImGui::EndCombo();
+        if (ImGui::Selectable("..")) {
+          if (std::find(roots.begin(), roots.end(),
+                        selected_current_file_path_) != roots.end()) {
+            selected_current_file_path_ = "Root";
+          } else if (p.has_parent_path()) {
+            selected_current_file_path_ = p.parent_path().string();
+          } else {
+            selected_current_file_path_ = "Root";
+          }
+          selected_file_.clear();
+        }
+
+        try {
+          for (const auto& entry : std::filesystem::directory_iterator(
+                   selected_current_file_path_)) {
+            std::string name = entry.path().filename().string();
+            if (entry.is_directory()) {
+              if (ImGui::Selectable(name.c_str())) {
+                selected_current_file_path_ = entry.path().string();
+                selected_file_.clear();
+              }
+            } else {
+              if (ImGui::Selectable(name.c_str())) {
+                selected_file_ = entry.path().string();
+                file_selected = true;
+                show_file_browser_ = false;
+              }
+            }
+          }
+        } catch (const std::exception& e) {
+          ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: %s", e.what());
+        }
+      }
+
+      ImGui::EndCombo();
+    }
+    ImGui::PopItemFlag();
+  } else {
+    show_file_browser_ = true;
   }
 
   return 0;

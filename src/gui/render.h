@@ -458,6 +458,7 @@ class Render {
   bool self_hosted_server_config_window_pos_reset_ = true;
   std::string selected_current_file_path_ = "";
   std::string selected_file_ = "";
+  bool show_file_browser_ = true;
   /* ------ main window property end ------ */
 
   /* ------ sub stream window property start ------ */
