@@ -158,8 +158,12 @@ static std::vector<std::string> no_such_id = {
 
 static std::vector<std::string> about = {
     reinterpret_cast<const char*>(u8"关于"), "About"};
+static std::vector<std::string> new_version_available = {
+    reinterpret_cast<const char*>(u8"新版本可用"), "New Version Available"};
 static std::vector<std::string> version = {
     reinterpret_cast<const char*>(u8"版本"), "Version"};
+static std::vector<std::string> access_website = {
+    reinterpret_cast<const char*>(u8"访问官网: "), "Access Website: "};
 
 static std::vector<std::string> confirm_delete_connection = {
     reinterpret_cast<const char*>(u8"确认删除此连接"),

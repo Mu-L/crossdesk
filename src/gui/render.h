@@ -307,6 +307,7 @@ class Render {
 #endif
 
   // main window properties
+  std::string latest_version_ = "";
   bool start_mouse_controller_ = false;
   bool mouse_controller_is_started_ = false;
   bool start_screen_capturer_ = false;
@@ -432,6 +433,10 @@ class Render {
   KeyboardCapturer* keyboard_capturer_ = nullptr;
   std::vector<DisplayInfo> display_info_list_;
   uint64_t last_frame_time_;
+  bool show_new_version_icon_ = false;
+  bool show_new_version_icon_in_menu_ = true;
+  uint64_t new_version_icon_last_trigger_time_ = 0;
+  uint64_t new_version_icon_render_start_time_ = 0;
   char client_id_[10] = "";
   char client_id_display_[12] = "";
   char client_id_with_password_[17] = "";

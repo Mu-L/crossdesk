@@ -3,6 +3,7 @@
 #include "render.h"
 
 #define BUTTON_PADDING 36.0f
+#define NEW_VERSION_ICON_RENDER_TIME_INTERVAL 2000
 
 namespace crossdesk {
 
@@ -39,13 +40,59 @@ int Render::TitleBar(bool main_window) {
                 localization::settings[localization_language_index_].c_str())) {
           show_settings_window_ = true;
         }
-        if (ImGui::MenuItem(
-                localization::about[localization_language_index_].c_str())) {
+
+        show_new_version_icon_in_menu_ = false;
+
+        std::string about_str =
+            localization::about[localization_language_index_];
+        if (!latest_version_.empty()) {
+          auto now_time =
+              std::chrono::duration_cast<std::chrono::milliseconds>(
+                  std::chrono::steady_clock::now().time_since_epoch())
+                  .count();
+
+          // every 2 seconds
+          if (now_time - new_version_icon_last_trigger_time_ >=
+              NEW_VERSION_ICON_RENDER_TIME_INTERVAL) {
+            show_new_version_icon_ = true;
+            new_version_icon_render_start_time_ = now_time;
+            new_version_icon_last_trigger_time_ = now_time;
+          }
+
+          // render for 1 second
+          if (show_new_version_icon_) {
+            about_str = about_str + " " + ICON_FA_TRIANGLE_EXCLAMATION;
+            if (now_time - new_version_icon_render_start_time_ >=
+                NEW_VERSION_ICON_RENDER_TIME_INTERVAL / 2) {
+              show_new_version_icon_ = false;
+            }
+          } else {
+            about_str = about_str + "      ";
+          }
+        }
+
+        if (ImGui::MenuItem(about_str.c_str())) {
           show_about_window_ = true;
         }
+
+        if (!latest_version_.empty() && ImGui::IsItemHovered()) {
+          ImGui::BeginTooltip();
+          ImGui::SetWindowFontScale(0.5f);
+          std::string new_version_available_str =
+              localization::new_version_available
+                  [localization_language_index_] +
+              ": " + latest_version_;
+          ImGui::Text("%s", new_version_available_str.c_str());
+          ImGui::SetWindowFontScale(1.0f);
+          ImGui::EndTooltip();
+        }
+
         ImGui::SetWindowFontScale(1.0f);
         ImGui::EndMenu();
+      } else {
+        show_new_version_icon_in_menu_ = true;
       }
+
       float menu_bar_line_size = 15.0f;
       draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y - 6),
                          ImVec2(bar_pos_x + menu_bar_line_size, bar_pos_y - 6),
@@ -56,6 +103,33 @@ int Render::TitleBar(bool main_window) {
       draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y + 6),
                          ImVec2(bar_pos_x + menu_bar_line_size, bar_pos_y + 6),
                          IM_COL32(0, 0, 0, 255));
+
+      if (!latest_version_.empty() && show_new_version_icon_in_menu_) {
+        auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now().time_since_epoch())
+                            .count();
+
+        // every 2 seconds
+        if (now_time - new_version_icon_last_trigger_time_ >=
+            NEW_VERSION_ICON_RENDER_TIME_INTERVAL) {
+          show_new_version_icon_ = true;
+          new_version_icon_render_start_time_ = now_time;
+          new_version_icon_last_trigger_time_ = now_time;
+        }
+
+        // render for 1 second
+        if (show_new_version_icon_) {
+          ImGui::SetWindowFontScale(0.6f);
+          ImGui::SetCursorPos(ImVec2(bar_pos_x + 10, bar_pos_y - 17));
+          ImGui::Text(ICON_FA_TRIANGLE_EXCLAMATION);
+          ImGui::SetWindowFontScale(1.0f);
+
+          if (now_time - new_version_icon_render_start_time_ >=
+              NEW_VERSION_ICON_RENDER_TIME_INTERVAL / 2) {
+            show_new_version_icon_ = false;
+          }
+        }
+      }
 
       {
         SettingWindow();

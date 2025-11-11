@@ -16,6 +16,7 @@
 #include "platform.h"
 #include "rd_log.h"
 #include "screen_capturer_factory.h"
+#include "version_checker.h"
 
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
@@ -906,6 +907,8 @@ int Render::DrawStreamWindow() {
 }
 
 int Render::Run() {
+  latest_version_ = CheckUpdate();
+
   path_manager_ = std::make_unique<PathManager>("CrossDesk");
   if (path_manager_) {
     cert_path_ =

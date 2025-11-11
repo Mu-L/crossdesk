@@ -24,6 +24,7 @@ add_requires("spdlog 1.14.1", {system = false})
 add_requires("imgui v1.91.5-docking", {configs = {sdl3 = true, sdl3_renderer = true}})
 add_requires("openssl3 3.3.2", {system = false})
 add_requires("nlohmann_json 3.11.3")
+add_requires("cpp-httplib v0.26.0", {configs = {ssl = true}})
 
 if is_os("windows") then
     add_requires("libyuv", "miniaudio 0.11.21")
@@ -48,7 +49,7 @@ end
 
 add_packages("spdlog", "imgui", "nlohmann_json")
 
-includes("submodules")
+includes("submodules", "thirdparty")
 
 target("rd_log")
     set_kind("object")
@@ -145,13 +146,21 @@ target("assets")
         "src/gui/assets/icons",
         "src/gui/assets/layouts", {public = true})
 
+target("version_checker")
+    set_kind("object")
+    add_packages("cpp-httplib")
+    add_defines("CROSSDESK_VERSION=\"" .. (get_config("CROSSDESK_VERSION") or "Unknown") .. "\"")
+    add_deps("rd_log")
+    add_files("src/version_checker/*.cpp")
+    add_includedirs("src/version_checker", {public = true})
+
 target("gui")
     set_kind("object")
     add_packages("libyuv")
     add_defines("CROSSDESK_VERSION=\"" .. (get_config("CROSSDESK_VERSION") or "Unknown") .. "\"")
     add_deps("rd_log", "common", "assets", "config_center", "minirtc", 
         "path_manager", "screen_capturer", "speaker_capturer", 
-        "device_controller", "thumbnail")
+        "device_controller", "thumbnail", "version_checker")
     add_files("src/gui/*.cpp", "src/gui/panels/*.cpp", "src/gui/toolbars/*.cpp",
         "src/gui/windows/*.cpp")
     add_includedirs("src/gui", "src/gui/panels", "src/gui/toolbars",
