@@ -35,12 +35,14 @@ jobs:
         id: set_deb_version
         run: |
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          BUILD_DATE=$(date +%Y%m%d)
           if [[ ! "${VERSION_NUM}" =~ ^[0-9] ]]; then
-            LEGAL_VERSION="0.0.0-${VERSION_NUM}-${SHORT_SHA}"
+            LEGAL_VERSION="v0.0.0-${VERSION_NUM}-${BUILD_DATE}-${SHORT_SHA}"
           else
-            LEGAL_VERSION="${VERSION_NUM}-${SHORT_SHA}"
+            LEGAL_VERSION="v${VERSION_NUM}-${BUILD_DATE}-${SHORT_SHA}"
           fi
           echo "LEGAL_VERSION=${LEGAL_VERSION}" >> $GITHUB_ENV
+          echo "BUILD_DATE=${BUILD_DATE}" >> $GITHUB_ENV
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -99,12 +101,14 @@ jobs:
         id: set_deb_version
         run: |
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          BUILD_DATE=$(date +%Y%m%d)
           if [[ ! "${VERSION_NUM}" =~ ^[0-9] ]]; then
-            LEGAL_VERSION="0.0.0-${VERSION_NUM}-${SHORT_SHA}"
+            LEGAL_VERSION="v0.0.0-${VERSION_NUM}-${BUILD_DATE}-${SHORT_SHA}"
           else
-            LEGAL_VERSION="${VERSION_NUM}-${SHORT_SHA}"
+            LEGAL_VERSION="v${VERSION_NUM}-${BUILD_DATE}-${SHORT_SHA}"
           fi
           echo "LEGAL_VERSION=${LEGAL_VERSION}" >> $GITHUB_ENV
+          echo "BUILD_DATE=${BUILD_DATE}" >> $GITHUB_ENV
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -160,9 +164,11 @@ jobs:
         run: |
           VERSION="${GITHUB_REF##*/}"
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
-          VERSION_NUM="${VERSION#v}-${SHORT_SHA}"
+          BUILD_DATE=$(date +%Y%m%d)
+          VERSION_NUM="v${VERSION#v}-${BUILD_DATE}-${SHORT_SHA}"
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_ENV
           echo "VERSION_NUM=${VERSION_NUM}"
+          echo "BUILD_DATE=${BUILD_DATE}" >> $GITHUB_ENV
 
       - name: Cache xmake dependencies
         uses: actions/cache@v4
@@ -223,7 +229,9 @@ jobs:
           $version = $version -replace '^v', ''
           $version = $version -replace '/', '-'
           $SHORT_SHA = $env:GITHUB_SHA.Substring(0,7)
-          echo "VERSION_NUM=$version-$SHORT_SHA" >> $env:GITHUB_ENV
+          $BUILD_DATE = Get-Date -Format "yyyyMMdd"
+          echo "VERSION_NUM=v$version-$BUILD_DATE-$SHORT_SHA" >> $env:GITHUB_ENV
+          echo "BUILD_DATE=$BUILD_DATE" >> $env:GITHUB_ENV
 
       - name: Cache xmake dependencies
         uses: actions/cache@v4
@@ -292,7 +300,7 @@ jobs:
         run: |
           xmake f --CROSSDESK_VERSION=${{ env.VERSION_NUM }} -y
           xmake b -vy crossdesk
- 
+
       - name: Decode and save certificate
         shell: powershell
         run: |
@@ -332,8 +340,14 @@ jobs:
         run: |
           VERSION="${GITHUB_REF##*/}"
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
-          VERSION_NUM="${VERSION#v}-${SHORT_SHA}"
+          BUILD_DATE=$(date +%Y%m%d)
+          BUILD_DATE_ISO=$(date +%Y-%m-%d)
+          VERSION_NUM="v${VERSION#v}-${BUILD_DATE}-${SHORT_SHA}"
+          VERSION_ONLY="${VERSION#v}"
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
+          echo "VERSION_ONLY=${VERSION_ONLY}" >> $GITHUB_OUTPUT
+          echo "BUILD_DATE=${BUILD_DATE}" >> $GITHUB_OUTPUT
+          echo "BUILD_DATE_ISO=${BUILD_DATE_ISO}" >> $GITHUB_OUTPUT
 
       - name: Rename artifacts
         run: |
@@ -387,17 +401,43 @@ jobs:
           remote_key: ${{ secrets.SERVER_KEY }}
 
       - name: Generate version.json
-        run: | 
-          echo "{" > version.json
-          echo " \"latest_version\": \"${{ steps.version.outputs.VERSION_NUM }}\"" >> version.json
-          echo "}" >> version.json cat version.json
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ steps.version.outputs.VERSION_ONLY }}",
+            "releaseDate": "${{ steps.version.outputs.BUILD_DATE_ISO }}",
+            "downloads": {
+              "windows-x64": {
+                "url": "https://downloads.crossdesk.cn/crossdesk-win-x64-${{ steps.version.outputs.VERSION_NUM }}.exe",
+                "filename": "crossdesk-win-x64-${{ steps.version.outputs.VERSION_NUM }}.exe"
+              },
+              "macos-x64": {
+                "url": "https://downloads.crossdesk.cn/crossdesk-macos-x64-${{ steps.version.outputs.VERSION_NUM }}.pkg",
+                "filename": "crossdesk-macos-x64-${{ steps.version.outputs.VERSION_NUM }}.pkg"
+              },
+              "macos-arm64": {
+                "url": "https://downloads.crossdesk.cn/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}.pkg",
+                "filename": "crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}.pkg"
+              },
+              "linux-amd64": {
+                "url": "https://downloads.crossdesk.cn/crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_NUM }}.deb",
+                "filename": "crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_NUM }}.deb"
+              },
+              "linux-arm64": {
+                "url": "https://downloads.crossdesk.cn/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_NUM }}.deb",
+                "filename": "crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_NUM }}.deb"
+              }
+            }
+          }
+          EOF
+          cat version.json
 
-      - name: Upload version.json to server 
+      - name: Upload version.json to server
         uses: burnett01/rsync-deployments@5.2
-        with: 
+        with:
           switches: -avzr --delete
-          path: version.json 
-          remote_path: /var/www/html/version/ 
-          remote_host: ${{ secrets.SERVER_HOST }} 
-          remote_user: ${{ secrets.SERVER_USER }} 
+          path: version.json
+          remote_path: /var/www/html/version/
+          remote_host: ${{ secrets.SERVER_HOST }}
+          remote_user: ${{ secrets.SERVER_USER }}
           remote_key: ${{ secrets.SERVER_KEY }}
