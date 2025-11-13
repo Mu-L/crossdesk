@@ -9,7 +9,10 @@ ARCHITECTURE="amd64"
 MAINTAINER="Junkun Di <junkun.di@hotmail.com>"
 DESCRIPTION="A simple cross-platform remote desktop client."
 
-DEB_DIR="${PKG_NAME}-${APP_VERSION}"
+# Remove 'v' prefix from version for Debian package (Debian version must start with digit)
+DEB_VERSION="${APP_VERSION#v}"
+
+DEB_DIR="${PKG_NAME}-${DEB_VERSION}"
 DEBIAN_DIR="$DEB_DIR/DEBIAN"
 BIN_DIR="$DEB_DIR/usr/bin"
 CERT_SRC_DIR="$DEB_DIR/opt/$PKG_NAME/certs"
@@ -35,7 +38,7 @@ done
 
 cat > "$DEBIAN_DIR/control" << EOF
 Package: $PKG_NAME
-Version: $APP_VERSION
+Version: $DEB_VERSION
 Architecture: $ARCHITECTURE
 Maintainer: $MAINTAINER
 Description: $DESCRIPTION
@@ -50,7 +53,7 @@ EOF
 
 cat > "$DESKTOP_DIR/$PKG_NAME.desktop" << EOF
 [Desktop Entry]
-Version=$APP_VERSION
+Version=$DEB_VERSION
 Name=$APP_NAME
 Comment=$DESCRIPTION
 Exec=/usr/bin/$PKG_NAME
