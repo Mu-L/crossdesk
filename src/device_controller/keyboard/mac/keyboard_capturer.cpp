@@ -120,8 +120,14 @@ int KeyboardCapturer::Hook(OnKeyAction on_key_action, void* user_ptr) {
 }
 
 int KeyboardCapturer::Unhook() {
-  CFRelease(run_loop_source_);
-  CFRelease(event_tap_);
+  if (run_loop_source_) {
+    CFRelease(run_loop_source_);
+  }
+
+  if (event_tap_) {
+    CFRelease(event_tap_);
+  }
+
   return 0;
 }
 
