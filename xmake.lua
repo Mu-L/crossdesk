@@ -133,9 +133,15 @@ target("thumbnail")
     add_files("src/thumbnail/*.cpp")
     add_includedirs("src/thumbnail", {public = true})
 
-target("config_center")
+target("autostart")
     set_kind("object")
     add_deps("rd_log")
+    add_files("src/autostart/*.cpp")
+    add_includedirs("src/autostart", {public = true})
+
+target("config_center")
+    set_kind("object")
+    add_deps("rd_log", "autostart")
     add_files("src/config_center/*.cpp")
     add_includedirs("src/config_center", {public = true})
 

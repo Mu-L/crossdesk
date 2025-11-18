@@ -168,8 +168,10 @@ static std::vector<std::string> access_website = {
 static std::vector<std::string> confirm_delete_connection = {
     reinterpret_cast<const char*>(u8"确认删除此连接"),
     "Confirm to delete this connection"};
-#if _WIN32
 
+static std::vector<std::string> enable_autostart = {
+    reinterpret_cast<const char*>(u8"开机自启:"), "Auto Start:"};
+#if _WIN32
 static std::vector<std::string> minimize_to_tray = {
     reinterpret_cast<const char*>(u8"退出时最小化到系统托盘:"),
     "Minimize to system tray when exit:"};

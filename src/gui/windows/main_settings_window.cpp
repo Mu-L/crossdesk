@@ -233,6 +233,25 @@ int Render::SettingWindow() {
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::Checkbox("##enable_self_hosted", &enable_self_hosted_);
       }
+
+      ImGui::Separator();
+
+      {
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 4);
+
+        ImGui::Text("%s",
+                    localization::enable_autostart[localization_language_index_]
+                        .c_str());
+
+        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+          ImGui::SetCursorPosX(ENABLE_AUTOSTART_PADDING_CN);
+        } else {
+          ImGui::SetCursorPosX(ENABLE_AUTOSTART_PADDING_EN);
+        }
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::Checkbox("##enable_autostart_", &enable_autostart_);
+      }
 #if _WIN32
       ImGui::Separator();
 
@@ -346,6 +365,22 @@ int Render::SettingWindow() {
           config_center_->SetSelfHosted(false);
         }
         enable_self_hosted_last_ = enable_self_hosted_;
+
+        if (enable_autostart_) {
+          config_center_->SetAutostart(true);
+        } else {
+          config_center_->SetAutostart(false);
+        }
+        enable_autostart_last_ = enable_autostart_;
+
+#if _WIN32
+        if (enable_minimize_to_tray_) {
+          config_center_->SetMinimizeToTray(true);
+        } else {
+          config_center_->SetMinimizeToTray(false);
+        }
+        enable_minimize_to_tray_last_ = enable_minimize_to_tray_;
+#endif
 
         settings_window_pos_reset_ = true;
 

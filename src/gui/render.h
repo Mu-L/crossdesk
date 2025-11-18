@@ -462,6 +462,8 @@ class Render {
   bool enable_turn_last_ = false;
   bool enable_srtp_last_ = false;
   bool enable_self_hosted_last_ = false;
+  bool enable_autostart_ = false;
+  bool enable_autostart_last_ = false;
   bool enable_minimize_to_tray_ = false;
   bool enable_minimize_to_tray_last_ = false;
   char signal_server_ip_self_[256] = "";

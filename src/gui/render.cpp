@@ -260,6 +260,8 @@ int Render::LoadSettingsFromCacheFile() {
   enable_turn_ = config_center_->IsEnableTurn();
   enable_srtp_ = config_center_->IsEnableSrtp();
   enable_self_hosted_ = config_center_->IsSelfHosted();
+  enable_autostart_ = config_center_->IsEnableAutostart();
+  enable_minimize_to_tray_ = config_center_->IsMinimizeToTray();
 
   language_button_value_last_ = language_button_value_;
   video_quality_button_value_last_ = video_quality_button_value_;
@@ -268,6 +270,8 @@ int Render::LoadSettingsFromCacheFile() {
   enable_turn_last_ = enable_turn_;
   enable_srtp_last_ = enable_srtp_;
   enable_self_hosted_last_ = enable_self_hosted_;
+  enable_autostart_last_ = enable_autostart_;
+  enable_minimize_to_tray_last_ = enable_minimize_to_tray_;
 
   LOG_INFO("Load settings from cache file");
 
