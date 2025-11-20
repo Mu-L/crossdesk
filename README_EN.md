@@ -73,7 +73,14 @@ git submodule update
 
 xmake b -vy crossdesk
 ```
+Build options:
+```
+--USE_CUDA=true/false: enable CUDA acceleration codec, default: false
+--CROSSDESK_VERSION=xxx: set the version number
 
+# example:
+xmake f --CROSSDESK_VERSION=1.0.0 --USE_CUDA=true
+```
 Run:
 ```
 xmake r crossdesk
@@ -81,7 +88,7 @@ xmake r crossdesk
 
 #### Development Without CUDA Environment
 
-For **Linux developers who do not have a CUDA environment** installed, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
+For **Linux developers who do not have a CUDA environment installed and want to enable hardware codec feature**, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
 This image comes with all required build dependencies and allows you to build the project directly inside the container without any additional setup.
 
 After entering the container, download the project and run:
@@ -89,6 +96,7 @@ After entering the container, download the project and run:
 export CUDA_PATH=/usr/local/cuda
 export XMAKE_GLOBALDIR=/data
 
+xmake f --USE_CUDA=true
 xmake b --root -vy crossdesk
 ```
 
@@ -111,6 +119,7 @@ set CUDA_PATH=path_to_cuda_installdir:
 ```
 Then re-run:
 ```
+xmake f --USE_CUDA=true
 xmake b -vy crossdesk
 ```
 

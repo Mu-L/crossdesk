@@ -70,7 +70,14 @@ git submodule update
 
 xmake b -vy crossdesk
 ```
+编译选项
+```
+--USE_CUDA=true/false: 启用 CUDA 硬件编解码，默认不启用
+--CROSSDESK_VERSION=xxx: 指定 CrossDesk 的版本
 
+# 示例
+xmake f --CROSSDESK_VERSION=1.0.0 --USE_CUDA=true
+```
 运行
 ```
 xmake r crossdesk
@@ -78,13 +85,14 @@ xmake r crossdesk
 
 ### 无 CUDA 环境下的开发支持
 
-对于**未安装 CUDA 环境的 Linux 开发者**，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
+对于**未安装 CUDA 环境的 Linux 开发者，如果希望编译后的成果物拥有硬件编解码能力**，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
 
 进入容器，下载工程后执行：
 ```
 export CUDA_PATH=/usr/local/cuda
 export XMAKE_GLOBALDIR=/data
 
+xmake f --USE_CUDA=true
 xmake b --root -vy crossdesk
 ```
 
@@ -106,6 +114,7 @@ set CUDA_PATH=path_to_cuda_installdir
 ```
 重新执行：
 ```
+xmake f --USE_CUDA=true
 xmake b -vy crossdesk
 ```
 
