@@ -51,7 +51,16 @@ int KeyboardCapturer::Hook(OnKeyAction on_key_action, void* user_ptr) {
 }
 
 int KeyboardCapturer::Unhook() {
+  g_on_key_action = nullptr;
+  g_user_ptr = nullptr;
+
   running_ = false;
+
+  if (display_) {
+    XSelectInput(display_, DefaultRootWindow(display_), 0);
+    XFlush(display_);
+  }
+
   return 0;
 }
 

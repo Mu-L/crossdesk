@@ -39,7 +39,12 @@ int KeyboardCapturer::Hook(OnKeyAction on_key_action, void* user_ptr) {
 }
 
 int KeyboardCapturer::Unhook() {
-  UnhookWindowsHookEx(keyboard_hook_);
+  if (keyboard_hook_) {
+    g_on_key_action = nullptr;
+    g_user_ptr = nullptr;
+    UnhookWindowsHookEx(keyboard_hook_);
+    keyboard_hook_ = nullptr;
+  }
   return 0;
 }
 

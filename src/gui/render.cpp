@@ -1340,6 +1340,7 @@ void Render::ProcessSdlEvent(const SDL_Event& event) {
         is_client_mode_ = false;
         reload_recent_connections_ = true;
         fullscreen_button_pressed_ = false;
+        start_keyboard_capturer_ = false;
         just_created_ = false;
         recent_connection_image_save_time_ = SDL_GetTicks();
       } else {

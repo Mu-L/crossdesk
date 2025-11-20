@@ -10,6 +10,10 @@ static void* g_user_ptr = nullptr;
 
 CGEventRef eventCallback(CGEventTapProxy proxy, CGEventType type,
                          CGEventRef event, void* userInfo) {
+  if (!g_on_key_action) {
+    return event;
+  }
+
   KeyboardCapturer* keyboard_capturer = (KeyboardCapturer*)userInfo;
   if (!keyboard_capturer) {
     LOG_ERROR("keyboard_capturer is nullptr");
@@ -120,12 +124,23 @@ int KeyboardCapturer::Hook(OnKeyAction on_key_action, void* user_ptr) {
 }
 
 int KeyboardCapturer::Unhook() {
+  g_on_key_action = nullptr;
+  g_user_ptr = nullptr;
+
+  if (event_tap_) {
+    CGEventTapEnable(event_tap_, false);
+  }
+
   if (run_loop_source_) {
+    CFRunLoopRemoveSource(CFRunLoopGetCurrent(), run_loop_source_,
+                          kCFRunLoopCommonModes);
     CFRelease(run_loop_source_);
+    run_loop_source_ = nullptr;
   }
 
   if (event_tap_) {
     CFRelease(event_tap_);
+    event_tap_ = nullptr;
   }
 
   return 0;
