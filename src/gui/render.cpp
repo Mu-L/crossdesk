@@ -736,6 +736,51 @@ int Render::SetupFontAndStyle() {
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
   io.Fonts->AddFontFromMemoryTTF(fa_solid_900_ttf, fa_solid_900_ttf_len, 30.0f,
                                  &config, icon_ranges);
+
+  // Load system Chinese font as fallback
+  config.MergeMode = false;
+  config.FontDataOwnedByAtlas = false;
+  system_chinese_font_ = nullptr;
+
+#if defined(_WIN32)
+  // Windows: Try Microsoft YaHei (微软雅黑) first, then SimSun (宋体)
+  const char* font_paths[] = {"C:/Windows/Fonts/msyh.ttc",
+                              "C:/Windows/Fonts/msyhbd.ttc",
+                              "C:/Windows/Fonts/simsun.ttc", nullptr};
+#elif defined(__APPLE__)
+  // macOS: Try PingFang SC first, then STHeiti
+  const char* font_paths[] = {"/System/Library/Fonts/PingFang.ttc",
+                              "/System/Library/Fonts/STHeiti Light.ttc",
+                              "/System/Library/Fonts/STHeiti Medium.ttc",
+                              nullptr};
+#else
+  // Linux: Try common Chinese fonts
+  const char* font_paths[] = {
+      "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+      "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+      "/usr/share/fonts/truetype/arphic/uming.ttc",
+      "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc", nullptr};
+#endif
+
+  for (int i = 0; font_paths[i] != nullptr; i++) {
+    std::ifstream font_file(font_paths[i], std::ios::binary);
+    if (font_file.good()) {
+      font_file.close();
+      system_chinese_font_ = io.Fonts->AddFontFromFileTTF(
+          font_paths[i], 32.0f, &config, io.Fonts->GetGlyphRangesChineseFull());
+      if (system_chinese_font_ != nullptr) {
+        LOG_INFO("Loaded system Chinese font: {}", font_paths[i]);
+        break;
+      }
+    }
+  }
+
+  // If no system font found, use default font
+  if (system_chinese_font_ == nullptr) {
+    system_chinese_font_ = io.Fonts->AddFontDefault(&config);
+    LOG_WARN("System Chinese font not found, using default font");
+  }
+
   io.Fonts->Build();
   ImGui::StyleColorsLight();
 
@@ -848,6 +893,8 @@ int Render::DrawMainWindow() {
 
   MainWindow();
 
+  UpdateNotificationWindow();
+
   ImGui::End();
 
   // Rendering
@@ -913,8 +960,25 @@ int Render::DrawStreamWindow() {
 }
 
 int Render::Run() {
-  latest_version_ = CheckUpdate();
-  update_available_ = IsNewerVersion(CROSSDESK_VERSION, latest_version_);
+  latest_version_info_ = CheckUpdate();
+  if (!latest_version_info_.empty() &&
+      latest_version_info_.contains("version") &&
+      latest_version_info_["version"].is_string()) {
+    latest_version_ = latest_version_info_["version"];
+    if (latest_version_info_.contains("releaseNotes") &&
+        latest_version_info_["releaseNotes"].is_string()) {
+      release_notes_ = latest_version_info_["releaseNotes"];
+    } else {
+      release_notes_ = "";
+    }
+    update_available_ = IsNewerVersion(CROSSDESK_VERSION, latest_version_);
+    if (update_available_) {
+      show_update_notification_window_ = true;
+    }
+  } else {
+    latest_version_ = "";
+    update_available_ = false;
+  }
 
   path_manager_ = std::make_unique<PathManager>("CrossDesk");
   if (path_manager_) {

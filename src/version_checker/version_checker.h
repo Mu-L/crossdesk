@@ -7,11 +7,12 @@
 #ifndef _VERSION_CHECKER_H_
 #define _VERSION_CHECKER_H_
 
+#include <nlohmann/json.hpp>
 #include <string>
 
 namespace crossdesk {
 
-std::string CheckUpdate();
+nlohmann::json CheckUpdate();
 
 bool IsNewerVersion(const std::string& current, const std::string& latest);
 

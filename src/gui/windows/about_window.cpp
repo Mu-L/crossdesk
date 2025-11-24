@@ -8,8 +8,8 @@
 
 namespace crossdesk {
 
-void Hyperlink(const std::string& label, const std::string& url,
-               const float window_width) {
+void Render::Hyperlink(const std::string& label, const std::string& url,
+                       const float window_width) {
   ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 0, 255, 255));
   ImGui::SetCursorPosX(window_width * 0.1f);
   ImGui::Text("%s", label.c_str());

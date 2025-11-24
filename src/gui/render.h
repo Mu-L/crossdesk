@@ -13,6 +13,7 @@
 #include <chrono>
 #include <fstream>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -151,6 +152,7 @@ class Render {
   int CreateStreamRenderWindow();
   int TitleBar(bool main_window);
   int MainWindow();
+  int UpdateNotificationWindow();
   int StreamWindow();
   int LocalWindow();
   int RemoteWindow();
@@ -165,6 +167,8 @@ class Render {
   bool ConnectionStatusWindow(
       std::shared_ptr<SubStreamWindowProperties>& props);
   int ShowRecentConnections();
+  void Hyperlink(const std::string& label, const std::string& url,
+                 const float window_width);
 
  private:
   int ConnectTo(const std::string& remote_id, const char* password,
@@ -300,6 +304,7 @@ class Render {
   SDL_Window* main_window_ = nullptr;
   SDL_Renderer* main_renderer_ = nullptr;
   ImGuiContext* main_ctx_ = nullptr;
+  ImFont* system_chinese_font_ = nullptr;  // System Chinese font for fallback
   bool exit_ = false;
   const int sdl_refresh_ms_ = 16;  // ~60 FPS
 #if _WIN32
@@ -307,8 +312,10 @@ class Render {
 #endif
 
   // main window properties
-  std::string latest_version_ = "";
+  nlohmann::json latest_version_info_ = nlohmann::json{};
   bool update_available_ = false;
+  std::string latest_version_ = "";
+  std::string release_notes_ = "";
   bool start_mouse_controller_ = false;
   bool mouse_controller_is_started_ = false;
   bool start_screen_capturer_ = false;
@@ -349,6 +356,8 @@ class Render {
   float notification_window_height_ = 80;
   float about_window_width_ = 300;
   float about_window_height_ = 170;
+  float update_notification_window_width_ = 400;
+  float update_notification_window_height_ = 320;
   int screen_width_ = 1280;
   int screen_height_ = 720;
   int selected_display_ = 0;
@@ -404,6 +413,7 @@ class Render {
   bool show_about_window_ = false;
   bool show_connection_status_window_ = false;
   bool show_reset_password_window_ = false;
+  bool show_update_notification_window_ = false;
   bool fullscreen_button_pressed_ = false;
   bool focus_on_input_widget_ = true;
   bool is_client_mode_ = false;

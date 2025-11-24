@@ -4,18 +4,14 @@
  * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
  */
 
-#ifndef _VERSION_CHECKER_H_
-#define _VERSION_CHECKER_H_
+#include "version_checker.h"
 
 #include <httplib.h>
 
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 #include <vector>
-
-using json = nlohmann::json;
 
 namespace crossdesk {
 
@@ -129,7 +125,7 @@ bool IsNewerVersionWithDate(const std::string& current_version,
   return false;
 }
 
-std::string CheckUpdate() {
+nlohmann::json CheckUpdate() {
   httplib::Client cli("https://version.crossdesk.cn");
 
   cli.set_connection_timeout(5);
@@ -138,28 +134,25 @@ std::string CheckUpdate() {
   if (auto res = cli.Get("/version.json")) {
     if (res->status == 200) {
       try {
-        auto j = json::parse(res->body);
-        std::string latest = j["version"];
+        auto j = nlohmann::json::parse(res->body);
         if (j.contains("releaseDate") && j["releaseDate"].is_string()) {
           latest_release_date_ = j["releaseDate"];
         } else {
           latest_release_date_ = "";
         }
-        return latest;
+        return j;
       } catch (std::exception&) {
         latest_release_date_ = "";
-        return "";
+        return nlohmann::json{};
       }
     } else {
       latest_release_date_ = "";
-      return "";
+      return nlohmann::json{};
     }
   } else {
     latest_release_date_ = "";
-    return "";
+    return nlohmann::json{};
   }
 }
 
-std::string GetLatestReleaseDate() { return latest_release_date_; }
 }  // namespace crossdesk
-#endif
