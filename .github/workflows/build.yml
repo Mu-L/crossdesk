@@ -408,6 +408,9 @@ jobs:
           {
             "version": "${{ steps.version.outputs.VERSION_ONLY }}",
             "releaseDate": "${{ steps.version.outputs.BUILD_DATE_ISO }}",
+            "releaseName": "",
+            "releaseNotes": "",
+            "tagName": "${{ steps.version.outputs.VERSION_WITH_V }}",
             "downloads": {
               "windows-x64": {
                 "url": "https://downloads.crossdesk.cn/crossdesk-win-x64-${{ steps.version.outputs.VERSION_WITH_V }}.exe",
