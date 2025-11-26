@@ -192,11 +192,13 @@ static std::vector<LPCWSTR> exit_program = {L"退出", L"Exit"};
 static std::vector<std::string> request_permissions = {
     reinterpret_cast<const char*>(u8"权限请求"), "Request Permissions"};
 static std::vector<std::string> screen_recording_permission = {
-    reinterpret_cast<const char*>(u8"录屏权限"), "Screen Recording Permission"};
+    reinterpret_cast<const char*>(u8"屏幕录制权限"),
+    "Screen Recording Permission"};
 static std::vector<std::string> accessibility_permission = {
-    reinterpret_cast<const char*>(u8"键鼠权限"), "Keyboard & Mouse Permission"};
+    reinterpret_cast<const char*>(u8"辅助功能权限"),
+    "Accessibility Permission"};
 static std::vector<std::string> permission_required_message = {
-    reinterpret_cast<const char*>(u8"应用需要授权以下权限:"),
+    reinterpret_cast<const char*>(u8"该应用需要授权以下权限:"),
     "The application requires the following permissions:"};
 #endif
 }  // namespace localization

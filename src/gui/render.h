@@ -194,6 +194,7 @@ class Render {
   bool CheckAccessibilityPermission();
   void OpenScreenRecordingPreferences();
   void OpenAccessibilityPreferences();
+  bool DrawToggleSwitch(const char* id, bool active, bool enabled);
 #endif
 
  public:

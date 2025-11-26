@@ -11,51 +11,55 @@
 
 namespace crossdesk {
 
-static bool DrawToggleSwitch(const char* id, bool active, bool enabled) {
-  ImGuiIO& io = ImGui::GetIO();
-  (void)io;
+bool Render::DrawToggleSwitch(const char* id, bool active, bool enabled) {
+  const float TRACK_HEIGHT = ImGui::GetFrameHeight();
+  const float TRACK_WIDTH = TRACK_HEIGHT * 1.8f;
+  const float TRACK_RADIUS = TRACK_HEIGHT * 0.5f;
+  const float KNOB_PADDING = 2.0f;
+  const float KNOB_HEIGHT = TRACK_HEIGHT - 4.0f;
+  const float KNOB_WIDTH = KNOB_HEIGHT * 1.2f;
+  const float KNOB_RADIUS = KNOB_HEIGHT * 0.5f;
+  const float DISABLED_ALPHA = 0.6f;
+  const float KNOB_ALPHA_DISABLED = 0.9f;
+
+  const ImVec4 COLOR_ACTIVE = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
+  const ImVec4 COLOR_ACTIVE_HOVER = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
+  const ImVec4 COLOR_INACTIVE = ImVec4(0.60f, 0.60f, 0.60f, 1.0f);
+  const ImVec4 COLOR_INACTIVE_HOVER = ImVec4(0.70f, 0.70f, 0.70f, 1.0f);
+  const ImVec4 COLOR_KNOB = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
+  ImVec2 track_pos = ImGui::GetCursorScreenPos();
 
-  float height = ImGui::GetFrameHeight();
-  float width = height * 1.8f;
-  float radius = height * 0.5f;
-
-  ImVec2 p = ImGui::GetCursorScreenPos();
-
-  ImGui::InvisibleButton(id, ImVec2(width, height));
+  ImGui::InvisibleButton(id, ImVec2(TRACK_WIDTH, TRACK_HEIGHT));
   bool hovered = ImGui::IsItemHovered();
   bool clicked = ImGui::IsItemClicked() && enabled;
 
-  ImVec4 col_bg_vec;
-  if (active) {
-    col_bg_vec =
-        hovered && enabled ? ImVec4(0.26f, 0.59f, 0.98f, 1.0f) : ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
-  } else {
-    col_bg_vec =
-        hovered && enabled ? ImVec4(0.70f, 0.70f, 0.70f, 1.0f) : ImVec4(0.60f, 0.60f, 0.60f, 1.0f);
-  }
+  ImVec4 track_color = active ? (hovered && enabled ? COLOR_ACTIVE_HOVER : COLOR_ACTIVE)
+                              : (hovered && enabled ? COLOR_INACTIVE_HOVER : COLOR_INACTIVE);
+
   if (!enabled) {
-    col_bg_vec.w *= 0.6f;
+    track_color.w *= DISABLED_ALPHA;
   }
-  ImU32 col_bg = ImGui::GetColorU32(col_bg_vec);
 
-  draw_list->AddRectFilled(ImVec2(p.x, p.y + 0.5f), ImVec2(p.x + width, p.y + height - 0.5f),
-                           col_bg, height * 0.5f);
+  ImVec2 track_min = ImVec2(track_pos.x, track_pos.y + 0.5f);
+  ImVec2 track_max = ImVec2(track_pos.x + TRACK_WIDTH, track_pos.y + TRACK_HEIGHT - 0.5f);
+  draw_list->AddRectFilled(track_min, track_max, ImGui::GetColorU32(track_color), TRACK_RADIUS);
 
-  float t = active ? 1.0f : 0.0f;
-  float knob_height = height - 4.0f;
-  float knob_width = knob_height * 1.2f;
-  float knob_radius = knob_height * 0.5f;
+  float knob_position = active ? 1.0f : 0.0f;
+  float knob_min_x = track_pos.x + KNOB_PADDING;
+  float knob_max_x = track_pos.x + TRACK_WIDTH - KNOB_WIDTH - KNOB_PADDING;
+  float knob_x = knob_min_x + knob_position * (knob_max_x - knob_min_x);
+  float knob_y = track_pos.y + (TRACK_HEIGHT - KNOB_HEIGHT) * 0.5f;
 
-  float knob_min_x = p.x + 2.0f;
-  float knob_max_x = p.x + width - knob_width - 2.0f;
-  float knob_x = knob_min_x + t * (knob_max_x - knob_min_x);
-  float knob_y = p.y + (height - knob_height) * 0.5f;
+  ImVec4 knob_color = COLOR_KNOB;
+  if (!enabled) {
+    knob_color.w = KNOB_ALPHA_DISABLED;
+  }
 
-  ImU32 col_knob = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, enabled ? 1.0f : 0.9f));
-  draw_list->AddRectFilled(ImVec2(knob_x, knob_y),
-                           ImVec2(knob_x + knob_width, knob_y + knob_height), col_knob,
-                           knob_radius);
+  ImVec2 knob_min = ImVec2(knob_x, knob_y);
+  ImVec2 knob_max = ImVec2(knob_x + KNOB_WIDTH, knob_y + KNOB_HEIGHT);
+  draw_list->AddRectFilled(knob_min, knob_max, ImGui::GetColorU32(knob_color), KNOB_RADIUS);
 
   return clicked;
 }
@@ -111,10 +115,13 @@ int Render::RequestPermissionWindow() {
   float window_height = localization_language_index_ == 0 ? REQUEST_PERMISSION_WINDOW_HEIGHT_CN
                                                           : REQUEST_PERMISSION_WINDOW_HEIGHT_EN;
 
-  // center the window on screen
+  float checkbox_padding = localization_language_index_ == 0
+                               ? REQUEST_PERMISSION_WINDOW_CHECKBOX_PADDING_CN
+                               : REQUEST_PERMISSION_WINDOW_CHECKBOX_PADDING_EN;
+
   ImVec2 center_pos = ImVec2((viewport->WorkSize.x - window_width) * 0.5f + viewport->WorkPos.x,
                              (viewport->WorkSize.y - window_height) * 0.5f + viewport->WorkPos.y);
-  ImGui::SetNextWindowPos(center_pos, ImGuiCond_Always);
+  ImGui::SetNextWindowPos(center_pos, ImGuiCond_Once);
 
   ImGui::SetNextWindowSize(ImVec2(window_width, window_height), ImGuiCond_Always);
 
@@ -122,11 +129,11 @@ int Render::RequestPermissionWindow() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0f, 15.0f));
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
-  ImGui::Begin(localization::request_permissions[localization_language_index_].c_str(), nullptr,
-               ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove |
-                   ImGuiWindowFlags_NoSavedSettings);
+  ImGui::Begin(
+      localization::request_permissions[localization_language_index_].c_str(), nullptr,
+      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
   ImGui::SetWindowFontScale(0.3f);
 
@@ -135,6 +142,7 @@ int Render::RequestPermissionWindow() {
     ImGui::PushFont(system_chinese_font_);
   }
 
+  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetTextLineHeight() + 5.0f);
   ImGui::SetCursorPosX(10.0f);
   ImGui::TextWrapped(
       "%s", localization::permission_required_message[localization_language_index_].c_str());
@@ -150,6 +158,7 @@ int Render::RequestPermissionWindow() {
               localization::accessibility_permission[localization_language_index_].c_str());
   ImGui::SameLine();
   ImGui::AlignTextToFramePadding();
+  ImGui::SetCursorPosX(checkbox_padding);
   if (accessibility_granted) {
     DrawToggleSwitch("accessibility_toggle_on", true, false);
   } else {
@@ -167,6 +176,7 @@ int Render::RequestPermissionWindow() {
               localization::screen_recording_permission[localization_language_index_].c_str());
   ImGui::SameLine();
   ImGui::AlignTextToFramePadding();
+  ImGui::SetCursorPosX(checkbox_padding);
   if (screen_recording_granted) {
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.0f);
     DrawToggleSwitch("screen_recording_toggle_on", true, false);
