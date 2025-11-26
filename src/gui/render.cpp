@@ -168,7 +168,7 @@ SDL_HitTestResult Render::HitTestCallback(SDL_Window* window,
   return SDL_HITTEST_NORMAL;
 }
 
-Render::Render() {}
+Render::Render() : last_rejoin_check_time_(std::chrono::steady_clock::now()) {}
 
 Render::~Render() {}
 

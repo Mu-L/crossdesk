@@ -101,12 +101,21 @@ int Render::RemoteWindow() {
         }
       }
 
+      // check every 1 second for rejoin
       if (need_to_rejoin_) {
-        need_to_rejoin_ = false;
-        for (const auto& [_, props] : client_properties_) {
-          if (props->rejoin_) {
-            ConnectTo(props->remote_id_, props->remote_password_,
-                      props->remember_password_);
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           now - last_rejoin_check_time_)
+                           .count();
+
+        if (elapsed >= 1000) {
+          last_rejoin_check_time_ = now;
+          need_to_rejoin_ = false;
+          for (const auto& [_, props] : client_properties_) {
+            if (props->rejoin_) {
+              ConnectTo(props->remote_id_, props->remote_password_,
+                        props->remember_password_);
+            }
           }
         }
       }

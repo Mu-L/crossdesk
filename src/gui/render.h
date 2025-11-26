@@ -379,6 +379,7 @@ class Render {
   int audio_len_ = 0;
   bool audio_buffer_fresh_ = false;
   bool need_to_rejoin_ = false;
+  std::chrono::steady_clock::time_point last_rejoin_check_time_;
   bool just_created_ = false;
   std::string controlled_remote_id_ = "";
   std::string focused_remote_id_ = "";
