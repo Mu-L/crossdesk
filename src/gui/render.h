@@ -192,7 +192,6 @@ class Render {
   int RequestPermissionWindow();
   bool CheckScreenRecordingPermission();
   bool CheckAccessibilityPermission();
-  void OpenSystemPreferences();
   void OpenScreenRecordingPreferences();
   void OpenAccessibilityPreferences();
 #endif

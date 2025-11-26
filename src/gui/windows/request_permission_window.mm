@@ -3,87 +3,107 @@
 #include "rd_log.h"
 #include "render.h"
 
-#ifdef __APPLE__
 #include <ApplicationServices/ApplicationServices.h>
 #include <CoreGraphics/CoreGraphics.h>
 #import <Foundation/Foundation.h>
 #include <unistd.h>
 #include <cstdlib>
-#endif
 
 namespace crossdesk {
 
-#ifdef __APPLE__
+static bool DrawToggleSwitch(const char* id, bool active, bool enabled) {
+  ImGuiIO& io = ImGui::GetIO();
+  (void)io;
+  ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+  float height = ImGui::GetFrameHeight();
+  float width = height * 1.8f;
+  float radius = height * 0.5f;
+
+  ImVec2 p = ImGui::GetCursorScreenPos();
+
+  ImGui::InvisibleButton(id, ImVec2(width, height));
+  bool hovered = ImGui::IsItemHovered();
+  bool clicked = ImGui::IsItemClicked() && enabled;
+
+  ImVec4 col_bg_vec;
+  if (active) {
+    col_bg_vec =
+        hovered && enabled ? ImVec4(0.26f, 0.59f, 0.98f, 1.0f) : ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
+  } else {
+    col_bg_vec =
+        hovered && enabled ? ImVec4(0.70f, 0.70f, 0.70f, 1.0f) : ImVec4(0.60f, 0.60f, 0.60f, 1.0f);
+  }
+  if (!enabled) {
+    col_bg_vec.w *= 0.6f;
+  }
+  ImU32 col_bg = ImGui::GetColorU32(col_bg_vec);
+
+  draw_list->AddRectFilled(ImVec2(p.x, p.y + 0.5f), ImVec2(p.x + width, p.y + height - 0.5f),
+                           col_bg, height * 0.5f);
+
+  float t = active ? 1.0f : 0.0f;
+  float knob_height = height - 4.0f;
+  float knob_width = knob_height * 1.2f;
+  float knob_radius = knob_height * 0.5f;
+
+  float knob_min_x = p.x + 2.0f;
+  float knob_max_x = p.x + width - knob_width - 2.0f;
+  float knob_x = knob_min_x + t * (knob_max_x - knob_min_x);
+  float knob_y = p.y + (height - knob_height) * 0.5f;
+
+  ImU32 col_knob = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, enabled ? 1.0f : 0.9f));
+  draw_list->AddRectFilled(ImVec2(knob_x, knob_y),
+                           ImVec2(knob_x + knob_width, knob_y + knob_height), col_knob,
+                           knob_radius);
+
+  return clicked;
+}
+
 bool Render::CheckScreenRecordingPermission() {
   // CGPreflightScreenCaptureAccess is available on macOS 10.15+
   if (@available(macOS 10.15, *)) {
     bool granted = CGPreflightScreenCaptureAccess();
-    LOG_INFO("CGPreflightScreenCaptureAccess returned: {}", granted);
     return granted;
   }
-  // For older macOS versions, assume permission is granted
+  // for older macOS versions, assume permission is granted
   return true;
 }
 
 bool Render::CheckAccessibilityPermission() {
-  // Check if the process is trusted for accessibility
-  // Note: This may require app restart to reflect permission changes
   NSDictionary* options = @{(__bridge id)kAXTrustedCheckOptionPrompt : @NO};
   bool trusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
-  LOG_INFO("AXIsProcessTrustedWithOptions returned: {}", trusted);
   return trusted;
 }
 
-void Render::OpenSystemPreferences() {
-  // Open System Preferences to the Privacy & Security > Screen Recording or
-  // Accessibility section
-  system("open "
-         "\"x-apple.systempreferences:com.apple.preference.security?Privacy_"
-         "ScreenCapture\"");
-}
-
-void Render::OpenScreenRecordingPreferences() {
-  // Request screen recording permission first to ensure app appears in System Settings
-  if (@available(macOS 10.15, *)) {
-    CGRequestScreenCaptureAccess();
-  }
-  // Open System Preferences to the Privacy & Security > Screen Recording section
-  system("open "
-         "\"x-apple.systempreferences:com.apple.preference.security?Privacy_"
-         "ScreenCapture\"");
-}
-
 void Render::OpenAccessibilityPreferences() {
-  // Request accessibility permission first to ensure app appears in System Settings
   NSDictionary* options = @{(__bridge id)kAXTrustedCheckOptionPrompt : @YES};
   AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
-  // Open System Preferences to the Privacy & Security > Accessibility section
+
   system("open "
          "\"x-apple.systempreferences:com.apple.preference.security?Privacy_"
          "Accessibility\"");
 }
-#endif
+
+void Render::OpenScreenRecordingPreferences() {
+  if (@available(macOS 10.15, *)) {
+    CGRequestScreenCaptureAccess();
+  }
+
+  system("open "
+         "\"x-apple.systempreferences:com.apple.preference.security?Privacy_"
+         "ScreenCapture\"");
+}
 
 int Render::RequestPermissionWindow() {
-#ifdef __APPLE__
-  // Check permissions - recheck every frame to update status immediately after user grants
-  // permission
   bool screen_recording_granted = CheckScreenRecordingPermission();
   bool accessibility_granted = CheckAccessibilityPermission();
 
-  // Update show_request_permission_window_ based on permission status
-  // Keep window visible if any permission is not granted
   show_request_permission_window_ = !screen_recording_granted || !accessibility_granted;
 
-  // Log permission status for debugging
-  LOG_INFO("Screen recording permission: {}, Accessibility permission: {}",
-           screen_recording_granted, accessibility_granted);
-
   if (!show_request_permission_window_) {
-    LOG_INFO("Request permission window is not shown");
     return 0;
   }
-  LOG_INFO("Request permission window is shown");
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   float window_width = localization_language_index_ == 0 ? REQUEST_PERMISSION_WINDOW_WIDTH_CN
@@ -91,14 +111,13 @@ int Render::RequestPermissionWindow() {
   float window_height = localization_language_index_ == 0 ? REQUEST_PERMISSION_WINDOW_HEIGHT_CN
                                                           : REQUEST_PERMISSION_WINDOW_HEIGHT_EN;
 
-  // Center the window on screen
+  // center the window on screen
   ImVec2 center_pos = ImVec2((viewport->WorkSize.x - window_width) * 0.5f + viewport->WorkPos.x,
                              (viewport->WorkSize.y - window_height) * 0.5f + viewport->WorkPos.y);
   ImGui::SetNextWindowPos(center_pos, ImGuiCond_Always);
 
   ImGui::SetNextWindowSize(ImVec2(window_width, window_height), ImGuiCond_Always);
 
-  // Make window always on top and modal-like
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
@@ -107,16 +126,15 @@ int Render::RequestPermissionWindow() {
 
   ImGui::Begin(localization::request_permissions[localization_language_index_].c_str(), nullptr,
                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove |
-                   ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_Modal);
+                   ImGuiWindowFlags_NoSavedSettings);
 
   ImGui::SetWindowFontScale(0.3f);
 
-  // use system Chinese font
+  // use system font
   if (system_chinese_font_ != nullptr) {
     ImGui::PushFont(system_chinese_font_);
   }
 
-  // Message
   ImGui::SetCursorPosX(10.0f);
   ImGui::TextWrapped(
       "%s", localization::permission_required_message[localization_language_index_].c_str());
@@ -125,7 +143,7 @@ int Render::RequestPermissionWindow() {
   ImGui::Spacing();
   ImGui::Spacing();
 
-  // Accessibility Permission
+  // accessibility permission
   ImGui::SetCursorPosX(10.0f);
   ImGui::AlignTextToFramePadding();
   ImGui::Text("1. %s:",
@@ -133,19 +151,16 @@ int Render::RequestPermissionWindow() {
   ImGui::SameLine();
   ImGui::AlignTextToFramePadding();
   if (accessibility_granted) {
-    ImGui::Text("%s", localization::permission_granted[localization_language_index_].c_str());
+    DrawToggleSwitch("accessibility_toggle_on", true, false);
   } else {
-    ImGui::Text("%s", localization::permission_denied[localization_language_index_].c_str());
-    ImGui::SameLine();
-    if (ImGui::Button(
-            localization::open_keyboard_mouse_settings[localization_language_index_].c_str())) {
+    if (DrawToggleSwitch("accessibility_toggle", accessibility_granted, !accessibility_granted)) {
       OpenAccessibilityPreferences();
     }
   }
 
   ImGui::Spacing();
 
-  // Screen Recording Permission
+  // screen recording permission
   ImGui::SetCursorPosX(10.0f);
   ImGui::AlignTextToFramePadding();
   ImGui::Text("2. %s:",
@@ -153,12 +168,11 @@ int Render::RequestPermissionWindow() {
   ImGui::SameLine();
   ImGui::AlignTextToFramePadding();
   if (screen_recording_granted) {
-    ImGui::Text("%s", localization::permission_granted[localization_language_index_].c_str());
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.0f);
+    DrawToggleSwitch("screen_recording_toggle_on", true, false);
   } else {
-    ImGui::Text("%s", localization::permission_denied[localization_language_index_].c_str());
-    ImGui::SameLine();
-    if (ImGui::Button(
-            localization::open_screen_recording_settings[localization_language_index_].c_str())) {
+    if (DrawToggleSwitch("screen_recording_toggle", screen_recording_granted,
+                         !screen_recording_granted)) {
       OpenScreenRecordingPreferences();
     }
   }
@@ -177,8 +191,5 @@ int Render::RequestPermissionWindow() {
   ImGui::PopStyleColor();
 
   return 0;
-#else
-  return 0;
-#endif
 }
 }  // namespace crossdesk

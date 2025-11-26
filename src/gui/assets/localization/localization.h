@@ -195,19 +195,9 @@ static std::vector<std::string> screen_recording_permission = {
     reinterpret_cast<const char*>(u8"录屏权限"), "Screen Recording Permission"};
 static std::vector<std::string> accessibility_permission = {
     reinterpret_cast<const char*>(u8"键鼠权限"), "Keyboard & Mouse Permission"};
-static std::vector<std::string> permission_granted = {
-    reinterpret_cast<const char*>(u8"已授权"), "Granted"};
-static std::vector<std::string> permission_denied = {
-    reinterpret_cast<const char*>(u8"未授权"), "Denied"};
-static std::vector<std::string> open_screen_recording_settings = {
-    reinterpret_cast<const char*>(u8"打开录屏设置"),
-    "Open Screen Recording Settings"};
-static std::vector<std::string> open_keyboard_mouse_settings = {
-    reinterpret_cast<const char*>(u8"打开键鼠设置"),
-    "Open Keyboard & Mouse Settings"};
 static std::vector<std::string> permission_required_message = {
-    reinterpret_cast<const char*>(u8"应用需要以下权限才能正常工作:"),
-    "The application requires the following permissions to work properly:"};
+    reinterpret_cast<const char*>(u8"应用需要授权以下权限:"),
+    "The application requires the following permissions:"};
 #endif
 }  // namespace localization
 }  // namespace crossdesk
