@@ -153,39 +153,44 @@ int Render::ConnectTo(const std::string& remote_id, const char* password,
   shared_lock.unlock();
 
   if (!exists) {
-    std::unique_lock unique_lock(client_properties_mutex_);
-    if (client_properties_.find(remote_id) == client_properties_.end()) {
-      client_properties_[remote_id] =
-          std::make_shared<SubStreamWindowProperties>();
-      auto props = client_properties_[remote_id];
-      props->local_id_ = "C-" + std::string(client_id_);
-      props->remote_id_ = remote_id;
-      memcpy(&props->params_, &params_, sizeof(Params));
-      props->params_.user_id = props->local_id_.c_str();
-      props->peer_ = CreatePeer(&props->params_);
+    PeerPtr* peer_to_init = nullptr;
+    std::string local_id;
 
-      if (!props->peer_) {
-        LOG_INFO("Create peer [{}] instance failed", props->local_id_);
-        return -1;
+    {
+      std::unique_lock unique_lock(client_properties_mutex_);
+      if (client_properties_.find(remote_id) == client_properties_.end()) {
+        client_properties_[remote_id] =
+            std::make_shared<SubStreamWindowProperties>();
+        auto props = client_properties_[remote_id];
+        props->local_id_ = "C-" + std::string(client_id_);
+        props->remote_id_ = remote_id;
+        memcpy(&props->params_, &params_, sizeof(Params));
+        props->params_.user_id = props->local_id_.c_str();
+        props->peer_ = CreatePeer(&props->params_);
+
+        if (!props->peer_) {
+          LOG_INFO("Create peer [{}] instance failed", props->local_id_);
+          return -1;
+        }
+
+        for (auto& display_info : display_info_list_) {
+          AddVideoStream(props->peer_, display_info.name.c_str());
+        }
+        AddAudioStream(props->peer_, props->audio_label_.c_str());
+        AddDataStream(props->peer_, props->data_label_.c_str());
+
+        props->connection_status_ = ConnectionStatus::Connecting;
+
+        peer_to_init = props->peer_;
+        local_id = props->local_id_;
       }
-
-      for (auto& display_info : display_info_list_) {
-        AddVideoStream(props->peer_, display_info.name.c_str());
-      }
-      AddAudioStream(props->peer_, props->audio_label_.c_str());
-      AddDataStream(props->peer_, props->data_label_.c_str());
-
-      if (props->peer_) {
-        LOG_INFO("[{}] Create peer instance successful", props->local_id_);
-        Init(props->peer_);
-        LOG_INFO("[{}] Peer init finish", props->local_id_);
-      } else {
-        LOG_INFO("Create peer [{}] instance failed", props->local_id_);
-      }
-
-      props->connection_status_ = ConnectionStatus::Connecting;
     }
-    unique_lock.unlock();
+
+    if (peer_to_init) {
+      LOG_INFO("[{}] Create peer instance successful", local_id);
+      Init(peer_to_init);
+      LOG_INFO("[{}] Peer init finish", local_id);
+    }
   }
 
   int ret = -1;
