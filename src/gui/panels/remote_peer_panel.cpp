@@ -79,24 +79,38 @@ int Render::RemoteWindow() {
           enter_pressed) {
         connect_button_pressed_ = true;
         bool found = false;
+        std::string target_remote_id;
+        std::string target_password;
+        bool should_connect = false;
+        bool already_connected = false;
+
         for (auto& [id, props] : recent_connections_) {
           if (id.find(remote_id) != std::string::npos) {
             found = true;
-            std::shared_lock lock(client_properties_mutex_);
-            if (client_properties_.find(remote_id) !=
-                client_properties_.end()) {
-              if (!client_properties_[remote_id]->connection_established_) {
-                ConnectTo(props.remote_id, props.password.c_str(), false);
+            target_remote_id = props.remote_id;
+            target_password = props.password;
+            {
+              std::shared_lock lock(client_properties_mutex_);
+              if (client_properties_.find(remote_id) !=
+                  client_properties_.end()) {
+                if (!client_properties_[remote_id]->connection_established_) {
+                  should_connect = true;
+                } else {
+                  already_connected = true;
+                }
               } else {
-                // todo: show warning message
-                LOG_INFO("Already connected to [{}]", remote_id);
+                should_connect = true;
               }
-            } else {
-              ConnectTo(props.remote_id, props.password.c_str(), false);
             }
+
+            if (should_connect) {
+              ConnectTo(target_remote_id, target_password.c_str(), false);
+            } else if (already_connected) {
+              LOG_INFO("Already connected to [{}]", remote_id);
+            }
+            break;
           }
         }
-
         if (!found) {
           ConnectTo(remote_id, "", false);
         }
