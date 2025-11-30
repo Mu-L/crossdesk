@@ -12,9 +12,9 @@ int Render::RecentConnectionsWindow() {
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::BeginChild(
       "RecentConnectionsWindow",
-      ImVec2(main_window_width_default_,
-             main_window_height_default_ - title_bar_height_ -
-                 local_window_height_ - status_bar_height_ + 1.0f),
+      ImVec2(main_window_width_, main_window_height_ - title_bar_height_ -
+                                     local_window_height_ - status_bar_height_ +
+                                     1.0f),
       ImGuiChildFlags_Border,
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
@@ -41,14 +41,15 @@ int Render::ShowRecentConnections() {
   ImVec2 sub_window_pos = ImGui::GetCursorPos();
   std::map<std::string, ImVec2> sub_containers_pos;
   float recent_connection_sub_container_width =
-      recent_connection_image_width_ + 16.0f;
+      recent_connection_image_width_ + 16.0f * dpi_scale_;
   float recent_connection_sub_container_height =
-      recent_connection_image_height_ + 36.0f;
+      recent_connection_image_height_ + 36.0f * dpi_scale_;
   ImGui::PushStyleColor(ImGuiCol_ChildBg,
                         ImVec4(239.0f / 255, 240.0f / 255, 242.0f / 255, 1.0f));
   ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
   ImGui::BeginChild("RecentConnectionsContainer",
-                    ImVec2(main_window_width_default_ - 50.0f, 145.0f),
+                    ImVec2(main_window_width_ * 0.95f,
+                           recent_connection_sub_container_height * 1.1f),
                     ImGuiChildFlags_Border,
                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
@@ -60,8 +61,8 @@ int Render::ShowRecentConnections() {
   ImGui::PopStyleColor();
   size_t recent_connections_count = recent_connections_.size();
   int count = 0;
-  float button_width = 22;
-  float button_height = 22;
+  float button_width = 22 * dpi_scale_;
+  float button_height = 22 * dpi_scale_;
   for (auto& it : recent_connections_) {
     sub_containers_pos[it.first] = ImGui::GetCursorPos();
     std::string recent_connection_sub_window_name =
@@ -206,17 +207,20 @@ int Render::ShowRecentConnections() {
 
     if (count != recent_connections_count - 1) {
       ImVec2 line_start =
-          ImVec2(image_screen_pos.x + recent_connection_image_width_ + 20.0f,
+          ImVec2(image_screen_pos.x + recent_connection_image_width_ +
+                     20.0f * dpi_scale_,
                  image_screen_pos.y);
       ImVec2 line_end = ImVec2(
-          image_screen_pos.x + recent_connection_image_width_ + 20.0f,
+          image_screen_pos.x + recent_connection_image_width_ +
+              20.0f * dpi_scale_,
           image_screen_pos.y + recent_connection_image_height_ + button_height);
       ImGui::GetWindowDrawList()->AddLine(line_start, line_end,
                                           IM_COL32(0, 0, 0, 122), 1.0f);
     }
 
     count++;
-    ImGui::SameLine(0, count != recent_connections_count ? 26.0f : 0.0f);
+    ImGui::SameLine(
+        0, count != recent_connections_count ? 26.0f * dpi_scale_ : 0.0f);
   }
 
   ImGui::EndChild();

@@ -75,7 +75,8 @@ int Render::RemoteWindow() {
       remote_id.erase(remove_if(remote_id.begin(), remote_id.end(),
                                 static_cast<int (*)(int)>(&isspace)),
                       remote_id.end());
-      if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 38)) ||
+      if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG,
+                        ImVec2(55 * dpi_scale_, 38 * dpi_scale_)) ||
           enter_pressed) {
         connect_button_pressed_ = true;
         bool found = false;
@@ -181,6 +182,20 @@ int Render::ConnectTo(const std::string& remote_id, const char* password,
         memcpy(&props->params_, &params_, sizeof(Params));
         props->params_.user_id = props->local_id_.c_str();
         props->peer_ = CreatePeer(&props->params_);
+        props->control_window_min_width_ =
+            props->control_window_min_width_ * dpi_scale_;
+        props->control_window_min_height_ =
+            props->control_window_min_height_ * dpi_scale_;
+        props->control_window_max_width_ =
+            props->control_window_max_width_ * dpi_scale_;
+        props->control_window_max_height_ =
+            props->control_window_max_height_ * dpi_scale_;
+        props->control_window_width_ =
+            props->control_window_width_ * dpi_scale_;
+        props->control_window_height_ =
+            props->control_window_height_ * dpi_scale_;
+        // props->control_bar_pos_x_ = props->control_bar_pos_x_ * dpi_scale_;
+        // props->control_bar_pos_y_ = props->control_bar_pos_y_ * dpi_scale_;
 
         if (!props->peer_) {
           LOG_INFO("Create peer [{}] instance failed", props->local_id_);

@@ -156,6 +156,12 @@ Thumbnail::~Thumbnail() {
   }
 }
 
+int Thumbnail::SetThumbnailDpiScale(float dpi_scale) {
+  thumbnail_width_ = static_cast<int>(thumbnail_width_ * dpi_scale);
+  thumbnail_height_ = static_cast<int>(thumbnail_height_ * dpi_scale);
+  return 0;
+}
+
 int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
                                const std::string& remote_id,
                                const std::string& host_name,

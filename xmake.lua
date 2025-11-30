@@ -29,7 +29,7 @@ if is_mode("debug") then
 end
 
 add_requires("spdlog 1.14.1", {system = false})
-add_requires("imgui v1.91.5-docking", {configs = {sdl3 = true, sdl3_renderer = true}})
+add_requires("imgui v1.92.1-docking", {configs = {sdl3 = true, sdl3_renderer = true}})
 add_requires("openssl3 3.3.2", {system = false})
 add_requires("nlohmann_json 3.11.3")
 add_requires("cpp-httplib v0.26.0", {configs = {ssl = true}})

@@ -53,20 +53,24 @@ int Render::StreamWindow() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
   ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
-  ImGui::Begin("VideoBg", nullptr,
-               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
-                   ImGuiWindowFlags_NoBringToFrontOnFocus |
-                   ImGuiWindowFlags_NoDocking);
+  bool video_bg_opened = ImGui::Begin(
+      "VideoBg", nullptr,
+      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
+          ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking);
   ImGui::PopStyleColor(2);
   ImGui::PopStyleVar();
+
+  if (!video_bg_opened) {
+    return 0;
+  }
 
   ImGuiWindowFlags stream_window_flag =
       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
       ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoMove;
 
   if (!fullscreen_button_pressed_) {
-    ImGui::SetNextWindowPos(ImVec2(20, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(0, 20), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(20.0f * dpi_scale_, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(0, 30.0f * dpi_scale_), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 8.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.0f));
@@ -101,14 +105,13 @@ int Render::StreamWindow() {
           continue;
         }
 
-        ImGui::SetWindowFontScale(0.6f);
         std::string tab_label =
             enable_srtp_
                 ? std::string(ICON_FA_SHIELD_HALVED) + " " + props->remote_id_
                 : props->remote_id_;
         if (ImGui::BeginTabItem(tab_label.c_str(), &props->tab_opened_)) {
           props->tab_selected_ = true;
-          ImGui::SetWindowFontScale(1.0f);
+          ImGui::SetWindowFontScale(0.6f * dpi_scale_);
 
           ImGui::SetNextWindowSize(
               ImVec2(stream_window_width_, stream_window_height_),
@@ -162,7 +165,6 @@ int Render::StreamWindow() {
           ImGui::EndTabItem();
         } else {
           props->tab_selected_ = false;
-          ImGui::SetWindowFontScale(1.0f);
           ++it;
         }
       }

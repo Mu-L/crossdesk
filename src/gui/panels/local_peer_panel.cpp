@@ -76,7 +76,8 @@ int Render::LocalWindow() {
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
       ImGui::SetWindowFontScale(0.5f);
-      if (ImGui::Button(ICON_FA_COPY, ImVec2(22, 38))) {
+      if (ImGui::Button(ICON_FA_COPY,
+                        ImVec2(22 * dpi_scale_, 38 * dpi_scale_))) {
         local_id_copied_ = true;
         ImGui::SetClipboardText(client_id_);
         copy_start_time_ = ImGui::GetTime();
@@ -156,23 +157,27 @@ int Render::LocalWindow() {
       ImGui::SetWindowFontScale(0.5f);
       auto l_x = ImGui::GetCursorScreenPos().x;
       auto l_y = ImGui::GetCursorScreenPos().y;
-      if (ImGui::Button(ICON_FA_EYE, ImVec2(22, 38))) {
+      if (ImGui::Button(ICON_FA_EYE,
+                        ImVec2(22 * dpi_scale_, 38 * dpi_scale_))) {
         show_password_ = !show_password_;
       }
 
       if (!show_password_) {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        draw_list->AddLine(ImVec2(l_x + 3.0f, l_y + 12.5f),
-                           ImVec2(l_x + 20.3f, l_y + 26.5f),
-                           IM_COL32(239, 240, 242, 255), 2.0f);
-        draw_list->AddLine(ImVec2(l_x + 3.0f, l_y + 11.0f),
-                           ImVec2(l_x + 20.3f, l_y + 25.0f),
-                           IM_COL32(0, 0, 0, 255), 1.5f);
+        draw_list->AddLine(
+            ImVec2(l_x + 3.0f * dpi_scale_, l_y + 12.5f * dpi_scale_),
+            ImVec2(l_x + 20.3f * dpi_scale_, l_y + 26.5f * dpi_scale_),
+            IM_COL32(239, 240, 242, 255), 2.0f);
+        draw_list->AddLine(
+            ImVec2(l_x + 3.0f * dpi_scale_, l_y + 11.0f * dpi_scale_),
+            ImVec2(l_x + 20.3f * dpi_scale_, l_y + 25.0f * dpi_scale_),
+            IM_COL32(0, 0, 0, 255), 1.5f);
       }
 
       ImGui::SameLine();
 
-      if (ImGui::Button(ICON_FA_PEN, ImVec2(22, 38))) {
+      if (ImGui::Button(ICON_FA_PEN,
+                        ImVec2(22 * dpi_scale_, 38 * dpi_scale_))) {
         show_reset_password_window_ = true;
       }
       ImGui::SetWindowFontScale(1.0f);

@@ -9,7 +9,7 @@ int Render::MainWindow() {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::BeginChild("DeskWindow",
-                    ImVec2(main_window_width_default_, local_window_height_),
+                    ImVec2(main_window_width_, local_window_height_),
                     ImGuiChildFlags_Border,
                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
@@ -21,8 +21,8 @@ int Render::MainWindow() {
 
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
   draw_list->AddLine(
-      ImVec2(main_window_width_default_ / 2, title_bar_height_ + 15.0f),
-      ImVec2(main_window_width_default_ / 2, title_bar_height_ + 225.0f),
+      ImVec2(main_window_width_ / 2, title_bar_height_ + 15.0f * dpi_scale_),
+      ImVec2(main_window_width_ / 2, title_bar_height_ + 225.0f * dpi_scale_),
       IM_COL32(0, 0, 0, 122), 1.0f);
 
   RemoteWindow();

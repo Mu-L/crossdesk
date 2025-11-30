@@ -484,12 +484,12 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
         render->need_to_send_host_info_ = true;
         render->start_screen_capturer_ = true;
         render->start_speaker_capturer_ = true;
-        // #ifdef CROSSDESK_DEBUG
-        //         render->start_mouse_controller_ = false;
-        //         render->start_keyboard_capturer_ = false;
-        // #else
+#ifdef CROSSDESK_DEBUG
+        render->start_mouse_controller_ = false;
+        render->start_keyboard_capturer_ = false;
+#else
         render->start_mouse_controller_ = true;
-        // #endif
+#endif
         if (std::all_of(render->connection_status_.begin(),
                         render->connection_status_.end(), [](const auto& kv) {
                           return kv.first.find("web") != std::string::npos;

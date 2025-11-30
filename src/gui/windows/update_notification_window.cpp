@@ -58,11 +58,14 @@ int Render::UpdateNotificationWindow() {
     float window_width = update_notification_window_width_;
     float window_height = update_notification_window_height_;
 
-#ifdef __APPLE__
-    float font_scale = 0.3f;
-#else
-    float font_scale = 0.5f;
-#endif
+    // #ifdef __APPLE__
+    //     float font_scale = 0.3f;
+    // #else
+    //     float font_scale = 0.5f;
+    // #endif
+
+    float button_width = 35.0f * dpi_scale_;
+    float button_height = 25.0f * dpi_scale_;
 
     ImGui::SetNextWindowPos(
         ImVec2(
@@ -86,17 +89,16 @@ int Render::UpdateNotificationWindow() {
       ImGui::PushFont(system_chinese_font_);
     }
 
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetTextLineHeight() +
-                         5.0f);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + window_height * 0.05f);
 
     // title: new version available
     ImGui::SetCursorPosX(window_width * 0.1f);
-    ImGui::SetWindowFontScale(font_scale + 0.2f);
+    ImGui::SetWindowFontScale(0.6f);
     std::string title =
         localization::new_version_available[localization_language_index_] +
         ": v" + latest_version_;
     ImGui::Text("%s", title.c_str());
-    ImGui::SetWindowFontScale(font_scale);
+    ImGui::SetWindowFontScale(0.1f);
 
     ImGui::Spacing();
 
@@ -104,7 +106,9 @@ int Render::UpdateNotificationWindow() {
     std::string download_text =
         localization::access_website[localization_language_index_] +
         "https://crossdesk.cn";
+    ImGui::SetWindowFontScale(0.5f);
     Hyperlink(download_text, "https://crossdesk.cn", window_width);
+    ImGui::SetWindowFontScale(1.0f);
 
     ImGui::Spacing();
 
@@ -116,7 +120,7 @@ int Render::UpdateNotificationWindow() {
     ImGui::BeginChild("ScrollableContent",
                       ImVec2(window_width * 0.9f, scrollable_height),
                       ImGuiChildFlags_Border, ImGuiWindowFlags_None);
-
+    ImGui::SetWindowFontScale(0.6f);
     // set text wrap position to current available width (accounts for
     // scrollbar)
     float wrap_pos = ImGui::GetContentRegionAvail().x;
@@ -167,9 +171,11 @@ int Render::UpdateNotificationWindow() {
       ImGui::SetCursorPosX(UPDATE_NOTIFICATION_OK_BUTTON_PADDING_EN);
     }
 
+    ImGui::SetWindowFontScale(0.5f);
     // update button
     if (ImGui::Button(
-            localization::update[localization_language_index_].c_str())) {
+            localization::update[localization_language_index_].c_str(),
+            ImVec2(button_width, button_height))) {
       // open download page
       std::string url = "https://crossdesk.cn";
 #if defined(_WIN32)
@@ -186,12 +192,12 @@ int Render::UpdateNotificationWindow() {
     ImGui::SameLine();
 
     if (ImGui::Button(
-            localization::cancel[localization_language_index_].c_str())) {
+            localization::cancel[localization_language_index_].c_str(),
+            ImVec2(button_width, button_height))) {
       show_update_notification_window_ = false;
     }
 
     ImGui::SetWindowFontScale(1.0f);
-    ImGui::SetWindowFontScale(font_scale);
 
     // pop system font
     if (system_chinese_font_ != nullptr) {
@@ -199,7 +205,6 @@ int Render::UpdateNotificationWindow() {
     }
 
     ImGui::End();
-    ImGui::SetWindowFontScale(1.0f);
     ImGui::PopStyleVar(3);
     ImGui::PopStyleColor();
   }

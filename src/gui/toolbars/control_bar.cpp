@@ -32,34 +32,41 @@ int LossRateDisplay(float loss_rate) {
 }
 
 int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
-  ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f * dpi_scale_);
 
   if (props->control_bar_expand_) {
-    ImGui::SetCursorPosX(props->is_control_bar_in_left_
-                             ? (props->control_window_width_ + 5.0f)
-                             : 38.0f);
+    float button_width = 25.0f * dpi_scale_;
+    float button_height = 25.0f * dpi_scale_;
+
+    ImGui::SetCursorPosX(
+        props->is_control_bar_in_left_
+            ? (props->control_window_width_ + 5.0f * dpi_scale_)
+            : 50.0f * dpi_scale_);
     // mouse control button
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     if (props->is_control_bar_in_left_) {
-      draw_list->AddLine(ImVec2(ImGui::GetCursorScreenPos().x - 5.0f,
-                                ImGui::GetCursorScreenPos().y - 7.0f),
-                         ImVec2(ImGui::GetCursorScreenPos().x - 5.0f,
-                                ImGui::GetCursorScreenPos().y - 7.0f +
-                                    props->control_window_height_),
-                         IM_COL32(178, 178, 178, 255), 1.0f);
+      draw_list->AddLine(
+          ImVec2(ImGui::GetCursorScreenPos().x - 5.0f * dpi_scale_,
+                 ImGui::GetCursorScreenPos().y - 7.0f * dpi_scale_),
+          ImVec2(ImGui::GetCursorScreenPos().x - 5.0f * dpi_scale_,
+                 ImGui::GetCursorScreenPos().y - 7.0f * dpi_scale_ +
+                     props->control_window_height_),
+          IM_COL32(178, 178, 178, 255), 1.0f);
     }
 
     std::string display = ICON_FA_DISPLAY;
-    if (ImGui::Button(display.c_str(), ImVec2(25, 25))) {
+    ImGui::SetWindowFontScale(0.9f);
+    if (ImGui::Button(display.c_str(), ImVec2(button_width, button_height))) {
       ImGui::OpenPopup("display");
     }
+    ImGui::SetWindowFontScale(1.0f);
 
     ImVec2 btn_min = ImGui::GetItemRectMin();
     ImVec2 btn_size_actual = ImGui::GetItemRectSize();
 
     if (ImGui::BeginPopup("display")) {
-      ImGui::SetWindowFontScale(0.5f);
+      ImGui::SetWindowFontScale(0.8f);
       for (int i = 0; i < props->display_info_list_.size(); i++) {
         if (ImGui::Selectable(props->display_info_list_[i].name.c_str())) {
           props->selected_display_ = i;
@@ -75,7 +82,6 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
         }
         props->display_selectable_hovered_ = ImGui::IsWindowHovered();
       }
-      ImGui::SetWindowFontScale(1.0f);
       ImGui::EndPopup();
     }
 
@@ -96,7 +102,8 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
     std::string mouse = props->mouse_control_button_pressed_
                             ? ICON_FA_COMPUTER_MOUSE
                             : ICON_FA_COMPUTER_MOUSE;
-    if (ImGui::Button(mouse.c_str(), ImVec2(25, 25))) {
+    ImGui::SetWindowFontScale(0.9f);
+    if (ImGui::Button(mouse.c_str(), ImVec2(button_width, button_height))) {
       if (props->connection_established_) {
         start_keyboard_capturer_ = !start_keyboard_capturer_;
         props->control_mouse_ = !props->control_mouse_;
@@ -108,17 +115,20 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
                 : localization::control_mouse[localization_language_index_];
       }
     }
+    ImGui::SetWindowFontScale(1.0f);
     if (!props->mouse_control_button_pressed_) {
+      draw_list->AddLine(ImVec2(disable_mouse_x, disable_mouse_y),
+                         ImVec2(disable_mouse_x + button_width * 0.75f,
+                                disable_mouse_y + button_height * 0.75f),
+                         IM_COL32(0, 0, 0, 255), 2.0f * dpi_scale_);
       draw_list->AddLine(
-          ImVec2(disable_mouse_x, disable_mouse_y),
-          ImVec2(disable_mouse_x + 16.0f, disable_mouse_y + 14.2f),
-          IM_COL32(0, 0, 0, 255), 2.0f);
-      draw_list->AddLine(
-          ImVec2(disable_mouse_x - 1.2f, disable_mouse_y + 1.2f),
-          ImVec2(disable_mouse_x + 15.3f, disable_mouse_y + 15.4f),
+          ImVec2(disable_mouse_x - 1.2f * dpi_scale_,
+                 disable_mouse_y + 1.2f * dpi_scale_),
+          ImVec2(disable_mouse_x + button_width * 0.75f - 1.2f * dpi_scale_,
+                 disable_mouse_y + button_height * 0.75f + 1.2f * dpi_scale_),
           ImGui::IsItemHovered() ? IM_COL32(66, 150, 250, 255)
                                  : IM_COL32(179, 213, 253, 255),
-          2.0f);
+          2.0f * dpi_scale_);
     }
 
     ImGui::SameLine();
@@ -131,7 +141,8 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
     std::string audio = props->audio_capture_button_pressed_
                             ? ICON_FA_VOLUME_HIGH
                             : ICON_FA_VOLUME_HIGH;
-    if (ImGui::Button(audio.c_str(), ImVec2(25, 25))) {
+    ImGui::SetWindowFontScale(0.9f);
+    if (ImGui::Button(audio.c_str(), ImVec2(button_width, button_height))) {
       if (props->connection_established_) {
         props->audio_capture_button_pressed_ =
             !props->audio_capture_button_pressed_;
@@ -148,17 +159,20 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
                       props->data_label_.c_str());
       }
     }
+    ImGui::SetWindowFontScale(1.0f);
     if (!props->audio_capture_button_pressed_) {
+      draw_list->AddLine(ImVec2(disable_audio_x, disable_audio_y),
+                         ImVec2(disable_audio_x + button_width * 0.75f,
+                                disable_audio_y + button_height * 0.75f),
+                         IM_COL32(0, 0, 0, 255), 2.0f * dpi_scale_);
       draw_list->AddLine(
-          ImVec2(disable_audio_x, disable_audio_y),
-          ImVec2(disable_audio_x + 16.0f, disable_audio_y + 14.2f),
-          IM_COL32(0, 0, 0, 255), 2.0f);
-      draw_list->AddLine(
-          ImVec2(disable_audio_x - 1.2f, disable_audio_y + 1.2f),
-          ImVec2(disable_audio_x + 15.3f, disable_audio_y + 15.4f),
+          ImVec2(disable_audio_x - 1.2f * dpi_scale_,
+                 disable_audio_y + 1.2f * dpi_scale_),
+          ImVec2(disable_audio_x + button_width * 0.75f - 1.2f * dpi_scale_,
+                 disable_audio_y + button_height * 0.75f + 1.2f * dpi_scale_),
           ImGui::IsItemHovered() ? IM_COL32(66, 150, 250, 255)
                                  : IM_COL32(179, 213, 253, 255),
-          2.0f);
+          2.0f * dpi_scale_);
     }
 
     ImGui::SameLine();
@@ -170,7 +184,9 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
       button_color_style_pushed = true;
     }
     std::string net_traffic_stats = ICON_FA_SIGNAL;
-    if (ImGui::Button(net_traffic_stats.c_str(), ImVec2(25, 25))) {
+    ImGui::SetWindowFontScale(0.9f);
+    if (ImGui::Button(net_traffic_stats.c_str(),
+                      ImVec2(button_width, button_height))) {
       props->net_traffic_stats_button_pressed_ =
           !props->net_traffic_stats_button_pressed_;
       props->control_window_height_is_changing_ = true;
@@ -182,6 +198,7 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
               : localization::show_net_traffic_stats
                     [localization_language_index_];
     }
+    ImGui::SetWindowFontScale(1.0f);
     if (button_color_style_pushed) {
       ImGui::PopStyleColor();
       button_color_style_pushed = false;
@@ -191,7 +208,9 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
     // fullscreen button
     std::string fullscreen =
         fullscreen_button_pressed_ ? ICON_FA_COMPRESS : ICON_FA_EXPAND;
-    if (ImGui::Button(fullscreen.c_str(), ImVec2(25, 25))) {
+    ImGui::SetWindowFontScale(0.9f);
+    if (ImGui::Button(fullscreen.c_str(),
+                      ImVec2(button_width, button_height))) {
       fullscreen_button_pressed_ = !fullscreen_button_pressed_;
       props->fullscreen_button_label_ =
           fullscreen_button_pressed_
@@ -205,13 +224,17 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
       }
       props->reset_control_bar_pos_ = true;
     }
+    ImGui::SetWindowFontScale(1.0f);
 
     ImGui::SameLine();
     // close button
     std::string close_button = ICON_FA_XMARK;
-    if (ImGui::Button(close_button.c_str(), ImVec2(25, 25))) {
+    ImGui::SetWindowFontScale(0.9f);
+    if (ImGui::Button(close_button.c_str(),
+                      ImVec2(button_width, button_height))) {
       CleanupPeer(props);
     }
+    ImGui::SetWindowFontScale(1.0f);
 
     ImGui::SameLine();
 
@@ -225,9 +248,10 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
     }
   }
 
-  ImGui::SetCursorPosX(props->is_control_bar_in_left_
-                           ? (props->control_window_width_ * 2 - 20.0f)
-                           : 5.0f);
+  ImGui::SetCursorPosX(
+      props->is_control_bar_in_left_
+          ? (props->control_window_width_ * 2 - 20.0f * dpi_scale_)
+          : 5.0f * dpi_scale_);
 
   std::string control_bar =
       props->control_bar_expand_
@@ -235,16 +259,19 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
                                             : ICON_FA_ANGLE_RIGHT)
           : (props->is_control_bar_in_left_ ? ICON_FA_ANGLE_RIGHT
                                             : ICON_FA_ANGLE_LEFT);
-  if (ImGui::Button(control_bar.c_str(), ImVec2(15, 25))) {
+  ImGui::SetWindowFontScale(0.9f);
+  if (ImGui::Button(control_bar.c_str(),
+                    ImVec2(15.0f * dpi_scale_, 25.0f * dpi_scale_))) {
     props->control_bar_expand_ = !props->control_bar_expand_;
     props->control_bar_button_pressed_time_ = ImGui::GetTime();
     props->control_window_width_is_changing_ = true;
 
     if (!props->control_bar_expand_) {
-      props->control_window_height_ = 40;
+      props->control_window_height_ = 35 * dpi_scale_;
       props->net_traffic_stats_button_pressed_ = false;
     }
   }
+  ImGui::SetWindowFontScale(1.0f);
 
   if (props->net_traffic_stats_button_pressed_ && props->control_bar_expand_) {
     NetTrafficStats(props);
@@ -259,8 +286,7 @@ int Render::NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props) {
   ImGui::SetCursorPos(ImVec2(props->is_control_bar_in_left_
                                  ? (props->control_window_width_ + 5.0f)
                                  : 5.0f,
-                             40.0f));
-
+                             35.0f * dpi_scale_));
   if (ImGui::BeginTable("NetTrafficStats", 4, ImGuiTableFlags_BordersH,
                         ImVec2(props->control_window_max_width_ - 10.0f,
                                props->control_window_max_height_ - 60.0f))) {

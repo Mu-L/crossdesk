@@ -202,7 +202,6 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props) {
                  : props->control_window_pos_.x,
              props->control_window_pos_.y),
       ImGuiCond_Always);
-  ImGui::SetWindowFontScale(0.5f);
 
   std::string control_child_window_title =
       props->remote_id_ + "ControlChildWindow";
@@ -210,7 +209,6 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props) {
       control_child_window_title.c_str(),
       ImVec2(props->control_window_width_ * 2, props->control_window_height_),
       ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration);
-  ImGui::SetWindowFontScale(1.0f);
   ImGui::PopStyleColor();
 
   ControlBar(props);

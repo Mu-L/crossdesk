@@ -133,9 +133,9 @@ SDL_HitTestResult Render::HitTestCallback(SDL_Window* window,
   int window_width, window_height;
   SDL_GetWindowSize(window, &window_width, &window_height);
 
-  if (area->y < 30 && area->y > MOUSE_GRAB_PADDING &&
-      area->x < window_width - 120 && area->x > MOUSE_GRAB_PADDING &&
-      !render->is_tab_bar_hovered_) {
+  if (area->y < 30 * render->dpi_scale_ && area->y > MOUSE_GRAB_PADDING &&
+      area->x < window_width - 120 * render->dpi_scale_ &&
+      area->x > MOUSE_GRAB_PADDING && !render->is_tab_bar_hovered_) {
     return SDL_HITTEST_DRAGGABLE;
   }
 
@@ -605,6 +605,53 @@ void Render::UpdateInteractions() {
   }
 }
 
+int Render::UpdateWindowSizeWithDpiScale(float dpi_scale) {
+  main_window_width_ = (int)(main_window_width_default_ * dpi_scale);
+  main_window_height_ = (int)(main_window_height_default_ * dpi_scale);
+  stream_window_width_ = (int)(stream_window_width_default_ * dpi_scale);
+  stream_window_height_ = (int)(stream_window_height_default_ * dpi_scale);
+
+  local_window_width_ = (int)(local_window_width_ * dpi_scale);
+  local_window_height_ = (int)(local_window_height_ * dpi_scale);
+  remote_window_width_ = (int)(remote_window_width_ * dpi_scale);
+  remote_window_height_ = (int)(remote_window_height_ * dpi_scale);
+  local_child_window_width_ = (int)(local_child_window_width_ * dpi_scale);
+  local_child_window_height_ = (int)(local_child_window_height_ * dpi_scale);
+  remote_child_window_width_ = (int)(remote_child_window_width_ * dpi_scale);
+  remote_child_window_height_ = (int)(remote_child_window_height_ * dpi_scale);
+  main_window_text_y_padding_ = (int)(main_window_text_y_padding_ * dpi_scale);
+  main_child_window_x_padding_ =
+      (int)(main_child_window_x_padding_ * dpi_scale);
+  main_child_window_y_padding_ =
+      (int)(main_child_window_y_padding_ * dpi_scale);
+  title_bar_width_ = (int)(title_bar_width_ * dpi_scale);
+  title_bar_height_ = (int)(title_bar_height_ * dpi_scale);
+  status_bar_height_ = (int)(status_bar_height_ * dpi_scale);
+  connection_status_window_width_ =
+      (int)(connection_status_window_width_ * dpi_scale);
+  connection_status_window_height_ =
+      (int)(connection_status_window_height_ * dpi_scale);
+  notification_window_width_ = (int)(notification_window_width_ * dpi_scale);
+  notification_window_height_ = (int)(notification_window_height_ * dpi_scale);
+  about_window_width_ = (int)(about_window_width_ * dpi_scale);
+  about_window_height_ = (int)(about_window_height_ * dpi_scale);
+  update_notification_window_width_ =
+      (int)(update_notification_window_width_ * dpi_scale);
+  update_notification_window_height_ =
+      (int)(update_notification_window_height_ * dpi_scale);
+
+  recent_connection_image_width_ =
+      (int)(recent_connection_image_width_ * dpi_scale);
+  recent_connection_image_height_ =
+      (int)(recent_connection_image_height_ * dpi_scale);
+
+  if (thumbnail_) {
+    thumbnail_->SetThumbnailDpiScale(dpi_scale);
+  }
+
+  return 0;
+}
+
 int Render::CreateMainWindow() {
   main_ctx_ = ImGui::CreateContext();
   if (!main_ctx_) {
@@ -614,9 +661,13 @@ int Render::CreateMainWindow() {
 
   ImGui::SetCurrentContext(main_ctx_);
 
+  dpi_scale_ = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+  LOG_INFO("System DPI scale before window creation: [{}]", dpi_scale_);
+
+  UpdateWindowSizeWithDpiScale(dpi_scale_);
+
   if (!SDL_CreateWindowAndRenderer(
-          "Remote Desk", (int)main_window_width_default_,
-          (int)main_window_height_default_,
+          "Remote Desk", (int)main_window_width_, (int)main_window_height_,
           SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_BORDERLESS |
               SDL_WINDOW_HIDDEN,
           &main_window_, &main_renderer_)) {
@@ -630,6 +681,12 @@ int Render::CreateMainWindow() {
   // for window region action
   SDL_SetWindowHitTest(main_window_, HitTestCallback, this);
 
+  SetupFontAndStyle();
+
+  ImGuiStyle& style = ImGui::GetStyle();
+  style.ScaleAllSizes(dpi_scale_);
+  style.FontScaleDpi = dpi_scale_;
+
 #if _WIN32
   SDL_PropertiesID props = SDL_GetWindowProperties(main_window_);
   HWND main_hwnd = (HWND)SDL_GetPointerProperty(
@@ -640,6 +697,9 @@ int Render::CreateMainWindow() {
   tray_ = std::make_unique<WinTray>(main_hwnd, tray_icon, L"CrossDesk",
                                     localization_language_index_);
 #endif
+
+  ImGui_ImplSDL3_InitForSDLRenderer(main_window_, main_renderer_);
+  ImGui_ImplSDLRenderer3_Init(main_renderer_);
 
   return 0;
 }
@@ -674,8 +734,8 @@ int Render::CreateStreamWindow() {
   ImGui::SetCurrentContext(stream_ctx_);
 
   if (!SDL_CreateWindowAndRenderer(
-          "Stream window", (int)stream_window_width_default_,
-          (int)stream_window_height_default_,
+          "Stream window", (int)stream_window_width_,
+          (int)stream_window_height_,
           SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_BORDERLESS,
           &stream_window_, &stream_renderer_)) {
     LOG_ERROR("Error creating stream_window_ and stream_renderer_: {}",
@@ -690,6 +750,13 @@ int Render::CreateStreamWindow() {
   // for window region action
   SDL_SetWindowHitTest(stream_window_, HitTestCallback, this);
 
+  SetupFontAndStyle();
+
+  SDL_SetRenderScale(stream_renderer_, dpi_scale_, dpi_scale_);
+
+  ImGui_ImplSDL3_InitForSDLRenderer(stream_window_, stream_renderer_);
+  ImGui_ImplSDLRenderer3_Init(stream_renderer_);
+
   // change props->stream_render_rect_
   SDL_Event event;
   event.type = SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED;
@@ -698,6 +765,9 @@ int Render::CreateStreamWindow() {
 
   stream_window_created_ = true;
   just_created_ = true;
+
+  stream_window_inited_ = true;
+  LOG_INFO("Stream window inited");
 
   return 0;
 }
@@ -724,6 +794,8 @@ int Render::DestroyStreamWindow() {
 }
 
 int Render::SetupFontAndStyle() {
+  float font_size = 32.0f;
+
   // Setup Dear ImGui style
   ImGuiIO& io = ImGui::GetIO();
 
@@ -733,7 +805,7 @@ int Render::SetupFontAndStyle() {
   ImFontConfig config;
   config.FontDataOwnedByAtlas = false;
   io.Fonts->AddFontFromMemoryTTF(OPPOSans_Regular_ttf, OPPOSans_Regular_ttf_len,
-                                 32.0f, &config,
+                                 font_size, &config,
                                  io.Fonts->GetGlyphRangesChineseFull());
   config.MergeMode = true;
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
@@ -769,8 +841,9 @@ int Render::SetupFontAndStyle() {
     std::ifstream font_file(font_paths[i], std::ios::binary);
     if (font_file.good()) {
       font_file.close();
-      system_chinese_font_ = io.Fonts->AddFontFromFileTTF(
-          font_paths[i], 32.0f, &config, io.Fonts->GetGlyphRangesChineseFull());
+      system_chinese_font_ =
+          io.Fonts->AddFontFromFileTTF(font_paths[i], font_size, &config,
+                                       io.Fonts->GetGlyphRangesChineseFull());
       if (system_chinese_font_ != nullptr) {
         LOG_INFO("Loaded system Chinese font: {}", font_paths[i]);
         break;
@@ -784,33 +857,7 @@ int Render::SetupFontAndStyle() {
     LOG_WARN("System Chinese font not found, using default font");
   }
 
-  io.Fonts->Build();
   ImGui::StyleColorsLight();
-
-  return 0;
-}
-
-int Render::SetupMainWindow() {
-  if (!main_ctx_) {
-    LOG_ERROR("Main context is null");
-    return -1;
-  }
-
-  ImGui::SetCurrentContext(main_ctx_);
-
-  SetupFontAndStyle();
-
-  SDL_GetWindowSizeInPixels(main_window_, &main_window_width_real_,
-                            &main_window_height_real_);
-  main_window_dpi_scaling_w_ = main_window_width_real_ / main_window_width_;
-  main_window_dpi_scaling_h_ = main_window_width_real_ / main_window_width_;
-  SDL_SetRenderScale(main_renderer_, main_window_dpi_scaling_w_,
-                     main_window_dpi_scaling_h_);
-  LOG_INFO("Use dpi scaling [{}x{}] for main window",
-           main_window_dpi_scaling_w_, main_window_dpi_scaling_h_);
-
-  ImGui_ImplSDL3_InitForSDLRenderer(main_window_, main_renderer_);
-  ImGui_ImplSDLRenderer3_Init(main_renderer_);
 
   return 0;
 }
@@ -820,42 +867,6 @@ int Render::DestroyMainWindowContext() {
   ImGui_ImplSDLRenderer3_Shutdown();
   ImGui_ImplSDL3_Shutdown();
   ImGui::DestroyContext(main_ctx_);
-
-  return 0;
-}
-
-int Render::SetupStreamWindow() {
-  if (stream_window_inited_) {
-    return 0;
-  }
-
-  if (!stream_ctx_) {
-    LOG_ERROR("Stream context is null");
-    return -1;
-  }
-
-  ImGui::SetCurrentContext(stream_ctx_);
-
-  SetupFontAndStyle();
-
-  SDL_GetWindowSizeInPixels(stream_window_, &stream_window_width_real_,
-                            &stream_window_height_real_);
-
-  stream_window_dpi_scaling_w_ =
-      stream_window_width_real_ / stream_window_width_;
-  stream_window_dpi_scaling_h_ =
-      stream_window_width_real_ / stream_window_width_;
-
-  SDL_SetRenderScale(stream_renderer_, stream_window_dpi_scaling_w_,
-                     stream_window_dpi_scaling_h_);
-  LOG_INFO("Use dpi scaling [{}x{}] for stream window",
-           stream_window_dpi_scaling_w_, stream_window_dpi_scaling_h_);
-
-  ImGui_ImplSDL3_InitForSDLRenderer(stream_window_, stream_renderer_);
-  ImGui_ImplSDLRenderer3_Init(stream_renderer_);
-
-  stream_window_inited_ = true;
-  LOG_INFO("Stream window inited");
 
   return 0;
 }
@@ -883,9 +894,8 @@ int Render::DrawMainWindow() {
 
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(
-      ImVec2(main_window_width_, main_window_height_default_),
-      ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2(main_window_width_, main_window_height_),
+                           ImGuiCond_Always);
   ImGui::Begin("MainRender", nullptr,
                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
@@ -907,7 +917,11 @@ int Render::DrawMainWindow() {
   ImGui::End();
 
   // Rendering
+  ImGuiIO& io = ImGui::GetIO();
+  (void)io;
   ImGui::Render();
+  SDL_SetRenderScale(main_renderer_, io.DisplayFramebufferScale.x,
+                     io.DisplayFramebufferScale.y);
   SDL_RenderClear(main_renderer_);
   ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), main_renderer_);
   SDL_RenderPresent(main_renderer_);
@@ -929,7 +943,6 @@ int Render::DrawStreamWindow() {
   StreamWindow();
 
   if (!fullscreen_button_pressed_) {
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(
         ImVec2(stream_window_width_,
@@ -940,14 +953,16 @@ int Render::DrawStreamWindow() {
                      ImGuiWindowFlags_NoBringToFrontOnFocus |
                      ImGuiWindowFlags_NoDocking);
 
-    ImGui::PopStyleColor();
-
     TitleBar(false);
     ImGui::End();
   }
 
   // Rendering
+  ImGuiIO& io = ImGui::GetIO();
+  (void)io;
   ImGui::Render();
+  SDL_SetRenderScale(stream_renderer_, io.DisplayFramebufferScale.x,
+                     io.DisplayFramebufferScale.y);
   SDL_RenderClear(stream_renderer_);
 
   // std::shared_lock lock(client_properties_mutex_);
@@ -1081,7 +1096,6 @@ void Render::InitializeModules() {
 
 void Render::InitializeMainWindow() {
   CreateMainWindow();
-  SetupMainWindow();
   if (SDL_WINDOW_HIDDEN & SDL_GetWindowFlags(main_window_)) {
     SDL_ShowWindow(main_window_);
   }
@@ -1192,7 +1206,6 @@ void Render::HandleRecentConnections() {
 void Render::HandleStreamWindow() {
   if (need_to_create_stream_window_) {
     CreateStreamWindow();
-    SetupStreamWindow();
     need_to_create_stream_window_ = false;
   }
 

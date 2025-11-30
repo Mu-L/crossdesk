@@ -54,12 +54,13 @@ int Render::ShowSimpleFileBrowser() {
   if (show_file_browser_) {
     ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 
-    float fixed_width = 130.0f;
+    float fixed_width = 130.0f * dpi_scale_;
     ImGui::SetNextItemWidth(fixed_width);
     ImGui::SetNextWindowSizeConstraints(ImVec2(fixed_width, 0),
                                         ImVec2(fixed_width, 100.0f));
 
     if (ImGui::BeginCombo("##select_a_file", display_text.c_str(), 0)) {
+      ImGui::SetWindowFontScale(0.5f);
       bool file_selected = false;
 
       auto roots = GetRootEntries();
@@ -154,7 +155,7 @@ int Render::SelfHostedServerWindow() {
 
     // Settings
     {
-      static int settings_items_padding = 30;
+      static int settings_items_padding = 30 * dpi_scale_;
       int settings_items_offset = 0;
 
       ImGui::SetWindowFontScale(0.5f);

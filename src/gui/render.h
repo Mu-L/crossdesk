@@ -71,10 +71,10 @@ class Render {
     float sub_stream_window_height_ = 720;
     float control_window_min_width_ = 20;
     float control_window_max_width_ = 230;
-    float control_window_min_height_ = 40;
-    float control_window_max_height_ = 170;
+    float control_window_min_height_ = 35;
+    float control_window_max_height_ = 180;
     float control_window_width_ = 230;
-    float control_window_height_ = 40;
+    float control_window_height_ = 35;
     float control_bar_pos_x_ = 0;
     float control_bar_pos_y_ = 30;
     float mouse_diff_control_bar_pos_x_ = 0;
@@ -175,14 +175,13 @@ class Render {
  private:
   int ConnectTo(const std::string& remote_id, const char* password,
                 bool remember_password);
+  int UpdateWindowSizeWithDpiScale(float dpi_scale);
   int CreateMainWindow();
   int DestroyMainWindow();
   int CreateStreamWindow();
   int DestroyStreamWindow();
   int SetupFontAndStyle();
-  int SetupMainWindow();
   int DestroyMainWindowContext();
-  int SetupStreamWindow();
   int DestroyStreamWindowContext();
   int DrawMainWindow();
   int DrawStreamWindow();
@@ -342,6 +341,7 @@ class Render {
   int main_window_height_real_ = 540;
   float main_window_dpi_scaling_w_ = 1.0f;
   float main_window_dpi_scaling_h_ = 1.0f;
+  float dpi_scale_ = 1.0f;
   float main_window_width_default_ = 640;
   float main_window_height_default_ = 480;
   float main_window_width_ = 640;

@@ -38,10 +38,9 @@ int Render::SettingWindow() {
 
     // Settings
     {
-      static int settings_items_padding = 30;
+      static int settings_items_padding = 30 * dpi_scale_;
       int settings_items_offset = 0;
 
-      ImGui::SetWindowFontScale(0.5f);
       ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
       ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
@@ -50,7 +49,6 @@ int Render::SettingWindow() {
                    nullptr,
                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                        ImGuiWindowFlags_NoSavedSettings);
-      ImGui::SetWindowFontScale(1.0f);
       ImGui::SetWindowFontScale(0.5f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       {
@@ -59,7 +57,7 @@ int Render::SettingWindow() {
             localization::language_en[localization_language_index_].c_str()};
 
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 4);
+        ImGui::SetCursorPosY(settings_items_offset + 4 * dpi_scale_);
         ImGui::Text(
             "%s", localization::language[localization_language_index_].c_str());
         if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
@@ -70,8 +68,17 @@ int Render::SettingWindow() {
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
 
-        ImGui::Combo("##language", &language_button_value_, language_items,
-                     IM_ARRAYSIZE(language_items));
+        if (ImGui::BeginCombo("##language",
+                              language_items[language_button_value_])) {
+          ImGui::SetWindowFontScale(0.5f);
+          for (int i = 0; i < IM_ARRAYSIZE(language_items); i++) {
+            bool selected = (i == language_button_value_);
+            if (ImGui::Selectable(language_items[i], selected))
+              language_button_value_ = i;
+          }
+
+          ImGui::EndCombo();
+        }
       }
 
       ImGui::Separator();
@@ -90,7 +97,7 @@ int Render::SettingWindow() {
                 .c_str()};
 
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 4);
+        ImGui::SetCursorPosY(settings_items_offset + 4 * dpi_scale_);
         ImGui::Text(
             "%s",
             localization::video_quality[localization_language_index_].c_str());
@@ -103,8 +110,18 @@ int Render::SettingWindow() {
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
 
-        ImGui::Combo("##video_quality", &video_quality_button_value_,
-                     video_quality_items, IM_ARRAYSIZE(video_quality_items));
+        if (ImGui::BeginCombo(
+                "##video_quality",
+                video_quality_items[video_quality_button_value_])) {
+          ImGui::SetWindowFontScale(0.5f);
+          for (int i = 0; i < IM_ARRAYSIZE(video_quality_items); i++) {
+            bool selected = (i == video_quality_button_value_);
+            if (ImGui::Selectable(video_quality_items[i], selected))
+              video_quality_button_value_ = i;
+          }
+
+          ImGui::EndCombo();
+        }
       }
 
       ImGui::Separator();
@@ -126,9 +143,18 @@ int Render::SettingWindow() {
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
 
-        ImGui::Combo("##video_frame_rate", &video_frame_rate_button_value_,
-                     video_frame_rate_items,
-                     IM_ARRAYSIZE(video_frame_rate_items));
+        if (ImGui::BeginCombo(
+                "##video_frame_rate",
+                video_frame_rate_items[video_frame_rate_button_value_])) {
+          ImGui::SetWindowFontScale(0.5f);
+          for (int i = 0; i < IM_ARRAYSIZE(video_frame_rate_items); i++) {
+            bool selected = (i == video_frame_rate_button_value_);
+            if (ImGui::Selectable(video_frame_rate_items[i], selected))
+              video_frame_rate_button_value_ = i;
+          }
+
+          ImGui::EndCombo();
+        }
       }
 
       ImGui::Separator();
@@ -153,9 +179,18 @@ int Render::SettingWindow() {
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
 
-        ImGui::Combo(
-            "##video_encode_format", &video_encode_format_button_value_,
-            video_encode_format_items, IM_ARRAYSIZE(video_encode_format_items));
+        if (ImGui::BeginCombo(
+                "##video_encode_format",
+                video_encode_format_items[video_encode_format_button_value_])) {
+          ImGui::SetWindowFontScale(0.5f);
+          for (int i = 0; i < IM_ARRAYSIZE(video_encode_format_items); i++) {
+            bool selected = (i == video_encode_format_button_value_);
+            if (ImGui::Selectable(video_encode_format_items[i], selected))
+              video_encode_format_button_value_ = i;
+          }
+
+          ImGui::EndCombo();
+        }
       }
 
 #if USE_CUDA && !defined(__aarch64__) && !defined(__arm__)
@@ -468,12 +503,10 @@ int Render::SettingWindow() {
 
         settings_window_pos_reset_ = true;
       }
-      ImGui::SetWindowFontScale(1.0f);
       ImGui::SetWindowFontScale(0.5f);
       ImGui::End();
       ImGui::PopStyleVar(2);
       ImGui::PopStyleColor();
-      ImGui::SetWindowFontScale(1.0f);
     }
   }
 

@@ -33,6 +33,8 @@ class Thumbnail {
   ~Thumbnail();
 
  public:
+  int SetThumbnailDpiScale(float dpi_scale);
+
   int SaveToThumbnail(const char* yuv420p, int width, int height,
                       const std::string& remote_id,
                       const std::string& host_name,
