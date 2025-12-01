@@ -77,12 +77,14 @@ ScreenCapturerWgc::~ScreenCapturerWgc() {
   CleanUp();
 
   if (nv12_frame_) {
-    delete nv12_frame_;
+    delete[] nv12_frame_;
     nv12_frame_ = nullptr;
+    nv12_width_ = 0;
+    nv12_height_ = 0;
   }
 
   if (nv12_frame_scaled_) {
-    delete nv12_frame_scaled_;
+    delete[] nv12_frame_scaled_;
     nv12_frame_scaled_ = nullptr;
   }
 }
@@ -215,13 +217,14 @@ int ScreenCapturerWgc::Resume(int monitor_index) {
 }
 
 int ScreenCapturerWgc::Stop() {
+  running_ = false;
+
   for (int i = 0; i < sessions_.size(); i++) {
     if (sessions_[i].running_) {
       sessions_[i].session_->Stop();
       sessions_[i].running_ = false;
     }
   }
-  running_ = false;
 
   return 0;
 }
@@ -256,18 +259,61 @@ int ScreenCapturerWgc::SwitchTo(int monitor_index) {
 
 void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame& frame,
                                 int id) {
+  if (!running_ || !on_data_) {
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock(frame_mutex_);
+
   if (on_data_) {
-    if (!nv12_frame_) {
-      nv12_frame_ = new unsigned char[frame.width * frame.height * 3 / 2];
+    if (id < 0 || id >= static_cast<int>(display_info_list_.size())) {
+      LOG_ERROR("WGC OnFrame invalid display index: {}", id);
+      return;
     }
 
-    libyuv::ARGBToNV12((const uint8_t*)frame.data, frame.width * 4,
-                       (uint8_t*)nv12_frame_, frame.width,
-                       (uint8_t*)(nv12_frame_ + frame.width * frame.height),
-                       frame.width, frame.width, frame.height);
+    if (!frame.data || frame.row_pitch == 0) {
+      LOG_ERROR("WGC OnFrame received invalid frame: data={}, row_pitch={}",
+                (void*)frame.data, frame.row_pitch);
+      return;
+    }
 
-    on_data_(nv12_frame_, frame.width * frame.height * 3 / 2, frame.width,
-             frame.height, display_info_list_[id].name.c_str());
+    // calculate the maximum width that can be contained in one row according to
+    // row_pitch (BGRA: 4 bytes per pixel), and take the minimum with logical
+    // width to avoid out-of-bounds access.
+    unsigned int max_width_by_pitch = frame.row_pitch / 4u;
+    int logical_width = static_cast<int>(
+        frame.width < max_width_by_pitch ? frame.width : max_width_by_pitch);
+
+    // libyuv::ARGBToNV12 requires even width/height
+    int even_width = logical_width & ~1;
+    int even_height = static_cast<int>(frame.height) & ~1;
+
+    if (even_width <= 0 || even_height <= 0) {
+      LOG_ERROR(
+          "WGC OnFrame invalid frame size after adjust: width={} "
+          "(frame.width={}, max_by_pitch={}), height={}",
+          logical_width, frame.width, max_width_by_pitch, frame.height);
+      return;
+    }
+
+    int nv12_size = even_width * even_height * 3 / 2;
+
+    if (!nv12_frame_ || nv12_width_ != even_width ||
+        nv12_height_ != even_height) {
+      delete[] nv12_frame_;
+      nv12_frame_ = new unsigned char[nv12_size];
+      nv12_width_ = even_width;
+      nv12_height_ = even_height;
+    }
+
+    libyuv::ARGBToNV12((const uint8_t*)frame.data,
+                       static_cast<int>(frame.row_pitch), (uint8_t*)nv12_frame_,
+                       even_width,
+                       (uint8_t*)(nv12_frame_ + even_width * even_height),
+                       even_width, even_width, even_height);
+
+    on_data_(nv12_frame_, nv12_size, even_width, even_height,
+             display_info_list_[id].name.c_str());
   }
 }
 

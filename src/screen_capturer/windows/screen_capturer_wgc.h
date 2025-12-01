@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <functional>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -65,6 +66,10 @@ class ScreenCapturerWgc : public ScreenCapturer,
 
   unsigned char* nv12_frame_ = nullptr;
   unsigned char* nv12_frame_scaled_ = nullptr;
+  int nv12_width_ = 0;
+  int nv12_height_ = 0;
+
+  std::mutex frame_mutex_;
 };
 }  // namespace crossdesk
 #endif
