@@ -71,10 +71,10 @@ class Render {
     float sub_stream_window_height_ = 720;
     float control_window_min_width_ = 20;
     float control_window_max_width_ = 230;
-    float control_window_min_height_ = 35;
+    float control_window_min_height_ = 38;
     float control_window_max_height_ = 180;
     float control_window_width_ = 230;
-    float control_window_height_ = 35;
+    float control_window_height_ = 38;
     float control_bar_pos_x_ = 0;
     float control_bar_pos_y_ = 30;
     float mouse_diff_control_bar_pos_x_ = 0;

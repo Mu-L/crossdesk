@@ -154,6 +154,8 @@ int Render::StreamWindow() {
               }
             }
             // lock.lock();
+            ImGui::End();
+            ImGui::EndTabItem();
             it = client_properties_.begin();
             continue;
           } else {
