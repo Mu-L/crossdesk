@@ -37,7 +37,7 @@ int Render::RecentConnectionsWindow() {
 }
 
 int Render::ShowRecentConnections() {
-  ImGui::SetCursorPosX(25.0f);
+  ImGui::SetCursorPosX(25.0f * dpi_scale_);
   ImVec2 sub_window_pos = ImGui::GetCursorPos();
   std::map<std::string, ImVec2> sub_containers_pos;
   float recent_connection_sub_container_width =
@@ -115,10 +115,11 @@ int Render::ShowRecentConnections() {
       it.second.remote_host_name = "unknown";
     }
 
-    ImVec2 image_screen_pos = ImVec2(ImGui::GetCursorScreenPos().x + 5.0f,
-                                     ImGui::GetCursorScreenPos().y + 5.0f);
-    ImVec2 image_pos =
-        ImVec2(ImGui::GetCursorPosX() + 5.0f, ImGui::GetCursorPosY() + 5.0f);
+    ImVec2 image_screen_pos =
+        ImVec2(ImGui::GetCursorScreenPos().x + 5.0f * dpi_scale_,
+               ImGui::GetCursorScreenPos().y + 5.0f * dpi_scale_);
+    ImVec2 image_pos = ImVec2(ImGui::GetCursorPosX() + 5.0f * dpi_scale_,
+                              ImGui::GetCursorPosY() + 5.0f * dpi_scale_);
     ImGui::SetCursorPos(image_pos);
     ImGui::Image((ImTextureID)(intptr_t)it.second.texture,
                  ImVec2((float)recent_connection_image_width_,
@@ -208,11 +209,11 @@ int Render::ShowRecentConnections() {
     if (count != recent_connections_count - 1) {
       ImVec2 line_start =
           ImVec2(image_screen_pos.x + recent_connection_image_width_ +
-                     20.0f * dpi_scale_,
+                     25.0f * dpi_scale_,
                  image_screen_pos.y);
       ImVec2 line_end = ImVec2(
           image_screen_pos.x + recent_connection_image_width_ +
-              20.0f * dpi_scale_,
+              25.0f * dpi_scale_,
           image_screen_pos.y + recent_connection_image_height_ + button_height);
       ImGui::GetWindowDrawList()->AddLine(line_start, line_end,
                                           IM_COL32(0, 0, 0, 122), 1.0f);
@@ -220,7 +221,7 @@ int Render::ShowRecentConnections() {
 
     count++;
     ImGui::SameLine(
-        0, count != recent_connections_count ? 26.0f * dpi_scale_ : 0.0f);
+        0, count != recent_connections_count ? (35.0f * dpi_scale_) : 0.0f);
   }
 
   ImGui::EndChild();

@@ -85,10 +85,6 @@ int Render::UpdateNotificationWindow() {
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
 
-    if (system_chinese_font_ != nullptr) {
-      ImGui::PushFont(system_chinese_font_);
-    }
-
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + window_height * 0.05f);
 
     // title: new version available
@@ -115,6 +111,9 @@ int Render::UpdateNotificationWindow() {
     float scrollable_height =
         window_height - UPDATE_NOTIFICATION_RESERVED_HEIGHT;
 
+    if (system_chinese_font_ != nullptr) {
+      ImGui::PushFont(system_chinese_font_);
+    }
     // scrollable content area
     ImGui::SetCursorPosX(window_width * 0.05f);
     ImGui::BeginChild("ScrollableContent",
@@ -163,6 +162,11 @@ int Render::UpdateNotificationWindow() {
 
     ImGui::EndChild();
 
+    // pop system font
+    if (system_chinese_font_ != nullptr) {
+      ImGui::PopFont();
+    }
+
     ImGui::Spacing();
 
     if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
@@ -198,11 +202,6 @@ int Render::UpdateNotificationWindow() {
     }
 
     ImGui::SetWindowFontScale(1.0f);
-
-    // pop system font
-    if (system_chinese_font_ != nullptr) {
-      ImGui::PopFont();
-    }
 
     ImGui::End();
     ImGui::PopStyleVar(3);
