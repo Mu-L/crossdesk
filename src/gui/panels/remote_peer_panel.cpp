@@ -12,8 +12,8 @@ int Render::RemoteWindow() {
   float remote_window_width = io.DisplaySize.x * 0.5f;
   float remote_window_height =
       io.DisplaySize.y * (1 - TITLE_BAR_HEIGHT - STATUS_BAR_HEIGHT);
-  float remote_window_button_width = io.DisplaySize.x * 0.046f;
-  float remote_window_button_height = io.DisplaySize.y * 0.075f;
+  float remote_window_arrow_button_width = io.DisplaySize.x * 0.1f;
+  float remote_window_arrow_button_height = io.DisplaySize.y * 0.078f;
 
   ImGui::SetNextWindowPos(
       ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * TITLE_BAR_HEIGHT),
@@ -29,7 +29,7 @@ int Render::RemoteWindow() {
   ImGui::PopStyleColor();
 
   ImGui::SetCursorPos(
-      ImVec2(io.DisplaySize.x * 0.545f, io.DisplaySize.y * 0.02f));
+      ImVec2(io.DisplaySize.x * 0.057f, io.DisplaySize.y * 0.02f));
 
   ImGui::TextColored(
       ImVec4(0.0f, 0.0f, 0.0f, 0.5f), "%s",
@@ -38,7 +38,7 @@ int Render::RemoteWindow() {
   ImGui::Spacing();
   {
     ImGui::SetNextWindowPos(
-        ImVec2(io.DisplaySize.x * 0.56f, io.DisplaySize.y * 0.15f),
+        ImVec2(io.DisplaySize.x * 0.557f, io.DisplaySize.y * 0.15f),
         ImGuiCond_Always);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(239.0f / 255, 240.0f / 255,
                                                    242.0f / 255, 1.0f));
@@ -58,7 +58,7 @@ int Render::RemoteWindow() {
           "%s", localization::remote_id[localization_language_index_].c_str());
 
       ImGui::Spacing();
-      ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
+      ImGui::SetNextItemWidth(io.DisplaySize.x * 0.25f);
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       if (re_enter_remote_id_) {
@@ -81,7 +81,8 @@ int Render::RemoteWindow() {
                                 static_cast<int (*)(int)>(&isspace)),
                       remote_id.end());
       if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG,
-                        ImVec2(55 * dpi_scale_, 38 * dpi_scale_)) ||
+                        ImVec2(remote_window_arrow_button_width,
+                               remote_window_arrow_button_height)) ||
           enter_pressed) {
         connect_button_pressed_ = true;
         bool found = false;
