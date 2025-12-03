@@ -7,42 +7,39 @@ namespace crossdesk {
 
 bool Render::ConnectionStatusWindow(
     std::shared_ptr<SubStreamWindowProperties>& props) {
-  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  ImGuiIO& io = ImGui::GetIO();
   bool ret_flag = false;
-  ImGui::SetNextWindowPos(ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                                  connection_status_window_width_) /
-                                     2,
-                                 (viewport->WorkSize.y - viewport->WorkPos.y -
-                                  connection_status_window_height_) /
-                                     2));
 
-  ImGui::SetNextWindowSize(ImVec2(connection_status_window_width_,
-                                  connection_status_window_height_));
+  ImGui::SetNextWindowPos(
+      ImVec2(io.DisplaySize.x * 0.33f, io.DisplaySize.y * 0.33f));
+  ImGui::SetNextWindowSize(
+      ImVec2(io.DisplaySize.x * 0.33f, io.DisplaySize.y * 0.33f));
 
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-
-  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0, 1.0, 1.0, 1.0));
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
 
   ImGui::Begin("ConnectionStatusWindow", nullptr,
-               ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                    ImGuiWindowFlags_NoSavedSettings);
   ImGui::PopStyleVar(2);
   ImGui::PopStyleColor();
+
+  auto connection_status_window_width = ImGui::GetWindowSize().x;
+  auto connection_status_window_height = ImGui::GetWindowSize().y;
 
   ImGui::SetWindowFontScale(0.5f);
   std::string text;
 
   if (ConnectionStatus::Connecting == props->connection_status_) {
     text = localization::p2p_connecting[localization_language_index_];
-    ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
-    ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
+    ImGui::SetCursorPosX(connection_status_window_width * 0.43f);
+    ImGui::SetCursorPosY(connection_status_window_height * 0.67f);
   } else if (ConnectionStatus::Connected == props->connection_status_) {
     text = localization::p2p_connected[localization_language_index_];
-    ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
-    ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
+    ImGui::SetCursorPosX(connection_status_window_width * 0.43f);
+    ImGui::SetCursorPosY(connection_status_window_height * 0.67f);
     // ok
     if (ImGui::Button(localization::ok[localization_language_index_].c_str()) ||
         ImGui::IsKeyPressed(ImGuiKey_Enter) ||
@@ -51,8 +48,8 @@ bool Render::ConnectionStatusWindow(
     }
   } else if (ConnectionStatus::Disconnected == props->connection_status_) {
     text = localization::p2p_disconnected[localization_language_index_];
-    ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
-    ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
+    ImGui::SetCursorPosX(connection_status_window_width * 0.43f);
+    ImGui::SetCursorPosY(connection_status_window_height * 0.67f);
     // ok
     if (ImGui::Button(localization::ok[localization_language_index_].c_str()) ||
         ImGui::IsKeyPressed(ImGuiKey_Enter) ||
@@ -61,8 +58,8 @@ bool Render::ConnectionStatusWindow(
     }
   } else if (ConnectionStatus::Failed == props->connection_status_) {
     text = localization::p2p_failed[localization_language_index_];
-    ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
-    ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
+    ImGui::SetCursorPosX(connection_status_window_width * 0.43f);
+    ImGui::SetCursorPosY(connection_status_window_height * 0.67f);
     // ok
     if (ImGui::Button(localization::ok[localization_language_index_].c_str()) ||
         ImGui::IsKeyPressed(ImGuiKey_Enter) ||
@@ -71,8 +68,8 @@ bool Render::ConnectionStatusWindow(
     }
   } else if (ConnectionStatus::Closed == props->connection_status_) {
     text = localization::p2p_closed[localization_language_index_];
-    ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
-    ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
+    ImGui::SetCursorPosX(connection_status_window_width * 0.43f);
+    ImGui::SetCursorPosY(connection_status_window_height * 0.67f);
     // ok
     if (ImGui::Button(localization::ok[localization_language_index_].c_str()) ||
         ImGui::IsKeyPressed(ImGuiKey_Enter) ||
@@ -87,11 +84,9 @@ bool Render::ConnectionStatusWindow(
         text = localization::reinput_password[localization_language_index_];
       }
 
-      auto window_width = ImGui::GetWindowSize().x;
-      auto window_height = ImGui::GetWindowSize().y;
-      ImGui::SetCursorPosX((window_width - IPUT_WINDOW_WIDTH / 2) * 0.5f);
-      ImGui::SetCursorPosY(window_height * 0.4f);
-      ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH / 2);
+      ImGui::SetCursorPosX(connection_status_window_width * 0.336f);
+      ImGui::SetCursorPosY(connection_status_window_height * 0.4f);
+      ImGui::SetNextItemWidth(connection_status_window_width * 0.33f);
 
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 
@@ -109,15 +104,16 @@ bool Render::ConnectionStatusWindow(
       ImVec2 text_size = ImGui::CalcTextSize(
           localization::remember_password[localization_language_index_]
               .c_str());
-      ImGui::SetCursorPosX((window_width - text_size.x) * 0.5f - 13.0f);
+      ImGui::SetCursorPosX((connection_status_window_width - text_size.x) *
+                           0.45f);
       ImGui::Checkbox(
           localization::remember_password[localization_language_index_].c_str(),
           &(props->remember_password_));
       ImGui::SetWindowFontScale(0.5f);
       ImGui::PopStyleVar();
 
-      ImGui::SetCursorPosX(window_width * 0.315f);
-      ImGui::SetCursorPosY(window_height * 0.75f);
+      ImGui::SetCursorPosX(connection_status_window_width * 0.325f);
+      ImGui::SetCursorPosY(connection_status_window_height * 0.75f);
       // ok
       if (ImGui::Button(
               localization::ok[localization_language_index_].c_str()) ||
@@ -140,14 +136,14 @@ bool Render::ConnectionStatusWindow(
       }
     } else if (password_validating_) {
       text = localization::validate_password[localization_language_index_];
-      ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
-      ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
+      ImGui::SetCursorPosX(connection_status_window_width * 0.43f);
+      ImGui::SetCursorPosY(connection_status_window_height * 0.67f);
     }
   } else if (ConnectionStatus::NoSuchTransmissionId ==
              props->connection_status_) {
     text = localization::no_such_id[localization_language_index_];
-    ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
-    ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
+    ImGui::SetCursorPosX(connection_status_window_width * 0.43f);
+    ImGui::SetCursorPosY(connection_status_window_height * 0.67f);
     // ok
     if (ImGui::Button(localization::ok[localization_language_index_].c_str()) ||
         ImGui::IsKeyPressed(ImGuiKey_Enter)) {
@@ -158,11 +154,9 @@ bool Render::ConnectionStatusWindow(
     }
   }
 
-  auto window_width = ImGui::GetWindowSize().x;
-  auto window_height = ImGui::GetWindowSize().y;
   auto text_width = ImGui::CalcTextSize(text.c_str()).x;
-  ImGui::SetCursorPosX((window_width - text_width) * 0.5f);
-  ImGui::SetCursorPosY(window_height * 0.2f);
+  ImGui::SetCursorPosX((connection_status_window_width - text_width) * 0.5f);
+  ImGui::SetCursorPosY(connection_status_window_height * 0.2f);
   ImGui::Text("%s", text.c_str());
   ImGui::SetWindowFontScale(1.0f);
 
