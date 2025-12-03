@@ -1,6 +1,6 @@
 #include <random>
 
-#include "layout.h"
+#include "layout_relative.h"
 #include "localization.h"
 #include "rd_log.h"
 #include "render.h"
@@ -8,20 +8,27 @@
 namespace crossdesk {
 
 int Render::LocalWindow() {
-  ImGui::SetNextWindowPos(ImVec2(-1.0f, title_bar_height_), ImGuiCond_Always);
+  ImGuiIO& io = ImGui::GetIO();
+  float local_window_width = io.DisplaySize.x * 0.5f;
+  float local_window_height =
+      io.DisplaySize.y * (1 - TITLE_BAR_HEIGHT - STATUS_BAR_HEIGHT);
+  float local_window_button_width = io.DisplaySize.x * 0.046f;
+  float local_window_button_height = io.DisplaySize.y * 0.075f;
+
+  ImGui::SetNextWindowPos(ImVec2(0.0f, io.DisplaySize.y * TITLE_BAR_HEIGHT),
+                          ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::BeginChild("LocalDesktopWindow",
-                    ImVec2(local_window_width_, local_window_height_),
+                    ImVec2(local_window_width, local_window_height),
                     ImGuiChildFlags_None,
-                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                         ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PopStyleColor();
 
-  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + main_window_text_y_padding_);
-  ImGui::Indent(main_child_window_x_padding_);
+  ImGui::SetCursorPos(
+      ImVec2(io.DisplaySize.x * 0.045f, io.DisplaySize.y * 0.02f));
 
   ImGui::TextColored(
       ImVec4(0.0f, 0.0f, 0.0f, 0.5f), "%s",
@@ -30,19 +37,16 @@ int Render::LocalWindow() {
   ImGui::Spacing();
   {
     ImGui::SetNextWindowPos(
-        ImVec2(main_child_window_x_padding_,
-               title_bar_height_ + main_child_window_y_padding_),
+        ImVec2(io.DisplaySize.x * 0.045f, io.DisplaySize.y * 0.15f),
         ImGuiCond_Always);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(239.0f / 255, 240.0f / 255,
                                                    242.0f / 255, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
     ImGui::BeginChild(
-        "LocalDesktopWindow_1",
-        ImVec2(local_child_window_width_, local_child_window_height_),
+        "LocalDesktopPanel",
+        ImVec2(local_window_width * 0.8f, local_window_height * 0.43f),
         ImGuiChildFlags_Border,
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoBringToFrontOnFocus);
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     {
@@ -52,7 +56,7 @@ int Render::LocalWindow() {
 
       ImGui::Spacing();
 
-      ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
+      ImGui::SetNextItemWidth(io.DisplaySize.x * 0.25f);
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 
@@ -76,8 +80,8 @@ int Render::LocalWindow() {
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
       ImGui::SetWindowFontScale(0.5f);
-      if (ImGui::Button(ICON_FA_COPY,
-                        ImVec2(22 * dpi_scale_, 38 * dpi_scale_))) {
+      if (ImGui::Button(ICON_FA_COPY, ImVec2(local_window_button_width,
+                                             local_window_button_height))) {
         local_id_copied_ = true;
         ImGui::SetClipboardText(client_id_);
         copy_start_time_ = ImGui::GetTime();
@@ -87,17 +91,10 @@ int Render::LocalWindow() {
 
       double time_duration = ImGui::GetTime() - copy_start_time_;
       if (local_id_copied_ && time_duration < 1.0f) {
-        const ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(
-            ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                    notification_window_width_) /
-                       2,
-                   (viewport->WorkSize.y - viewport->WorkPos.y -
-                    notification_window_height_) /
-                       2));
-
+            ImVec2(io.DisplaySize.x * 0.33f, io.DisplaySize.y * 0.33f));
         ImGui::SetNextWindowSize(
-            ImVec2(notification_window_width_, notification_window_height_));
+            ImVec2(io.DisplaySize.x * 0.33f, io.DisplaySize.y * 0.33f));
         ImGui::PushStyleColor(
             ImGuiCol_WindowBg,
             ImVec4(1.0f, 1.0f, 1.0f, 1.0f - (float)time_duration));
@@ -116,7 +113,7 @@ int Render::LocalWindow() {
             [localization_language_index_];
         auto text_width = ImGui::CalcTextSize(text.c_str()).x;
         ImGui::SetCursorPosX((window_width - text_width) * 0.5f);
-        ImGui::SetCursorPosY(window_height * 0.5f);
+        ImGui::SetCursorPosY(window_height * 0.4f);
         ImGui::PushStyleColor(ImGuiCol_Text,
                               ImVec4(0, 0, 0, 1.0f - (float)time_duration));
         ImGui::Text("%s", text.c_str());
@@ -135,7 +132,7 @@ int Render::LocalWindow() {
                   localization::password[localization_language_index_].c_str());
       ImGui::SetWindowFontScale(1.0f);
 
-      ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
+      ImGui::SetNextItemWidth(io.DisplaySize.x * 0.25f);
       ImGui::Spacing();
 
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
@@ -157,55 +154,34 @@ int Render::LocalWindow() {
       ImGui::SetWindowFontScale(0.5f);
       auto l_x = ImGui::GetCursorScreenPos().x;
       auto l_y = ImGui::GetCursorScreenPos().y;
-      if (ImGui::Button(ICON_FA_EYE,
-                        ImVec2(22 * dpi_scale_, 38 * dpi_scale_))) {
+      if (ImGui::Button(
+              show_password_ ? ICON_FA_EYE : ICON_FA_EYE_SLASH,
+              ImVec2(local_window_button_width, local_window_button_height))) {
         show_password_ = !show_password_;
-      }
-
-      if (!show_password_) {
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        draw_list->AddLine(
-            ImVec2(l_x + 3.0f * dpi_scale_, l_y + 12.5f * dpi_scale_),
-            ImVec2(l_x + 20.3f * dpi_scale_, l_y + 26.5f * dpi_scale_),
-            IM_COL32(239, 240, 242, 255), 2.0f);
-        draw_list->AddLine(
-            ImVec2(l_x + 3.0f * dpi_scale_, l_y + 11.0f * dpi_scale_),
-            ImVec2(l_x + 20.3f * dpi_scale_, l_y + 25.0f * dpi_scale_),
-            IM_COL32(0, 0, 0, 255), 1.5f);
       }
 
       ImGui::SameLine();
 
-      if (ImGui::Button(ICON_FA_PEN,
-                        ImVec2(22 * dpi_scale_, 38 * dpi_scale_))) {
+      if (ImGui::Button(ICON_FA_PEN, ImVec2(local_window_button_width,
+                                            local_window_button_height))) {
         show_reset_password_window_ = true;
       }
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PopStyleColor(3);
 
       if (show_reset_password_window_) {
-        const ImGuiViewport* viewport = ImGui::GetMainViewport();
-
         ImGui::SetNextWindowPos(
-            ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                    connection_status_window_width_) /
-                       2,
-                   (viewport->WorkSize.y - viewport->WorkPos.y -
-                    connection_status_window_height_) /
-                       2));
-
-        ImGui::SetNextWindowSize(ImVec2(connection_status_window_width_,
-                                        connection_status_window_height_));
+            ImVec2(io.DisplaySize.x * 0.33f, io.DisplaySize.y * 0.33f));
+        ImGui::SetNextWindowSize(
+            ImVec2(io.DisplaySize.x * 0.33f, io.DisplaySize.y * 0.33f));
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0, 1.0, 1.0, 1.0));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
 
         ImGui::Begin("ResetPasswordWindow", nullptr,
-                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                          ImGuiWindowFlags_NoSavedSettings);
         ImGui::PopStyleVar(2);
         ImGui::PopStyleColor();
@@ -220,9 +196,9 @@ int Render::LocalWindow() {
         ImGui::SetCursorPosY(window_height * 0.2f);
         ImGui::Text("%s", text.c_str());
 
-        ImGui::SetCursorPosX((window_width - IPUT_WINDOW_WIDTH / 2) * 0.5f);
+        ImGui::SetCursorPosX(window_width * 0.33f);
         ImGui::SetCursorPosY(window_height * 0.4f);
-        ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH / 2);
+        ImGui::SetNextItemWidth(window_width * 0.33f);
 
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 
