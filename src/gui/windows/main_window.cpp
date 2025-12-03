@@ -1,3 +1,4 @@
+#include "layout_relative.h"
 #include "localization.h"
 #include "rd_log.h"
 #include "render.h"
@@ -5,30 +6,35 @@
 namespace crossdesk {
 
 int Render::MainWindow() {
-  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_), ImGuiCond_Always);
+  ImGuiIO& io = ImGui::GetIO();
+  float local_remote_window_width = io.DisplaySize.x;
+  float local_remote_window_height =
+      io.DisplaySize.y * (1 - TITLE_BAR_HEIGHT - STATUS_BAR_HEIGHT);
+
+  ImGui::SetNextWindowPos(ImVec2(0.0f, io.DisplaySize.y * TITLE_BAR_HEIGHT),
+                          ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-  ImGui::BeginChild("DeskWindow",
-                    ImVec2(main_window_width_, local_window_height_),
-                    ImGuiChildFlags_Border,
-                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                        ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::BeginChild(
+      "DeskWindow",
+      ImVec2(local_remote_window_width, local_remote_window_height),
+      ImGuiChildFlags_Border,
+      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+          ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PopStyleVar();
   ImGui::PopStyleColor();
 
   LocalWindow();
 
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
-  draw_list->AddLine(
-      ImVec2(main_window_width_ / 2, title_bar_height_ + 15.0f * dpi_scale_),
-      ImVec2(main_window_width_ / 2, title_bar_height_ + 225.0f * dpi_scale_),
-      IM_COL32(0, 0, 0, 122), 1.0f);
+  draw_list->AddLine(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.1f),
+                     ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.53f),
+                     IM_COL32(0, 0, 0, 122), 1.0f);
 
   RemoteWindow();
   ImGui::EndChild();
 
-  RecentConnectionsWindow();
+  // RecentConnectionsWindow();
   StatusBar();
 
   if (show_connection_status_window_) {

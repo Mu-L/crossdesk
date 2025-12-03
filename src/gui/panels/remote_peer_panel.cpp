@@ -1,4 +1,4 @@
-#include "layout.h"
+#include "layout_relative.h"
 #include "localization.h"
 #include "rd_log.h"
 #include "render.h"
@@ -8,21 +8,28 @@ namespace crossdesk {
 static int InputTextCallback(ImGuiInputTextCallbackData* data);
 
 int Render::RemoteWindow() {
-  ImGui::SetNextWindowPos(ImVec2(local_window_width_ + 1.0f, title_bar_height_),
-                          ImGuiCond_Always);
+  ImGuiIO& io = ImGui::GetIO();
+  float remote_window_width = io.DisplaySize.x * 0.5f;
+  float remote_window_height =
+      io.DisplaySize.y * (1 - TITLE_BAR_HEIGHT - STATUS_BAR_HEIGHT);
+  float remote_window_button_width = io.DisplaySize.x * 0.046f;
+  float remote_window_button_height = io.DisplaySize.y * 0.075f;
+
+  ImGui::SetNextWindowPos(
+      ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * TITLE_BAR_HEIGHT),
+      ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
-  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
   ImGui::BeginChild("RemoteDesktopWindow",
-                    ImVec2(remote_window_width_, remote_window_height_),
+                    ImVec2(remote_window_width, remote_window_height),
                     ImGuiChildFlags_None,
-                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                         ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PopStyleColor();
 
-  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + main_window_text_y_padding_);
-  ImGui::Indent(main_child_window_x_padding_ - 1.0f);
+  ImGui::SetCursorPos(
+      ImVec2(io.DisplaySize.x * 0.545f, io.DisplaySize.y * 0.02f));
 
   ImGui::TextColored(
       ImVec4(0.0f, 0.0f, 0.0f, 0.5f), "%s",
@@ -31,8 +38,7 @@ int Render::RemoteWindow() {
   ImGui::Spacing();
   {
     ImGui::SetNextWindowPos(
-        ImVec2(local_window_width_ + main_child_window_x_padding_ - 1.0f,
-               title_bar_height_ + main_child_window_y_padding_),
+        ImVec2(io.DisplaySize.x * 0.56f, io.DisplaySize.y * 0.15f),
         ImGuiCond_Always);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(239.0f / 255, 240.0f / 255,
                                                    242.0f / 255, 1.0f));
@@ -40,10 +46,9 @@ int Render::RemoteWindow() {
 
     ImGui::BeginChild(
         "RemoteDesktopWindow_1",
-        ImVec2(remote_child_window_width_, remote_child_window_height_),
+        ImVec2(remote_window_width * 0.8f, remote_window_height * 0.43f),
         ImGuiChildFlags_Border,
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();

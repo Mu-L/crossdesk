@@ -19,7 +19,7 @@ int Render::LocalWindow() {
                           ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
-  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
   ImGui::BeginChild("LocalDesktopWindow",
                     ImVec2(local_window_width, local_window_height),
                     ImGuiChildFlags_None,
@@ -46,7 +46,8 @@ int Render::LocalWindow() {
         "LocalDesktopPanel",
         ImVec2(local_window_width * 0.8f, local_window_height * 0.43f),
         ImGuiChildFlags_Border,
-        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBringToFrontOnFocus);
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     {
