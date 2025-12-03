@@ -294,6 +294,8 @@ class Render {
   /* ------ all windows property start ------ */
   float title_bar_width_ = 640;
   float title_bar_height_ = 30;
+  float title_bar_button_width_ = 30;
+  float title_bar_button_height_ = 30;
   /* ------ all windows property end ------ */
 
   /* ------ main window property start ------ */

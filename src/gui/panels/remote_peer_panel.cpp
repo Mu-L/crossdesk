@@ -188,20 +188,13 @@ int Render::ConnectTo(const std::string& remote_id, const char* password,
         memcpy(&props->params_, &params_, sizeof(Params));
         props->params_.user_id = props->local_id_.c_str();
         props->peer_ = CreatePeer(&props->params_);
-        props->control_window_min_width_ =
-            props->control_window_min_width_ * dpi_scale_;
-        props->control_window_min_height_ =
-            props->control_window_min_height_ * dpi_scale_;
-        props->control_window_max_width_ =
-            props->control_window_max_width_ * dpi_scale_;
-        props->control_window_max_height_ =
-            props->control_window_max_height_ * dpi_scale_;
-        props->control_window_width_ =
-            props->control_window_width_ * dpi_scale_;
-        props->control_window_height_ =
-            props->control_window_height_ * dpi_scale_;
-        // props->control_bar_pos_x_ = props->control_bar_pos_x_ * dpi_scale_;
-        // props->control_bar_pos_y_ = props->control_bar_pos_y_ * dpi_scale_;
+
+        props->control_window_width_ = title_bar_button_height_ * 7.5f;
+        props->control_window_height_ = title_bar_button_height_ * 1.16f;
+        props->control_window_min_width_ = title_bar_button_height_ * 0.65f;
+        props->control_window_min_height_ = title_bar_button_height_ * 1.16f;
+        props->control_window_max_width_ = title_bar_button_height_ * 7.5f;
+        props->control_window_max_height_ = title_bar_button_height_ * 6.0f;
 
         if (!props->peer_) {
           LOG_INFO("Create peer [{}] instance failed", props->local_id_);

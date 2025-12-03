@@ -53,11 +53,11 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props) {
       ImVec2(props->control_window_width_, props->control_window_height_),
       ImGuiCond_Always);
 
-  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_ + 1), ImGuiCond_Once);
+  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_), ImGuiCond_Once);
 
   float pos_x = 0;
   float pos_y = 0;
-  float y_boundary = fullscreen_button_pressed_ ? 0 : (title_bar_height_ + 1);
+  float y_boundary = fullscreen_button_pressed_ ? 0 : title_bar_height_;
 
   if (props->reset_control_bar_pos_) {
     float new_cursor_pos_x = 0;
@@ -94,7 +94,7 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props) {
   } else if (!props->reset_control_bar_pos_ &&
                  ImGui::IsMouseReleased(ImGuiMouseButton_Left) ||
              props->control_window_width_is_changing_) {
-    if (props->control_window_pos_.x <= stream_window_width_ / 2) {
+    if (props->control_window_pos_.x <= stream_window_width_ * 0.5f) {
       if (props->control_window_pos_.y + props->control_window_height_ >
           stream_window_height_) {
         pos_y = stream_window_height_ - props->control_window_height_;
@@ -118,18 +118,16 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props) {
         }
       }
       props->is_control_bar_in_left_ = true;
-    } else if (props->control_window_pos_.x > stream_window_width_ / 2) {
+    } else if (props->control_window_pos_.x > stream_window_width_ * 0.5f) {
       pos_x = 0;
       pos_y =
           (props->control_window_pos_.y >= y_boundary &&
            props->control_window_pos_.y <=
                stream_window_height_ - props->control_window_height_)
               ? props->control_window_pos_.y
-              : (props->control_window_pos_.y < (fullscreen_button_pressed_
-                                                     ? 0
-                                                     : (title_bar_height_ + 1))
-                     ? (fullscreen_button_pressed_ ? 0
-                                                   : (title_bar_height_ + 1))
+              : (props->control_window_pos_.y <
+                         (fullscreen_button_pressed_ ? 0 : title_bar_height_)
+                     ? (fullscreen_button_pressed_ ? 0 : title_bar_height_)
                      : (stream_window_height_ - props->control_window_height_));
 
       if (props->control_bar_expand_) {
@@ -205,10 +203,10 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props) {
 
   std::string control_child_window_title =
       props->remote_id_ + "ControlChildWindow";
-  ImGui::BeginChild(
-      control_child_window_title.c_str(),
-      ImVec2(props->control_window_width_ * 2, props->control_window_height_),
-      ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration);
+  ImGui::BeginChild(control_child_window_title.c_str(),
+                    ImVec2(props->control_window_width_ * 2.0f,
+                           props->control_window_height_),
+                    ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration);
   ImGui::PopStyleColor();
 
   ControlBar(props);

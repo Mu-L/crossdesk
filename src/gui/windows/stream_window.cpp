@@ -69,9 +69,13 @@ int Render::StreamWindow() {
       ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoMove;
 
   if (!fullscreen_button_pressed_) {
-    ImGui::SetNextWindowPos(ImVec2(20.0f * dpi_scale_, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(0, 30.0f * dpi_scale_), ImGuiCond_Always);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 8.0f));
+    ImGui::SetNextWindowPos(
+        ImVec2(title_bar_height_ * 0.2f, title_bar_height_ * 0.2f),
+        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(
+        ImVec2(title_bar_height_ * 4.0f, title_bar_height_ * 0.8f),
+        ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.0f));
     ImGui::Begin("TabBar", nullptr,

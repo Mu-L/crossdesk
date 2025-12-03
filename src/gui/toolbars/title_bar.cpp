@@ -9,10 +9,24 @@ namespace crossdesk {
 
 int Render::TitleBar(bool main_window) {
   ImGuiIO& io = ImGui::GetIO();
-  float title_bar_width = io.DisplaySize.x;
-  float title_bar_height = io.DisplaySize.y * (TITLE_BAR_HEIGHT + 0.01f);
-  float title_bar_button_width = io.DisplaySize.x * TITLE_BAR_BUTTON_WIDTH;
-  float title_bar_button_height = io.DisplaySize.y * TITLE_BAR_BUTTON_HEIGHT;
+  float title_bar_width = title_bar_width_;
+  float title_bar_height = title_bar_height_;
+  float title_bar_button_width = title_bar_button_width_;
+  float title_bar_button_height = title_bar_button_height_;
+  if (main_window) {
+    title_bar_width = io.DisplaySize.x;
+    title_bar_height = io.DisplaySize.y * (TITLE_BAR_HEIGHT + 0.01f);
+    title_bar_button_width = io.DisplaySize.x * TITLE_BAR_BUTTON_WIDTH;
+    title_bar_button_height = io.DisplaySize.y * TITLE_BAR_BUTTON_HEIGHT;
+    title_bar_height_ = title_bar_height;
+    title_bar_button_width_ = title_bar_button_width;
+    title_bar_button_height_ = title_bar_button_height;
+  } else {
+    title_bar_width = io.DisplaySize.x;
+    title_bar_height = title_bar_button_height_;
+    title_bar_button_width = title_bar_button_width_;
+    title_bar_button_height = title_bar_button_height_;
+  }
 
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -185,7 +199,7 @@ int Render::TitleBar(bool main_window) {
     ImGui::PushStyleColor(ImGuiCol_ButtonActive,
                           ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-    if (!window_maximized_) {
+    if (window_maximized_) {
       float pos_x_top = title_bar_width - title_bar_button_width * 1.65f;
       float pos_y_top = title_bar_button_height * 0.36f;
       float pos_x_bottom = title_bar_width - title_bar_button_width * 1.6f;

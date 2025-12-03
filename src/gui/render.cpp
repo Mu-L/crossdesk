@@ -11,7 +11,7 @@
 #include "device_controller_factory.h"
 #include "fa_regular_400.h"
 #include "fa_solid_900.h"
-#include "layout.h"
+#include "layout_relative.h"
 #include "localization.h"
 #include "platform.h"
 #include "rd_log.h"
@@ -969,10 +969,11 @@ int Render::DrawStreamWindow() {
   StreamWindow();
 
   if (!fullscreen_button_pressed_) {
+    ImGuiIO& io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(
-        ImVec2(stream_window_width_,
-               fullscreen_button_pressed_ ? 0 : title_bar_height_),
+        ImVec2(io.DisplaySize.x,
+               fullscreen_button_pressed_ ? 0 : title_bar_button_height_),
         ImGuiCond_Always);
     ImGui::Begin("StreamWindowTitleBar", nullptr,
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
