@@ -175,7 +175,6 @@ class Render {
  private:
   int ConnectTo(const std::string& remote_id, const char* password,
                 bool remember_password);
-  int UpdateWindowSizeWithDpiScale(float dpi_scale);
   int CreateMainWindow();
   int DestroyMainWindow();
   int CreateStreamWindow();

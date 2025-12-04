@@ -605,53 +605,6 @@ void Render::UpdateInteractions() {
   }
 }
 
-int Render::UpdateWindowSizeWithDpiScale(float dpi_scale) {
-  main_window_width_ = (int)(main_window_width_default_ * dpi_scale);
-  main_window_height_ = (int)(main_window_height_default_ * dpi_scale);
-  stream_window_width_ = (int)(stream_window_width_default_ * dpi_scale);
-  stream_window_height_ = (int)(stream_window_height_default_ * dpi_scale);
-
-  local_window_width_ = (int)(local_window_width_ * dpi_scale);
-  local_window_height_ = (int)(local_window_height_ * dpi_scale);
-  remote_window_width_ = (int)(remote_window_width_ * dpi_scale);
-  remote_window_height_ = (int)(remote_window_height_ * dpi_scale);
-  local_child_window_width_ = (int)(local_child_window_width_ * dpi_scale);
-  local_child_window_height_ = (int)(local_child_window_height_ * dpi_scale);
-  remote_child_window_width_ = (int)(remote_child_window_width_ * dpi_scale);
-  remote_child_window_height_ = (int)(remote_child_window_height_ * dpi_scale);
-  main_window_text_y_padding_ = (int)(main_window_text_y_padding_ * dpi_scale);
-  main_child_window_x_padding_ =
-      (int)(main_child_window_x_padding_ * dpi_scale);
-  main_child_window_y_padding_ =
-      (int)(main_child_window_y_padding_ * dpi_scale);
-  title_bar_width_ = (int)(title_bar_width_ * dpi_scale);
-  title_bar_height_ = (int)(title_bar_height_ * dpi_scale);
-  status_bar_height_ = (int)(status_bar_height_ * dpi_scale);
-  connection_status_window_width_ =
-      (int)(connection_status_window_width_ * dpi_scale);
-  connection_status_window_height_ =
-      (int)(connection_status_window_height_ * dpi_scale);
-  notification_window_width_ = (int)(notification_window_width_ * dpi_scale);
-  notification_window_height_ = (int)(notification_window_height_ * dpi_scale);
-  about_window_width_ = (int)(about_window_width_ * dpi_scale);
-  about_window_height_ = (int)(about_window_height_ * dpi_scale);
-  update_notification_window_width_ =
-      (int)(update_notification_window_width_ * dpi_scale);
-  update_notification_window_height_ =
-      (int)(update_notification_window_height_ * dpi_scale);
-
-  recent_connection_image_width_ =
-      (int)(recent_connection_image_width_ * dpi_scale);
-  recent_connection_image_height_ =
-      (int)(recent_connection_image_height_ * dpi_scale);
-
-  if (thumbnail_) {
-    thumbnail_->SetThumbnailDpiScale(dpi_scale);
-  }
-
-  return 0;
-}
-
 int Render::CreateMainWindow() {
   main_ctx_ = ImGui::CreateContext();
   if (!main_ctx_) {
@@ -758,6 +711,10 @@ int Render::CreateStreamWindow() {
   SDL_SetWindowHitTest(stream_window_, HitTestCallback, this);
 
   SetupFontAndStyle(false);
+
+  ImGuiStyle& style = ImGui::GetStyle();
+  style.ScaleAllSizes(dpi_scale_);
+  style.FontScaleDpi = dpi_scale_;
 
   ImGui_ImplSDL3_InitForSDLRenderer(stream_window_, stream_renderer_);
   ImGui_ImplSDLRenderer3_Init(stream_renderer_);
@@ -924,9 +881,9 @@ int Render::DrawMainWindow() {
   ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y),
                            ImGuiCond_Always);
   ImGui::Begin("MainRender", nullptr,
-               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
-                   ImGuiWindowFlags_NoBringToFrontOnFocus);
+               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
+                   ImGuiWindowFlags_NoBringToFrontOnFocus |
+                   ImGuiWindowFlags_NoDocking);
   ImGui::PopStyleColor();
 
   TitleBar(true);
@@ -968,24 +925,31 @@ int Render::DrawStreamWindow() {
 
   StreamWindow();
 
-  if (!fullscreen_button_pressed_) {
-    ImGuiIO& io = ImGui::GetIO();
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(
-        ImVec2(io.DisplaySize.x,
-               fullscreen_button_pressed_ ? 0 : title_bar_button_height_),
-        ImGuiCond_Always);
-    ImGui::Begin("StreamWindowTitleBar", nullptr,
-                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
-                     ImGuiWindowFlags_NoBringToFrontOnFocus |
-                     ImGuiWindowFlags_NoDocking);
+  ImGuiIO& io = ImGui::GetIO();
+  float stream_title_window_height =
+      fullscreen_button_pressed_ ? 0 : title_bar_height_;
 
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+  // Set minimum window size to 0 to allow exact height control
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+  ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, stream_title_window_height),
+                           ImGuiCond_Always);
+  ImGui::Begin("StreamTitleWindow", nullptr,
+               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
+                   ImGuiWindowFlags_NoBringToFrontOnFocus |
+                   ImGuiWindowFlags_NoDocking);
+  ImGui::PopStyleVar(2);
+  ImGui::PopStyleColor();
+
+  if (!fullscreen_button_pressed_) {
     TitleBar(false);
-    ImGui::End();
   }
 
+  ImGui::End();
+
   // Rendering
-  ImGuiIO& io = ImGui::GetIO();
   (void)io;
   ImGui::Render();
   SDL_SetRenderScale(stream_renderer_, io.DisplayFramebufferScale.x,

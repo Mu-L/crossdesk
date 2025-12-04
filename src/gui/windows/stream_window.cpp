@@ -70,11 +70,10 @@ int Render::StreamWindow() {
 
   if (!fullscreen_button_pressed_) {
     ImGui::SetNextWindowPos(
-        ImVec2(title_bar_height_ * 0.2f, title_bar_height_ * 0.2f),
+        ImVec2(title_bar_button_width_ * 0.8f, title_bar_button_width_ * 0.1f),
         ImGuiCond_Always);
-    ImGui::SetNextWindowSize(
-        ImVec2(title_bar_height_ * 4.0f, title_bar_height_ * 0.8f),
-        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(0, title_bar_button_width_ * 0.8f),
+                             ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.0f));
@@ -115,7 +114,7 @@ int Render::StreamWindow() {
                 : props->remote_id_;
         if (ImGui::BeginTabItem(tab_label.c_str(), &props->tab_opened_)) {
           props->tab_selected_ = true;
-          ImGui::SetWindowFontScale(0.6f * dpi_scale_);
+          ImGui::SetWindowFontScale(0.6f);
 
           ImGui::SetNextWindowSize(
               ImVec2(stream_window_width_, stream_window_height_),

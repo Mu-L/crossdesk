@@ -32,10 +32,10 @@ int LossRateDisplay(float loss_rate) {
 }
 
 int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
-  float button_width = title_bar_button_height_ * 0.8f;
-  float button_height = title_bar_button_height_ * 0.8f;
-  float line_padding = title_bar_button_height_ * 0.12f;
-  float line_thickness = title_bar_button_height_ * 0.07f;
+  float button_width = title_bar_height_ * 0.8f;
+  float button_height = title_bar_height_ * 0.8f;
+  float line_padding = title_bar_height_ * 0.12f;
+  float line_thickness = title_bar_height_ * 0.07f;
 
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
   if (props->control_bar_expand_) {

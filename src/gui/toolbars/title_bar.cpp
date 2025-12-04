@@ -11,11 +11,13 @@ int Render::TitleBar(bool main_window) {
   ImGuiIO& io = ImGui::GetIO();
   float title_bar_width = title_bar_width_;
   float title_bar_height = title_bar_height_;
+  float title_bar_height_padding = title_bar_height_;
   float title_bar_button_width = title_bar_button_width_;
   float title_bar_button_height = title_bar_button_height_;
   if (main_window) {
     title_bar_width = io.DisplaySize.x;
-    title_bar_height = io.DisplaySize.y * (TITLE_BAR_HEIGHT + 0.01f);
+    title_bar_height = io.DisplaySize.y * TITLE_BAR_HEIGHT;
+    title_bar_height_padding = io.DisplaySize.y * (TITLE_BAR_HEIGHT + 0.01f);
     title_bar_button_width = io.DisplaySize.x * TITLE_BAR_BUTTON_WIDTH;
     title_bar_button_height = io.DisplaySize.y * TITLE_BAR_BUTTON_HEIGHT;
     title_bar_height_ = title_bar_height;
@@ -32,7 +34,7 @@ int Render::TitleBar(bool main_window) {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
   ImGui::BeginChild(main_window ? "MainTitleBar" : "StreamTitleBar",
-                    ImVec2(title_bar_width, title_bar_height),
+                    ImVec2(title_bar_width, title_bar_height_padding),
                     ImGuiChildFlags_Border,
                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                         ImGuiWindowFlags_NoBringToFrontOnFocus);
@@ -120,7 +122,7 @@ int Render::TitleBar(bool main_window) {
 
       if (update_available_ && ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
-        ImGui::SetWindowFontScale(0.5f * dpi_scale_);
+        ImGui::SetWindowFontScale(0.5f);
         std::string new_version_available_str =
             localization::new_version_available[localization_language_index_] +
             ": " + latest_version_;
