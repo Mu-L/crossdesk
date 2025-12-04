@@ -54,7 +54,7 @@ int Render::ShowSimpleFileBrowser() {
   if (show_file_browser_) {
     ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 
-    float fixed_width = 130.0f * dpi_scale_;
+    float fixed_width = title_bar_button_width_ * 3.8f;
     ImGui::SetNextItemWidth(fixed_width);
     ImGui::SetNextWindowSizeConstraints(ImVec2(fixed_width, 0),
                                         ImVec2(fixed_width, 100.0f));
@@ -121,33 +121,20 @@ int Render::ShowSimpleFileBrowser() {
 }
 
 int Render::SelfHostedServerWindow() {
+  ImGuiIO& io = ImGui::GetIO();
+  show_self_hosted_server_config_window_ = true;
   if (show_self_hosted_server_config_window_) {
     if (self_hosted_server_config_window_pos_reset_) {
-      const ImGuiViewport* viewport = ImGui::GetMainViewport();
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
         ImGui::SetNextWindowPos(
-            ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                    SELF_HOSTED_SERVER_CONFIG_WINDOW_WIDTH_CN) /
-                       2,
-                   (viewport->WorkSize.y - viewport->WorkPos.y -
-                    SELF_HOSTED_SERVER_CONFIG_WINDOW_HEIGHT_CN) /
-                       2));
-
+            ImVec2(io.DisplaySize.x * 0.298f, io.DisplaySize.y * 0.25f));
         ImGui::SetNextWindowSize(
-            ImVec2(SELF_HOSTED_SERVER_CONFIG_WINDOW_WIDTH_CN,
-                   SELF_HOSTED_SERVER_CONFIG_WINDOW_HEIGHT_CN));
+            ImVec2(io.DisplaySize.x * 0.407f, io.DisplaySize.y * 0.41f));
       } else {
         ImGui::SetNextWindowPos(
-            ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                    SELF_HOSTED_SERVER_CONFIG_WINDOW_WIDTH_EN) /
-                       2,
-                   (viewport->WorkSize.y - viewport->WorkPos.y -
-                    SELF_HOSTED_SERVER_CONFIG_WINDOW_HEIGHT_EN) /
-                       2));
-
+            ImVec2(io.DisplaySize.x * 0.27f, io.DisplaySize.y * 0.3f));
         ImGui::SetNextWindowSize(
-            ImVec2(SELF_HOSTED_SERVER_CONFIG_WINDOW_WIDTH_EN,
-                   SELF_HOSTED_SERVER_CONFIG_WINDOW_HEIGHT_EN));
+            ImVec2(io.DisplaySize.x * 0.465f, io.DisplaySize.y * 0.41f));
       }
 
       self_hosted_server_config_window_pos_reset_ = false;
@@ -174,17 +161,19 @@ int Render::SelfHostedServerWindow() {
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       {
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", localization::self_hosted_server_address
                               [localization_language_index_]
                                   .c_str());
+        ImGui::SameLine();
         if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_HOST_INPUT_BOX_PADDING_CN);
+          ImGui::SetCursorPosX(title_bar_button_width_ * 2.5f);
         } else {
-          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_HOST_INPUT_BOX_PADDING_EN);
+          ImGui::SetCursorPosX(title_bar_button_width_ * 3.43f);
         }
         ImGui::SetCursorPosY(settings_items_offset);
-        ImGui::SetNextItemWidth(SELF_HOSTED_SERVER_INPUT_WINDOW_WIDTH);
+        ImGui::SetNextItemWidth(title_bar_button_width_ * 3.8f);
 
         ImGui::InputText("##signal_server_ip_self_", signal_server_ip_self_,
                          IM_ARRAYSIZE(signal_server_ip_self_),
@@ -195,19 +184,20 @@ int Render::SelfHostedServerWindow() {
 
       {
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text(
             "%s",
             localization::self_hosted_server_port[localization_language_index_]
                 .c_str());
-
+        ImGui::SameLine();
         if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_PORT_INPUT_BOX_PADDING_CN);
+          ImGui::SetCursorPosX(title_bar_button_width_ * 2.5f);
         } else {
-          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_PORT_INPUT_BOX_PADDING_EN);
+          ImGui::SetCursorPosX(title_bar_button_width_ * 3.43f);
         }
         ImGui::SetCursorPosY(settings_items_offset);
-        ImGui::SetNextItemWidth(SELF_HOSTED_SERVER_INPUT_WINDOW_WIDTH);
+        ImGui::SetNextItemWidth(title_bar_button_width_ * 3.8f);
 
         ImGui::InputText("##signal_server_port_self_", signal_server_port_self_,
                          IM_ARRAYSIZE(signal_server_port_self_));
@@ -217,18 +207,19 @@ int Render::SelfHostedServerWindow() {
 
       {
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", localization::self_hosted_server_coturn_server_port
                               [localization_language_index_]
                                   .c_str());
-
+        ImGui::SameLine();
         if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_PORT_INPUT_BOX_PADDING_CN);
+          ImGui::SetCursorPosX(title_bar_button_width_ * 2.5f);
         } else {
-          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_PORT_INPUT_BOX_PADDING_EN);
+          ImGui::SetCursorPosX(title_bar_button_width_ * 3.43f);
         }
         ImGui::SetCursorPosY(settings_items_offset);
-        ImGui::SetNextItemWidth(SELF_HOSTED_SERVER_INPUT_WINDOW_WIDTH);
+        ImGui::SetNextItemWidth(title_bar_button_width_ * 3.8f);
 
         ImGui::InputText("##coturn_server_port_self_", coturn_server_port_self_,
                          IM_ARRAYSIZE(coturn_server_port_self_));
@@ -238,18 +229,19 @@ int Render::SelfHostedServerWindow() {
 
       {
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("%s", localization::self_hosted_server_certificate_path
                               [localization_language_index_]
                                   .c_str());
-
+        ImGui::SameLine();
         if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_PORT_INPUT_BOX_PADDING_CN);
+          ImGui::SetCursorPosX(title_bar_button_width_ * 2.5f);
         } else {
-          ImGui::SetCursorPosX(SELF_HOSTED_SERVER_PORT_INPUT_BOX_PADDING_EN);
+          ImGui::SetCursorPosX(title_bar_button_width_ * 3.43f);
         }
         ImGui::SetCursorPosY(settings_items_offset);
-        ImGui::SetNextItemWidth(SELF_HOSTED_SERVER_INPUT_WINDOW_WIDTH);
+        ImGui::SetNextItemWidth(title_bar_button_width_ * 3.8f);
 
         ShowSimpleFileBrowser();
       }
@@ -259,12 +251,13 @@ int Render::SelfHostedServerWindow() {
       }
 
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-        ImGui::SetCursorPosX(SELF_HOSTED_SERVER_CONFIG_OK_BUTTON_PADDING_CN);
+        ImGui::SetCursorPosX(title_bar_button_width_ * 2.32f);
       } else {
-        ImGui::SetCursorPosX(SELF_HOSTED_SERVER_CONFIG_OK_BUTTON_PADDING_EN);
+        ImGui::SetCursorPosX(title_bar_button_width_ * 2.7f);
       }
 
-      settings_items_offset += settings_items_padding + 10;
+      settings_items_offset +=
+          settings_items_padding + title_bar_button_width_ * 0.3f;
       ImGui::SetCursorPosY(settings_items_offset);
       ImGui::PopStyleVar();
 
