@@ -131,7 +131,7 @@ int Render::TitleBar(bool main_window) {
         ImGui::EndTooltip();
       }
 
-      ImGui::EndMenu();
+      ImGui::EndPopup();
     } else {
       show_new_version_icon_in_menu_ = true;
     }
@@ -152,7 +152,9 @@ int Render::TitleBar(bool main_window) {
       // render for 1 second
       if (show_new_version_icon_) {
         ImGui::SetWindowFontScale(0.6f);
-        ImGui::SetCursorPos(ImVec2(bar_pos_x + 10, bar_pos_y - 17));
+        ImGui::SetCursorPos(
+            ImVec2(bar_pos_x + title_bar_button_width * 0.15f,
+                   bar_pos_y - title_bar_button_width * 0.325f));
         ImGui::Text(ICON_FA_TRIANGLE_EXCLAMATION);
         ImGui::SetWindowFontScale(1.0f);
 
